@@ -2,7 +2,9 @@
 
 **Practical, free resources for modern laboratories**
 
-Created by [**Next Step Solutions**](https://github.com/tdoerks) - Innovative consulting for laboratory operations
+*By laboratorians, for laboratorians* 🔬
+
+Created by [@tdoerks](https://github.com/tdoerks)
 
 ---
 
@@ -103,16 +105,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 👤 About Next Step Solutions
+## 👤 About
 
-Next Step Solutions provides innovative consulting services for laboratory operations, focusing on:
-- Laboratory workflow optimization
-- Bioinformatics pipeline development
-- Standard operating procedure (SOP) development
-- Laboratory management tools and automation
+These resources are developed by laboratory professionals with real-world experience in research, clinical, and academic settings. We understand the challenges of lab management because we live them every day.
 
-**Contact:** Tyler Doerksen
+**Created by:** Tyler Doerksen
 **GitHub:** [@tdoerks](https://github.com/tdoerks)
+**Background:** Bioinformatics, Laboratory Operations, Microbiology
 
 ---
 
@@ -129,9 +128,7 @@ If you find these resources helpful:
 
 ## 🙏 Acknowledgments
 
-Developed with practical input from laboratory professionals working in research, clinical, and academic settings.
-
-Special thanks to the open-source community for inspiration and tools.
+Built by laboratorians who understand the daily challenges of running a lab. Special thanks to the open-source community for inspiration and tools that make this possible.
 
 ---
 

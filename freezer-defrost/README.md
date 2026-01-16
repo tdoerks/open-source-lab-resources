@@ -248,10 +248,11 @@ MIT License - See [LICENSE](../LICENSE) file
 
 ## 👤 Contact
 
-Created by **Next Step Solutions**
-Tyler Doerksen - [@tdoerks](https://github.com/tdoerks)
+Created by Tyler Doerksen - [@tdoerks](https://github.com/tdoerks)
 
-For consulting inquiries about laboratory operations, SOP development, or custom tools, please reach out!
+*By laboratorians, for laboratorians* 🔬
+
+Questions, suggestions, or want to collaborate? Open an issue or reach out!
 
 ---
 
