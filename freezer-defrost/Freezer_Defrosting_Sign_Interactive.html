@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freezer Defrosting Sign - Interactive</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        @page {
+            size: letter;
+            margin: 0;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            width: 8.5in;
+            height: 11in;
+            font-family: Arial, sans-serif;
+            background: white;
+            position: relative;
+        }
+        .warning-stripes-top, .warning-stripes-bottom {
+            height: 30px;
+            display: flex;
+            width: 100%;
+        }
+        .warning-stripes-bottom {
+            position: absolute;
+            bottom: 0;
+        }
+        .stripe {
+            flex: 1;
+            height: 100%;
+        }
+        .stripe:nth-child(odd) {
+            background: #FFD700;
+        }
+        .stripe:nth-child(even) {
+            background: #000000;
+        }
+        .header {
+            background: #DC143C;
+            color: white;
+            text-align: center;
+            padding: 15px 20px;
+            margin: 15px 20px 10px 20px;
+            border-radius: 8px;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin: 0;
+            font-weight: bold;
+        }
+        .header h2 {
+            font-size: 38px;
+            margin: 5px 0 0 0;
+            font-weight: bold;
+        }
+        .warning-icon {
+            font-size: 24px;
+            margin-top: 5px;
+        }
+        .content {
+            padding: 0 20px;
+        }
+        .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 12px 0 8px 0;
+            color: #000;
+        }
+        .section-title.warning {
+            color: #DC143C;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .form-grid.full-width {
+            grid-template-columns: 1fr;
+        }
+        .info-box {
+            background: #E3F2FD;
+            border: 2px solid #1976D2;
+            border-radius: 5px;
+            padding: 6px 10px;
+            position: relative;
+        }
+        .info-box.contact-box {
+            background: #FFEBEE;
+            border-color: #D32F2F;
+        }
+        .info-label {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .phone-field-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .qr-code {
+            width: 40px;
+            height: 40px;
+            display: none;
+            flex-shrink: 0;
+        }
+        .qr-code.visible {
+            display: block;
+        }
+        .input-with-button {
+            display: flex;
+            gap: 5px;
+        }
+        .now-button {
+            background: #FFC107;
+            color: #000;
+            border: 2px solid #FF6F00;
+            padding: 0 16px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(255, 193, 7, 0.4);
+            position: relative;
+        }
+        .now-button:hover {
+            background: #FFB300;
+            transform: scale(1.05);
+        }
+        .now-button:hover::after {
+            content: "Click to use current time";
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+        .fill-input {
+            width: 100%;
+            background: white;
+            border: 1.5px solid #666;
+            height: 28px;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 15px;
+            font-family: Arial, sans-serif;
+        }
+        .fill-input:focus {
+            outline: 2px solid #1976D2;
+            border-color: #1976D2;
+        }
+        .info-value {
+            font-size: 14px;
+            color: #D32F2F;
+            font-weight: bold;
+            margin-top: 2px;
+            padding: 3px 0;
+        }
+        .auto-calculated {
+            background: #FFF9C4;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 2px solid #FFC107;
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            margin-top: 4px;
+            text-align: center;
+        }
+        .warning-list {
+            margin-left: 10px;
+        }
+        .warning-item {
+            font-size: 13px;
+            margin: 4px 0;
+            line-height: 1.2;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 8px;
+            padding: 0 20px 30px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .footer-qr {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #666;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            padding: 5px;
+            text-align: center;
+        }
+        @media print {
+            .now-button:hover::after {
+                display: none !important;
+            }
+            .qr-code {
+                break-inside: avoid;
+            }
+        }
+        .button-container {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .action-button {
+            background: #DC143C;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .action-button:hover {
+            background: #B71C1C;
+        }
+        .clear-button {
+            background: #666;
+        }
+        .clear-button:hover {
+            background: #444;
+        }
+        .save-button {
+            background: #2E7D32;
+        }
+        .save-button:hover {
+            background: #1B5E20;
+        }
+        .status-message {
+            position: fixed;
+            top: 70px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+        }
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .button-container, .status-message {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="button-container">
+        <button class="action-button save-button" onclick="saveForm()">💾 Save</button>
+        <button class="action-button clear-button" onclick="clearForm()">🗑️ Clear All</button>
+        <button class="action-button" onclick="window.print()">🖨️ Print Sign</button>
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+    <div class="warning-stripes-top">
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+    </div>
+
+    <div class="header">
+        <h1>OUT OF SERVICE</h1>
+        <h2>DEFROSTING IN PROGRESS</h2>
+        <div class="warning-icon">⚠️</div>
+    </div>
+
+    <div class="content">
+        <div class="section-title">DEFROST INFORMATION</div>
+
+        <!-- Row 1: Start DateTime + NOW button | Person Who Started -->
+        <div class="form-grid">
+            <div class="info-box">
+                <div class="info-label">📅 Start Date/Time:</div>
+                <div class="input-with-button">
+                    <input type="datetime-local" id="startDateTime" class="fill-input" onchange="calculateDates()">
+                    <button class="now-button" onclick="setNow()">NOW</button>
+                </div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">👤 Person Who Started:</div>
+                <input type="text" id="startedBy" class="fill-input" placeholder="Enter name">
+            </div>
+        </div>
+
+        <!-- Row 2: Person Responsible for Restart | Responsible Person Phone -->
+        <div class="form-grid">
+            <div class="info-box">
+                <div class="info-label">👤 Person Responsible for Restart:</div>
+                <input type="text" id="restartBy" class="fill-input" placeholder="Enter name">
+            </div>
+            <div class="info-box">
+                <div class="info-label">📞 Responsible Person Phone:</div>
+                <div class="phone-field-wrapper">
+                    <input type="tel" id="restartByPhone" class="fill-input" placeholder="Phone number" oninput="generatePhoneQR('restartByPhone')">
+                    <div id="qr-restartByPhone" class="qr-code"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Expected Completion | Safe to Return Items -->
+        <div class="form-grid">
+            <div class="info-box">
+                <div class="info-label">Expected Completion:</div>
+                <div class="info-value">24-48 hours from start</div>
+                <div class="auto-calculated" id="expectedCompletion">Enter start date above</div>
+            </div>
+            <div class="info-box">
+                <div class="info-label">Safe to Return Items:</div>
+                <div class="info-value">7 days from start</div>
+                <div class="auto-calculated" id="safeToReturn">Enter start date above</div>
+            </div>
+        </div>
+
+        <!-- Row 4: Storage Method | Backup Location -->
+        <div class="form-grid">
+            <div class="info-box">
+                <div class="info-label">🧊 Storage Method:</div>
+                <select id="storageMethod" class="fill-input">
+                    <option value="">Select method...</option>
+                    <option value="Backup Freezer">Backup Freezer</option>
+                    <option value="Dry Ice Coolers">Dry Ice Coolers</option>
+                </select>
+            </div>
+            <div class="info-box">
+                <div class="info-label">📍 Backup Storage Location:</div>
+                <input type="text" id="backupLocation" class="fill-input" placeholder="Where are items stored?">
+            </div>
+        </div>
+
+        <div class="section-title">EMERGENCY CONTACTS</div>
+
+        <!-- Row 5: Emergency Contact Name | Emergency Phone -->
+        <div class="form-grid">
+            <div class="info-box contact-box">
+                <div class="info-label">👤 Emergency Contact:</div>
+                <input type="text" id="emergencyContact" class="fill-input" placeholder="Enter name">
+            </div>
+            <div class="info-box contact-box">
+                <div class="info-label">📞 Emergency Phone:</div>
+                <div class="phone-field-wrapper">
+                    <input type="tel" id="emergencyPhone" class="fill-input" placeholder="Phone number" oninput="generatePhoneQR('emergencyPhone')">
+                    <div id="qr-emergencyPhone" class="qr-code"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 6: Lab Manager | Lab Manager Phone -->
+        <div class="form-grid">
+            <div class="info-box contact-box">
+                <div class="info-label">👤 Laboratory Manager:</div>
+                <input type="text" id="labManager" class="fill-input" placeholder="Enter name">
+            </div>
+            <div class="info-box contact-box">
+                <div class="info-label">📞 Lab Manager Phone:</div>
+                <div class="phone-field-wrapper">
+                    <input type="tel" id="labManagerPhone" class="fill-input" placeholder="Phone number" oninput="generatePhoneQR('labManagerPhone')">
+                    <div id="qr-labManagerPhone" class="qr-code"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title warning">⚠ SAFETY WARNINGS</div>
+        <div class="warning-list">
+            <div class="warning-item">⚠ Cold Burns: Dry ice in use - wear insulated gloves</div>
+            <div class="warning-item">⚠ Slip Hazard: Wet floor around freezer</div>
+            <div class="warning-item">⚠ Asphyxiation: Ensure adequate ventilation</div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-qr">
+            SOP QR<br>
+            <small>In Progress</small>
+        </div>
+        <div>See Freezer Defrosting SOP for complete procedures</div>
+    </div>
+
+    <div class="warning-stripes-bottom">
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+    </div>
+
+    <script>
+        // Track QR code instances
+        const qrInstances = {};
+
+        function generatePhoneQR(fieldId) {
+            const input = document.getElementById(fieldId);
+            const qrDiv = document.getElementById(`qr-${fieldId}`);
+            const phoneNumber = input.value.trim();
+
+            // Clear existing QR code
+            if (qrInstances[fieldId]) {
+                qrDiv.innerHTML = '';
+                delete qrInstances[fieldId];
+            }
+
+            // Generate new QR code if phone number exists
+            if (phoneNumber && phoneNumber.length >= 7) {
+                // Format phone number for tel: protocol
+                const telNumber = phoneNumber.replace(/\D/g, ''); // Remove non-digits
+                const telLink = `tel:+1${telNumber}`; // Assume US/Canada, add +1
+
+                try {
+                    qrInstances[fieldId] = new QRCode(qrDiv, {
+                        text: telLink,
+                        width: 40,
+                        height: 40,
+                        correctLevel: QRCode.CorrectLevel.L
+                    });
+                    qrDiv.classList.add('visible');
+                } catch (e) {
+                    console.error('QR generation failed:', e);
+                }
+            } else {
+                qrDiv.classList.remove('visible');
+            }
+        }
+
+        function setNow() {
+            const now = new Date();
+            // Format for datetime-local input: YYYY-MM-DDTHH:MM
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+
+            const dateTimeString = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+            document.getElementById('startDateTime').value = dateTimeString;
+            calculateDates();
+
+            // Auto-save
+            localStorage.setItem('startDateTime', dateTimeString);
+            showStatus('✓ Start time set to NOW', 'success');
+        }
+
+        function calculateDates() {
+            const startInput = document.getElementById('startDateTime');
+            const expectedCompletionDiv = document.getElementById('expectedCompletion');
+            const safeToReturnDiv = document.getElementById('safeToReturn');
+
+            if (startInput.value) {
+                const startDate = new Date(startInput.value);
+
+                // Calculate expected completion (24-48 hours, show range)
+                const completion24 = new Date(startDate);
+                completion24.setHours(completion24.getHours() + 24);
+                const completion48 = new Date(startDate);
+                completion48.setHours(completion48.getHours() + 48);
+
+                // Calculate safe to return (7 days)
+                const safeDate = new Date(startDate);
+                safeDate.setDate(safeDate.getDate() + 7);
+
+                // Format dates nicely
+                const options = {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+
+                expectedCompletionDiv.textContent =
+                    `${completion24.toLocaleString('en-US', options)} - ${completion48.toLocaleString('en-US', options)}`;
+
+                safeToReturnDiv.textContent =
+                    `${safeDate.toLocaleString('en-US', options)}`;
+            } else {
+                expectedCompletionDiv.textContent = 'Enter start date above';
+                safeToReturnDiv.textContent = 'Enter start date above';
+            }
+        }
+
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.style.background = type === 'success' ? '#4CAF50' : '#F44336';
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function saveForm() {
+            const fields = ['startDateTime', 'startedBy', 'restartBy', 'restartByPhone',
+                           'storageMethod', 'backupLocation', 'emergencyContact',
+                           'emergencyPhone', 'labManager', 'labManagerPhone'];
+
+            let savedCount = 0;
+            fields.forEach(field => {
+                const element = document.getElementById(field);
+                if (element && element.value) {
+                    localStorage.setItem(field, element.value);
+                    savedCount++;
+                }
+            });
+
+            // Save timestamp
+            localStorage.setItem('lastSaved', new Date().toLocaleString());
+
+            showStatus(`✓ Saved ${savedCount} fields successfully!`, 'success');
+        }
+
+        function clearForm() {
+            if (confirm('⚠️ Clear all form data? This cannot be undone.')) {
+                localStorage.clear();
+
+                // Clear all inputs
+                document.querySelectorAll('input').forEach(input => input.value = '');
+
+                // Clear all selects
+                document.querySelectorAll('select').forEach(select => select.selectedIndex = 0);
+
+                calculateDates();
+                showStatus('✓ All data cleared', 'success');
+            }
+        }
+
+        function exportData() {
+            const fields = ['startDateTime', 'startedBy', 'restartBy', 'restartByPhone',
+                           'storageMethod', 'backupLocation', 'emergencyContact',
+                           'emergencyPhone', 'labManager', 'labManagerPhone'];
+
+            const data = {};
+            fields.forEach(field => {
+                const value = localStorage.getItem(field);
+                if (value) {
+                    data[field] = value;
+                }
+            });
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `defrost_data_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+
+            showStatus('✓ Data exported!', 'success');
+        }
+
+        // Load saved data from localStorage on page load
+        window.addEventListener('load', function() {
+            const fields = ['startDateTime', 'startedBy', 'restartBy', 'restartByPhone',
+                           'storageMethod', 'backupLocation', 'emergencyContact',
+                           'emergencyPhone', 'labManager', 'labManagerPhone'];
+
+            fields.forEach(field => {
+                const saved = localStorage.getItem(field);
+                const element = document.getElementById(field);
+                if (saved && element) {
+                    element.value = saved;
+                }
+            });
+
+            // Recalculate dates if start time was saved
+            if (localStorage.getItem('startDateTime')) {
+                calculateDates();
+            }
+
+            // Show last saved time if available
+            const lastSaved = localStorage.getItem('lastSaved');
+            if (lastSaved) {
+                console.log(`Last saved: ${lastSaved}`);
+            }
+        });
+
+        // Auto-save data when changed
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input, select').forEach(element => {
+                element.addEventListener('change', function() {
+                    localStorage.setItem(this.id, this.value);
+                    if (this.id === 'startDateTime') {
+                        calculateDates();
+                    }
+                });
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+P or Cmd+P for print (browser default)
+            // Ctrl+S or Cmd+S for save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                saveForm();
+            }
+        });
+    </script>
+</body>
+</html>

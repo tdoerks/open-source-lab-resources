@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="8.5in" height="11in" viewBox="0 0 850 1100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define styles -->
+  <defs>
+    <style>
+      .warning-stripe { fill: #FFD700; }
+      .warning-black { fill: #000000; }
+      .warning-red { fill: #DC143C; }
+      .header-text { fill: white; font-family: Arial, sans-serif; font-weight: bold; }
+      .section-header { fill: #000000; font-family: Arial, sans-serif; font-weight: bold; font-size: 32px; }
+      .info-text { fill: #000000; font-family: Arial, sans-serif; font-size: 24px; }
+      .red-text { fill: #DC143C; font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; }
+      .small-text { fill: #000000; font-family: Arial, sans-serif; font-size: 20px; }
+      .footer-text { fill: #666666; font-family: Arial, sans-serif; font-size: 20px; }
+      .info-box { fill: #EEEEEE; stroke: #000000; stroke-width: 2; }
+      .fill-box { fill: white; stroke: #666666; stroke-width: 1.5; }
+    </style>
+  </defs>
+
+  <!-- Warning stripes at top -->
+  <rect x="0" y="0" width="100" height="30" class="warning-stripe"/>
+  <rect x="100" y="0" width="100" height="30" class="warning-black"/>
+  <rect x="200" y="0" width="100" height="30" class="warning-stripe"/>
+  <rect x="300" y="0" width="100" height="30" class="warning-black"/>
+  <rect x="400" y="0" width="100" height="30" class="warning-stripe"/>
+  <rect x="500" y="0" width="100" height="30" class="warning-black"/>
+  <rect x="600" y="0" width="100" height="30" class="warning-stripe"/>
+  <rect x="700" y="0" width="100" height="30" class="warning-black"/>
+  <rect x="800" y="0" width="50" height="30" class="warning-stripe"/>
+
+  <!-- Warning stripes at bottom -->
+  <rect x="0" y="1070" width="100" height="30" class="warning-stripe"/>
+  <rect x="100" y="1070" width="100" height="30" class="warning-black"/>
+  <rect x="200" y="1070" width="100" height="30" class="warning-stripe"/>
+  <rect x="300" y="1070" width="100" height="30" class="warning-black"/>
+  <rect x="400" y="1070" width="100" height="30" class="warning-stripe"/>
+  <rect x="500" y="1070" width="100" height="30" class="warning-black"/>
+  <rect x="600" y="1070" width="100" height="30" class="warning-stripe"/>
+  <rect x="700" y="1070" width="100" height="30" class="warning-black"/>
+  <rect x="800" y="1070" width="50" height="30" class="warning-stripe"/>
+
+  <!-- Red header section -->
+  <rect x="50" y="50" width="750" height="200" class="warning-red" rx="10"/>
+
+  <!-- Header text -->
+  <text x="425" y="100" class="header-text" font-size="36" text-anchor="middle">OUT OF SERVICE</text>
+  <text x="425" y="150" class="header-text" font-size="48" text-anchor="middle">DEFROSTING</text>
+  <text x="425" y="200" class="header-text" font-size="48" text-anchor="middle">IN PROGRESS</text>
+
+  <!-- Warning symbol -->
+  <polygon points="425,220 445,250 405,250" fill="white" stroke="white" stroke-width="3"/>
+  <text x="425" y="247" class="header-text" font-size="20" text-anchor="middle">!</text>
+
+  <!-- DEFROST INFORMATION section -->
+  <text x="50" y="300" class="section-header">DEFROST INFORMATION</text>
+
+  <!-- Start Date/Time -->
+  <rect x="50" y="320" width="750" height="70" class="info-box" rx="5"/>
+  <text x="70" y="345" class="info-text">Start Date/Time:</text>
+  <rect x="70" y="350" width="710" height="30" class="fill-box" rx="3"/>
+
+  <!-- Expected Completion -->
+  <rect x="50" y="410" width="750" height="70" class="info-box" rx="5"/>
+  <text x="70" y="435" class="info-text">Expected Completion:</text>
+  <text x="70" y="465" class="red-text">24-48 hours from start time</text>
+
+  <!-- Safe to Return Samples -->
+  <rect x="50" y="500" width="750" height="70" class="info-box" rx="5"/>
+  <text x="70" y="525" class="info-text">Safe to Return Samples:</text>
+  <text x="70" y="555" class="red-text">7 days from start time</text>
+
+  <!-- Actual Completion -->
+  <rect x="50" y="590" width="750" height="70" class="info-box" rx="5"/>
+  <text x="70" y="615" class="info-text">Actual Completion Date/Time:</text>
+  <rect x="70" y="620" width="710" height="30" class="fill-box" rx="3"/>
+
+  <!-- SAFETY WARNINGS section -->
+  <text x="50" y="710" class="section-header" fill="#DC143C">⚠ SAFETY WARNINGS</text>
+
+  <text x="70" y="745" class="small-text">⚠ Cold Burns: Dry ice in use - wear insulated gloves</text>
+  <text x="70" y="780" class="small-text">⚠ Slip Hazard: Wet floor around freezer</text>
+  <text x="70" y="815" class="small-text">⚠ Asphyxiation: Ensure adequate ventilation</text>
+
+  <!-- EMERGENCY CONTACTS section -->
+  <text x="50" y="880" class="section-header">EMERGENCY CONTACTS</text>
+
+  <!-- Emergency Contact -->
+  <text x="70" y="915" class="info-text">Emergency Contact: Anna Fritzon</text>
+  <rect x="70" y="920" width="710" height="30" class="fill-box" rx="3"/>
+
+  <!-- Laboratory Manager -->
+  <text x="70" y="975" class="info-text">Laboratory Manager: Tyler Doerksen</text>
+  <rect x="70" y="980" width="710" height="30" class="fill-box" rx="3"/>
+
+  <!-- Footer -->
+  <text x="425" y="1050" class="footer-text" text-anchor="middle">See Freezer Defrosting SOP for complete procedures</text>
+</svg>

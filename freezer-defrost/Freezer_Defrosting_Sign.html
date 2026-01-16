@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freezer Defrosting Sign</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 0;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            width: 8.5in;
+            height: 11in;
+            font-family: Arial, sans-serif;
+            background: white;
+            position: relative;
+        }
+        .warning-stripes-top, .warning-stripes-bottom {
+            height: 30px;
+            display: flex;
+            width: 100%;
+        }
+        .warning-stripes-bottom {
+            position: absolute;
+            bottom: 0;
+        }
+        .stripe {
+            flex: 1;
+            height: 100%;
+        }
+        .stripe:nth-child(odd) {
+            background: #FFD700;
+        }
+        .stripe:nth-child(even) {
+            background: #000000;
+        }
+        .header {
+            background: #DC143C;
+            color: white;
+            text-align: center;
+            padding: 20px 30px;
+            margin: 20px 30px;
+            border-radius: 10px;
+        }
+        .header h1 {
+            font-size: 40px;
+            margin: 0;
+            font-weight: bold;
+        }
+        .header h2 {
+            font-size: 46px;
+            margin: 8px 0 0 0;
+            font-weight: bold;
+        }
+        .warning-icon {
+            font-size: 28px;
+            margin-top: 8px;
+        }
+        .content {
+            padding: 0 30px;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #000;
+        }
+        .section-title.warning {
+            color: #DC143C;
+        }
+        .info-box {
+            background: #EEEEEE;
+            border: 2px solid #000;
+            border-radius: 6px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+        }
+        .info-label {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .fill-line {
+            background: white;
+            border: 1.5px solid #666;
+            height: 30px;
+            border-radius: 4px;
+        }
+        .info-value {
+            font-size: 18px;
+            color: #DC143C;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        .contact-name {
+            font-size: 16px;
+            color: #000;
+            font-weight: normal;
+            margin-top: 4px;
+        }
+        .warning-list {
+            margin-left: 15px;
+        }
+        .warning-item {
+            font-size: 16px;
+            margin: 8px 0;
+            line-height: 1.3;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 15px;
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            padding: 0 30px;
+        }
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="warning-stripes-top">
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+    </div>
+
+    <div class="header">
+        <h1>OUT OF SERVICE</h1>
+        <h2>DEFROSTING IN PROGRESS</h2>
+        <div class="warning-icon">⚠️</div>
+    </div>
+
+    <div class="content">
+        <div class="section-title">DEFROST INFORMATION</div>
+
+        <div class="info-box">
+            <div class="info-label">Start Date/Time:</div>
+            <div class="fill-line"></div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">Expected Completion:</div>
+            <div class="info-value">24-48 hours from start time</div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">Safe to Return Samples:</div>
+            <div class="info-value">7 days from start time</div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">Actual Completion Date/Time:</div>
+            <div class="fill-line"></div>
+        </div>
+
+        <div class="section-title warning">⚠ SAFETY WARNINGS</div>
+        <div class="warning-list">
+            <div class="warning-item">⚠ Cold Burns: Dry ice in use - wear insulated gloves</div>
+            <div class="warning-item">⚠ Slip Hazard: Wet floor around freezer</div>
+            <div class="warning-item">⚠ Asphyxiation: Ensure adequate ventilation</div>
+        </div>
+
+        <div class="section-title">EMERGENCY CONTACTS</div>
+
+        <div class="info-box">
+            <div class="info-label">Emergency Contact: Anna Fritzon</div>
+            <div class="fill-line"></div>
+        </div>
+
+        <div class="info-box">
+            <div class="info-label">Laboratory Manager: Tyler Doerksen</div>
+            <div class="fill-line"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        See Freezer Defrosting SOP for complete procedures
+    </div>
+
+    <div class="warning-stripes-bottom">
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+        <div class="stripe"></div>
+    </div>
+</body>
+</html>
