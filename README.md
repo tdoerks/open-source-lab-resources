@@ -27,6 +27,19 @@ Complete system for managing freezer defrosting procedures:
   - Auto-saves data in browser
   - Print-ready single-page layout
 
+#### 🧮 [MiSeq Pooling Calculators](./miseq-pooling/)
+Interactive calculators for Illumina MiSeq library pooling:
+- **Standard MiSeq Calculator** - For v2/v3 chemistry
+- **MiSeq i100 Calculator** - Optimized for i100 runs with PhiX toggle
+- **Features:**
+  - Auto-calculates equimolar pooling volumes
+  - Molarity conversions (ng/µL → nM)
+  - PhiX spike-in calculations (i100 version)
+  - Color-coded warnings for problematic samples
+  - Export data for records
+  - Auto-saves in browser
+  - Print-ready protocols
+
 ---
 
 ## 🚀 Quick Start
@@ -39,6 +52,16 @@ Complete system for managing freezer defrosting procedures:
 4. **Fill in** contact and storage information
 5. **Print** the completed sign
 6. **Post** on your freezer during defrosting
+
+### MiSeq Pooling Calculators
+
+1. **Download** your version:
+   - [Standard MiSeq](./miseq-pooling/MiSeq_Pooling_Sheet.html) - v2/v3 kits
+   - [MiSeq i100](./miseq-pooling/MiSeq_i100_Pooling_Sheet.html) - i100 kit
+2. **Open** in any web browser
+3. **Enter** run details and sample data (ID, concentration, size)
+4. **Watch** automatic molarity and volume calculations
+5. **Export** or print your pooling protocol
 
 No installation required! Works offline after first load.
 
@@ -89,7 +112,6 @@ We welcome contributions from the laboratory community!
 
 - Sample inventory tracker
 - Equipment maintenance logs
-- MiSeq run tracker
 - Laboratory safety checklists
 - More SOPs and templates
 

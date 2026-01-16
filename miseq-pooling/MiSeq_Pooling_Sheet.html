@@ -1,0 +1,2086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Illumina MiSeq Pooling Sheet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+        }
+        
+        .section-header {
+            background-color: #3498db;
+            color: white;
+            padding: 15px;
+            border-radius: 6px 6px 0 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .section-content {
+            padding: 20px;
+        }
+        
+        .header-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            font-weight: bold;
+            color: #34495e;
+        }
+        
+        .input-group input {
+            padding: 8px;
+            border: 2px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .samples-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        
+        .samples-table th {
+            background-color: #34495e;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-size: 12px;
+            border: 1px solid #2c3e50;
+        }
+        
+        .samples-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            font-size: 12px;
+        }
+        
+        .samples-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .samples-table tr.sample-added {
+            background-color: #e0e0e0 !important;
+            opacity: 0.7;
+        }
+        
+        .sample-input {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        
+        .calculated-cell {
+            background-color: #e8f5e8;
+            font-weight: bold;
+            color: #27ae60;
+            text-align: center;
+        }
+        
+        .index-cell {
+            background-color: #fff3cd;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        .index-cell:hover {
+            background-color: #ffeeba;
+        }
+        
+        .btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px 10px 0;
+            font-size: 14px;
+        }
+        
+        .btn:hover {
+            background-color: #219a52;
+        }
+        
+        .btn-blue {
+            background-color: #3498db;
+        }
+        
+        .btn-blue:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-remove {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .btn-remove:hover {
+            background-color: #c0392b;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-box {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .summary-value {
+            font-weight: bold;
+            color: #27ae60;
+        }
+        
+        .error { color: #c62828; }
+        .warning { color: #ef6c00; }
+        
+        .step-box {
+            background-color: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .step-box h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .step-content {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .step-note {
+            font-size: 11px;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        .materials-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .control-item {
+            text-align: center;
+        }
+        
+        .control-label {
+            font-size: 12px;
+            color: #6c757d;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .control-input {
+            width: 70px;
+            padding: 4px;
+            border: 1px solid #bdc3c7;
+            border-radius: 3px;
+            text-align: center;
+        }
+        
+        .control-value {
+            font-weight: bold;
+            color: #3498db;
+            font-size: 14px;
+        }
+        
+        .qubit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .bio-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 6px;
+        }
+        
+        .comparison-item {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .comparison-value {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        
+        .tooltip {
+            position: fixed;
+            background-color: #4caf50;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Illumina MiSeq Pooling Sheet</h1>
+        
+        <!-- Header Information -->
+        <div class="section">
+            <div class="section-header">Run Information</div>
+            <div class="section-content">
+                <div class="header-grid">
+                    <div>
+                        <div class="input-group">
+                            <label>Date:</label>
+                            <input type="date" id="date" value="">
+                        </div>
+                        <div class="input-group">
+                            <label>Lab Name:</label>
+                            <input type="text" id="labName" placeholder="Enter lab name">
+                        </div>
+                        <div class="input-group">
+                            <label>Run Name:</label>
+                            <input type="text" id="runName" placeholder="Enter run name">
+                        </div>
+                        <div class="input-group">
+                            <label>Sample Type:</label>
+                            <input type="text" id="sampleType" placeholder="e.g., DNA, RNA">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="input-group">
+                            <label>Initials:</label>
+                            <input type="text" id="initials" placeholder="Your initials">
+                        </div>
+                        <div class="input-group">
+                            <label>Qubit Date:</label>
+                            <input type="date" id="qubitDate">
+                        </div>
+                        <div class="input-group">
+                            <label>Avg Fragment Size (bp):</label>
+                            <input type="number" id="avgFragmentSize" value="520" onchange="updateCalculations()">
+                        </div>
+                        <div class="input-group">
+                            <label>Final Pool Conc (nM):</label>
+                            <input type="number" id="finalPoolConc" value="10" onchange="updateCalculations()">
+                        </div>
+                        <div class="input-group">
+                            <label>Final Pool Volume (μL):</label>
+                            <input type="number" id="finalPoolVolume" value="100" onchange="updateCalculations()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Information -->
+        <div class="section">
+            <div class="section-header">Sample Information & Pooling Calculations</div>
+            <div class="section-content">
+                <table class="samples-table" id="samplesTable">
+                    <thead>
+                        <tr>
+                            <th>Sample ID</th>
+                            <th>Index #</th>
+                            <th>Qubit Conc<br>(ng/μL)</th>
+                            <th>Stock Conc<br>(nM)</th>
+                            <th>Desired Share<br>of Reads (M)</th>
+                            <th>Final Conc<br>in Pool (nM)</th>
+                            <th>Volume for<br>Pool (μL)</th>
+                            <th>Sample<br>Added</th>
+                            <th>Plate</th>
+                            <th>Well</th>
+                            <th>S Index</th>
+                            <th>N Index</th>
+                            <th>LRM S Index</th>
+                            <th>LRM N Index</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="samplesTableBody">
+                        <!-- Sample rows will be added here -->
+                    </tbody>
+                </table>
+                
+                <button class="btn" onclick="addSample()">+ Add Sample</button>
+                <button class="btn btn-blue" onclick="showBulkInput()">📋 Bulk Input from Excel</button>
+                
+                <!-- Report Generation Modal -->
+                <div id="reportModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; width: 70%; max-width: 600px; max-height: 80%; overflow-y: auto;">
+                        <h3 style="margin-top: 0; color: #9b59b6;">📄 Generate Pooling Report</h3>
+                        <p style="color: #7f8c8d; margin-bottom: 20px;">
+                            Create a comprehensive report of your pooling session for documentation and lab records.
+                        </p>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 10px; color: #34495e;">Report Sections</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="checkbox" id="includeRunInfo" checked style="transform: scale(1.2);">
+                                    Run Information
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="checkbox" id="includeSampleTable" checked style="transform: scale(1.2);">
+                                    Sample Table
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="checkbox" id="includePoolSummary" checked style="transform: scale(1.2);">
+                                    Pool Summary
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="checkbox" id="includeQCResults" checked style="transform: scale(1.2);">
+                                    QC Results
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="checkbox" id="includeProtocol" checked style="transform: scale(1.2);">
+                                    Loading Protocol
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="checkbox" id="includeIndexes" checked style="transform: scale(1.2);">
+                                    Index Sequences
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="checkbox" id="includeReagents" checked style="transform: scale(1.2);">
+                                    Reagent & Instrument Tracking
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 10px; color: #34495e;">Report Format</h4>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="radio" name="reportFormat" value="detailed" checked style="transform: scale(1.2);">
+                                    Detailed Report
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                    <input type="radio" name="reportFormat" value="summary" style="transform: scale(1.2);">
+                                    Summary Only
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #34495e;">Additional Notes</label>
+                            <textarea id="reportNotes" placeholder="Add any additional notes, observations, or comments about this pooling session..." 
+                                style="width: 100%; height: 80px; padding: 8px; border: 2px solid #bdc3c7; border-radius: 4px; font-size: 14px; resize: vertical;"></textarea>
+                        </div>
+                        
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button onclick="generateReport('preview')" style="background-color: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Preview Report</button>
+                            <button onclick="generateReport('print')" style="background-color: #2ecc71; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Print Report</button>
+                            <button onclick="generateReport('download')" style="background-color: #e67e22; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Download HTML</button>
+                            <button onclick="closeReportDialog()" style="background-color: #95a5a6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Preview Modal -->
+                <div id="reportPreviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 1001;">
+                    <div style="position: absolute; top: 2%; left: 2%; width: 96%; height: 96%; background: white; border-radius: 8px; display: flex; flex-direction: column;">
+                        <div style="padding: 20px; border-bottom: 2px solid #dee2e6; display: flex; justify-content: between; align-items: center;">
+                            <h3 style="margin: 0; color: #9b59b6;">Report Preview</h3>
+                            <div style="margin-left: auto;">
+                                <button onclick="generateReport('print')" style="background-color: #2ecc71; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Print This Report</button>
+                                <button onclick="generateReport('download')" style="background-color: #e67e22; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Download HTML</button>
+                                <button onclick="closeReportPreview()" style="background-color: #95a5a6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Close</button>
+                            </div>
+                        </div>
+                        <div id="reportPreviewContent" style="flex: 1; overflow-y: auto; padding: 20px; background: #f8f9fa;"></div>
+                    </div>
+                </div>
+                
+                <!-- Bulk Input Modal -->
+                <div id="bulkInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; width: 85%; max-width: 900px; max-height: 85%; overflow-y: auto;">
+                        <h3 style="margin-top: 0; color: #3498db;">Bulk Input from Excel</h3>
+                        <p style="color: #7f8c8d; margin-bottom: 20px;">
+                            Copy any columns from Excel and we'll help you map them to the right fields.<br>
+                            <strong>Tip:</strong> Include headers to make column mapping easier!
+                        </p>
+                        
+                        <textarea id="bulkInputData" placeholder="Paste your Excel data here...
+Example:
+Sample_Name    Concentration    Well_Position    Plate_ID    Index
+Sample1        15.2            A01              Plate1      1
+Sample2        12.8            A02              Plate1      2
+Sample3        18.5            A03              Plate1      3" 
+                            style="width: 100%; height: 180px; padding: 10px; border: 2px solid #bdc3c7; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; resize: vertical;" onchange="analyzeColumns()"></textarea>
+                        
+                        <div style="margin: 15px 0;">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                                <input type="checkbox" id="hasHeaders" checked style="transform: scale(1.2);" onchange="analyzeColumns()">
+                                First row contains headers
+                            </label>
+                        </div>
+
+                        <!-- Column Mapping Section -->
+                        <div id="columnMappingSection" style="display: none; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+                            <h4 style="margin-top: 0; color: #34495e;">Column Mapping</h4>
+                            <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 15px;">Select which column contains each type of data:</p>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                <div>
+                                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #34495e;">Sample ID *</label>
+                                    <select id="sampleIdColumn" style="width: 100%; padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px;">
+                                        <option value="">-- Select Column --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #34495e;">Index #</label>
+                                    <select id="indexColumn" style="width: 100%; padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px;">
+                                        <option value="">-- Select Column --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #34495e;">Qubit Conc *</label>
+                                    <select id="qubitColumn" style="width: 100%; padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px;">
+                                        <option value="">-- Select Column --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #34495e;">Plate</label>
+                                    <select id="plateColumn" style="width: 100%; padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px;">
+                                        <option value="">-- Select Column --</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #34495e;">Well</label>
+                                    <select id="wellColumn" style="width: 100%; padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px;">
+                                        <option value="">-- Select Column --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p style="font-size: 11px; color: #7f8c8d; margin-top: 10px;">* Required fields</p>
+                        </div>
+                        
+                        <div id="previewSection" style="display: none; margin: 20px 0;">
+                            <h4 style="color: #34495e;">Preview:</h4>
+                            <div id="dataPreview" style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; max-height: 150px; overflow-y: auto;"></div>
+                            <p id="previewStats" style="font-size: 12px; color: #7f8c8d; margin-top: 10px;"></p>
+                        </div>
+                        
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button onclick="analyzeColumns()" style="background-color: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Analyze Columns</button>
+                            <button onclick="previewMappedData()" style="background-color: #f39c12; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Preview Data</button>
+                            <button onclick="processMappedInput()" style="background-color: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Import Data</button>
+                            <button onclick="closeBulkInput()" style="background-color: #95a5a6; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pool Summary and QC -->
+        <div class="section">
+            <div class="section-header">Pool Summary & Quality Control</div>
+            <div class="section-content">
+                <div class="summary-grid">
+                    <div class="summary-box">
+                        <h3>Pool Summary</h3>
+                        <div class="summary-item">
+                            <span>Total Samples:</span>
+                            <span class="summary-value" id="totalSamples">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Total Library Volume:</span>
+                            <span class="summary-value" id="totalLibVolume">0 μL</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Dilution Buffer Volume:</span>
+                            <span class="summary-value" id="dilutionBufferVolume">0 μL</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Shared Reads Total:</span>
+                            <span class="summary-value" id="sharedReadsTotal">0 M</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Samples Added to Pool:</span>
+                            <span class="summary-value" id="samplesAdded">0 / 0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-box">
+                        <h3>Quality Control</h3>
+                        <div class="summary-item">
+                            <span>Index Duplicates:</span>
+                            <span class="summary-value" id="indexDuplicates">None</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Concentration Range:</span>
+                            <span class="summary-value" id="concRange">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>Volume Balance:</span>
+                            <span class="summary-value" id="volumeBalance">OK</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Post-Pooling Calculator -->
+        <div class="section">
+            <div class="section-header">Post-Pooling Concentration Calculator</div>
+            <div class="section-content">
+                <p style="color: #7f8c8d; margin-bottom: 20px;">Use this after pooling to verify your actual pool concentration using Qubit measurements</p>
+                
+                <div class="header-grid">
+                    <div>
+                        <h4>Qubit Readings (ng/μL)</h4>
+                        <div class="qubit-grid">
+                            <input type="number" id="qubitRep1" step="0.01" placeholder="Rep 1" onchange="calculateQubitAverage()" style="padding: 8px; border: 2px solid #bdc3c7; border-radius: 4px;">
+                            <input type="number" id="qubitRep2" step="0.01" placeholder="Rep 2" onchange="calculateQubitAverage()" style="padding: 8px; border: 2px solid #bdc3c7; border-radius: 4px;">
+                            <input type="number" id="qubitRep3" step="0.01" placeholder="Rep 3" onchange="calculateQubitAverage()" style="padding: 8px; border: 2px solid #bdc3c7; border-radius: 4px;">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Average Qubit:</label>
+                            <span id="qubitAverage" style="font-weight: bold; color: #3498db;">- ng/μL</span>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Avg Fragment Size (bp):</label>
+                            <input type="number" id="poolFragmentSize" value="520" onchange="calculatePoolNM()" style="padding: 8px; border: 2px solid #bdc3c7; border-radius: 4px;">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>Pool Concentration:</label>
+                            <span id="poolConcentrationNM" style="font-weight: bold; color: #27ae60; font-size: 16px;">- nM</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4>Bioanalyzer Readings (bp)</h4>
+                        <div class="bio-grid">
+                            <input type="number" id="bioRead1" placeholder="Reading 1" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead2" placeholder="Reading 2" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead3" placeholder="Reading 3" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead4" placeholder="Reading 4" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead5" placeholder="Reading 5" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead6" placeholder="Reading 6" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead7" placeholder="Reading 7" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead8" placeholder="Reading 8" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead9" placeholder="Reading 9" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead10" placeholder="Reading 10" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                            <input type="number" id="bioRead11" placeholder="Reading 11" step="0.1" onchange="calculateBioAverage()" style="padding: 6px; border: 1px solid #bdc3c7; border-radius: 3px; font-size: 11px;">
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #7f8c8d;">
+                            <span>Average: </span><span id="bioAverage">-</span>
+                            <span style="margin-left: 15px;">Count: </span><span id="bioCount">0/11</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comparison-grid">
+                    <div class="comparison-item">
+                        <div>Expected Pool Conc</div>
+                        <div class="comparison-value" style="color: #3498db;" id="expectedPoolConc">10 nM</div>
+                    </div>
+                    <div class="comparison-item">
+                        <div>Actual Pool Conc</div>
+                        <div class="comparison-value" style="color: #27ae60;" id="actualPoolConc">- nM</div>
+                    </div>
+                    <div class="comparison-item">
+                        <div>Difference</div>
+                        <div class="comparison-value" id="poolDifference">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complete Loading Protocol -->
+        <div class="section">
+            <div class="section-header">Complete MiSeq Loading Protocol</div>
+            <div class="section-content">
+                <p style="color: #7f8c8d; margin-bottom: 20px;">Complete step-by-step workflow from pool concentration to final loading with PhiX</p>
+                
+                <!-- Controls -->
+                <div class="controls-grid">
+                    <div class="control-item">
+                        <span class="control-label">Pool Concentration</span>
+                        <span class="control-value" id="protocolPoolConc">- nM</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">4 nM Volume (μL)</span>
+                        <input type="number" class="control-input" id="protocol4nMVolume" value="100" min="50" max="500" onchange="calculateProtocol()">
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">NaOH Volume (μL)</span>
+                        <input type="number" class="control-input" id="protocolNaOHVolume" value="500" min="100" onchange="calculateProtocol()">
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">Loading Conc (pM)</span>
+                        <input type="number" class="control-input" id="protocolLoadingConc" value="11.75" step="0.25" min="8" max="20" onchange="calculateProtocol()">
+                    </div>
+                    <div class="control-item">
+                        <span class="control-label">PhiX %</span>
+                        <input type="number" class="control-input" id="protocolPhiXPercent" value="1" step="0.5" min="0" max="50" onchange="calculateProtocol()">
+                    </div>
+                </div>
+
+                <!-- Protocol Steps -->
+                <div class="step-box" style="border-left: 4px solid #2196f3; background-color: #e3f2fd;">
+                    <h4 style="color: #1976d2;">Step 1: Dilute Pool to 4 nM</h4>
+                    <div class="step-content">
+                        • <span id="step1PoolVol">-</span> μL pool (<span id="step1PoolConc">-</span> nM)<br>
+                        • <span id="step1WaterVol">-</span> μL H₂O<br>
+                        = <span id="step1Total">100</span> μL at 4 nM
+                    </div>
+                    <div id="step1Warning" class="step-note" style="display: none;"></div>
+                </div>
+
+                <div class="step-box" style="border-left: 4px solid #f39c12; background-color: #fef9e7;">
+                    <h4 style="color: #d68910;">⚠️ Step 2: Prepare 0.2 N NaOH</h4>
+                    <div class="step-content">
+                        • <span id="step2WaterVol">400</span> μL H₂O first<br>
+                        • <span id="step2NaOHVol">100</span> μL 1 N NaOH<br>
+                        = <span id="step2Total">500</span> μL 0.2 N NaOH
+                    </div>
+                    <div class="step-note" style="color: #d68910;">Use immediately</div>
+                </div>
+
+                <div class="step-box" style="border-left: 4px solid #e74c3c; background-color: #fff5f5;">
+                    <h4 style="color: #c0392b;">Step 3: Denature (4 nM → 2 nM)</h4>
+                    <div class="step-content">
+                        • 5 μL of 4 nM pool<br>
+                        • 5 μL of 0.2 N NaOH<br>
+                        = 10 μL at 2 nM
+                    </div>
+                    <div class="step-note" style="color: #c0392b;">Incubate 5 min at RT</div>
+                </div>
+
+                <div class="step-box" style="border-left: 4px solid #3498db; background-color: #f0f8ff;">
+                    <h4 style="color: #2980b9;">Step 4: First HyB (2 nM → 20 pM)</h4>
+                    <div class="step-content">
+                        • 10 μL of 2 nM pool<br>
+                        • 990 μL HyB buffer<br>
+                        = 1000 μL at 20 pM
+                    </div>
+                    <div class="step-note" style="color: #2980b9;">100-fold dilution</div>
+                </div>
+
+                <div class="step-box" style="border-left: 4px solid #27ae60; background-color: #f0fff0;">
+                    <h4 style="color: #27ae60;">Step 5: Loading Concentration</h4>
+                    <div class="step-content">
+                        • <span id="step5PoolVol">587.5</span> μL of 20 pM<br>
+                        • <span id="step5HyBVol">412.5</span> μL HyB buffer<br>
+                        = 1000 μL at <span id="step5FinalConc">11.75</span> pM
+                    </div>
+                    <div class="step-note" style="color: #27ae60;">Library ready</div>
+                </div>
+
+                <div class="step-box" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5;">
+                    <h4 style="color: #7b1fa2;">Step 6: Add PhiX Control</h4>
+                    <div class="step-content">
+                        • <span id="step6LibraryVol">990</span> μL library<br>
+                        • <span id="step6PhiXVol">10</span> μL PhiX (<span id="step6PhiXConc">11.75</span> pM)<br>
+                        = 1000 μL with <span id="step6PhiXPercent">1</span>% PhiX
+                    </div>
+                    <div class="step-note" style="color: #7b1fa2;">Ready for MiSeq</div>
+                </div>
+
+                <!-- Materials Summary -->
+                <div class="materials-grid">
+                    <div>
+                        <h4>Complete Materials List</h4>
+                        <div style="line-height: 1.6;">
+                            <strong>From your pool:</strong> <span id="totalPoolNeeded">-</span> μL<br>
+                            <strong>Nuclease-free H₂O:</strong> <span id="totalWaterNeeded">-</span> μL<br>
+                            <strong>1 N NaOH:</strong> <span id="totalNaOHNeeded">100</span> μL<br>
+                            <strong>HyB buffer:</strong> <span id="totalHyBNeeded">-</span> μL<br>
+                            <strong>PhiX control:</strong> <span id="totalPhiXNeeded">10</span> μL
+                        </div>
+                    </div>
+                    <div>
+                        <h4>Final Result</h4>
+                        <div style="line-height: 1.6;">
+                            • 1000 μL at <span id="finalLoadingResult">11.75</span> pM<br>
+                            • <span id="finalPhiXResult">1</span>% PhiX control<br>
+                            • Ready for MiSeq loading
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reagent & Instrument Tracking -->
+        <div class="section">
+            <div class="section-header">Reagent & Instrument Tracking</div>
+            <div class="section-content">
+                <p style="color: #7f8c8d; margin-bottom: 20px;">Track reagents, lot numbers, and instruments used for complete documentation and traceability.</p>
+                
+                <div class="header-grid">
+                    <div>
+                        <h4 style="color: #34495e; margin-bottom: 15px;">🧪 Reagents & Consumables</h4>
+                        <div class="input-group">
+                            <label>Qubit Reagent Lot:</label>
+                            <input type="text" id="qubitLot" placeholder="e.g., Q32851">
+                        </div>
+                        <div class="input-group">
+                            <label>Library Prep Kit:</label>
+                            <input type="text" id="prepKit" placeholder="e.g., Nextera XT">
+                        </div>
+                        <div class="input-group">
+                            <label>Prep Kit Lot:</label>
+                            <input type="text" id="prepKitLot" placeholder="e.g., 20310538">
+                        </div>
+                        <div class="input-group">
+                            <label>Index Kit:</label>
+                            <input type="text" id="indexKit" placeholder="e.g., Nextera XT Index Kit v2">
+                        </div>
+                        <div class="input-group">
+                            <label>Index Kit Lot:</label>
+                            <input type="text" id="indexKitLot" placeholder="e.g., 20310539">
+                        </div>
+                        <div class="input-group">
+                            <label>MiSeq Reagent Kit:</label>
+                            <input type="text" id="miseqKit" placeholder="e.g., MiSeq Reagent Kit v3">
+                        </div>
+                        <div class="input-group">
+                            <label>MiSeq Kit Lot:</label>
+                            <input type="text" id="miseqKitLot" placeholder="e.g., MS-102-3003">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: #34495e; margin-bottom: 15px;">🔬 Instruments & Equipment</h4>
+                        <div class="input-group">
+                            <label>Qubit Instrument:</label>
+                            <input type="text" id="qubitInstrument" placeholder="e.g., Qubit 4.0 #QB001">
+                        </div>
+                        <div class="input-group">
+                            <label>Bioanalyzer/TapeStation:</label>
+                            <input type="text" id="bioInstrument" placeholder="e.g., 2100 Bioanalyzer #BA002">
+                        </div>
+                        <div class="input-group">
+                            <label>Pipettes Used:</label>
+                            <input type="text" id="pipettes" placeholder="e.g., P2, P10, P20, P200">
+                        </div>
+                        <div class="input-group">
+                            <label>Thermocycler:</label>
+                            <input type="text" id="thermocycler" placeholder="e.g., Bio-Rad T100 #TC003">
+                        </div>
+                        <div class="input-group">
+                            <label>MiSeq Instrument:</label>
+                            <input type="text" id="miseqInstrument" placeholder="e.g., MiSeq #M00123">
+                        </div>
+                        <div class="input-group">
+                            <label>Other Equipment:</label>
+                            <input type="text" id="otherEquipment" placeholder="e.g., Centrifuge, Vortex">
+                        </div>
+                        <div class="input-group">
+                            <label>Performed By:</label>
+                            <input type="text" id="performedBy" placeholder="Full name of operator">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; padding: 15px; background-color: #e8f5e8; border-radius: 6px; border-left: 4px solid #27ae60;">
+                    <h4 style="margin-top: 0; color: #27ae60;">📋 Quick Checklist</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="checkReagents" style="transform: scale(1.2);">
+                            All reagent lots recorded
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="checkInstruments" style="transform: scale(1.2);">
+                            All instruments documented
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="checkCalibration" style="transform: scale(1.2);">
+                            Instruments calibrated/QC'd
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="checkStorage" style="transform: scale(1.2);">
+                            Reagent storage verified
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generate Report Section -->
+        <div class="section">
+            <div class="section-header">Documentation & Reporting</div>
+            <div class="section-content">
+                <p style="color: #7f8c8d; margin-bottom: 20px;">Generate comprehensive reports for lab documentation, compliance, and record-keeping.</p>
+                <button class="btn" onclick="showReportDialog()" style="background-color: #9b59b6; font-size: 16px; padding: 12px 24px;">📄 Generate Pooling Report</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sampleCount = 0;
+        
+        // Index sequences
+        const sIndexSequences = {
+            'S501': 'TAGATCGC', 'S502': 'CTCTCTAT', 'S503': 'TATCCTCT', 'S504': 'AGAGTAGA',
+            'S505': 'GTAAGGAG', 'S506': 'ACTGCATA', 'S507': 'AAGGAGTA', 'S508': 'CTAAGCCT',
+            'S510': 'GTAGAGGC', 'S511': 'TCTACTCT', 'S513': 'TTCTAGCT', 'S515': 'TTCTGCCT',
+            'S516': 'TTGAGCCT', 'S517': 'TGCCTCTT', 'S518': 'TCATGAGC', 'S520': 'GGCTCTGA',
+            'S521': 'TCTTACGC', 'S522': 'ATCCACTG'
+        };
+        
+        const nIndexSequences = {
+            'N701': 'TAAGGCGA', 'N702': 'CGTACTAG', 'N703': 'AGGCAGAA', 'N704': 'TCCTGAGC',
+            'N705': 'GGACTCCT', 'N706': 'TAGGCATG', 'N707': 'CTCTCTAC', 'N708': 'CAGAGAGG',
+            'N709': 'GCTACGCT', 'N710': 'CGAGGCTG', 'N711': 'AAGAGGCA', 'N712': 'GTAGAGGA',
+            'N713': 'GTCGTGAT', 'N714': 'ACCACTGT', 'N715': 'TGGATCTG', 'N716': 'CCGTTTGT',
+            'N717': 'TGCTGGGT', 'N718': 'GAGGGGTT', 'N719': 'AGGTTGGG', 'N720': 'GTGTGAGG',
+            'N721': 'TGGGTTTC', 'N722': 'TGGTCACA', 'N723': 'TTGACCCT', 'N724': 'CCACTCCT',
+            'N726': 'ATGCGCAG', 'N727': 'TAGCGCTC', 'N728': 'CCTGTTCC', 'N729': 'GTACGCAA'
+        };
+        
+        const kitCombinations = {
+            'Kit A': {
+                'S502': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S503': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S505': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S506': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S507': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S508': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S510': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S511': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715']
+            },
+            'Kit B': {
+                'S502': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S503': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S505': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S506': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S507': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S508': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S510': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S511': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729']
+            },
+            'Kit C': {
+                'S513': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S515': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S516': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S517': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S518': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S520': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S521': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715'],
+                'S522': ['N701', 'N702', 'N703', 'N704', 'N705', 'N706', 'N707', 'N710', 'N711', 'N712', 'N714', 'N715']
+            },
+            'Kit D': {
+                'S513': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S515': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S516': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S517': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S518': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S520': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S521': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729'],
+                'S522': ['N716', 'N718', 'N719', 'N720', 'N721', 'N722', 'N723', 'N724', 'N726', 'N727', 'N728', 'N729']
+            }
+        };
+
+        // Initialize date to today
+        document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+        function addSample() {
+            sampleCount++;
+            const tableBody = document.getElementById('samplesTableBody');
+            const row = document.createElement('tr');
+            
+            row.innerHTML = `
+                <td><input type="text" class="sample-input" id="sampleId_${sampleCount}" placeholder="Sample ID" onchange="updateCalculations()"></td>
+                <td><input type="text" class="sample-input" id="indexNumber_${sampleCount}" placeholder="Index #" onchange="updateCalculations()"></td>
+                <td><input type="number" class="sample-input" id="qubitConc_${sampleCount}" step="0.01" onchange="updateCalculations()" placeholder="ng/μL"></td>
+                <td class="calculated-cell"><span id="stockConc_${sampleCount}">-</span></td>
+                <td><input type="number" class="sample-input" id="desiredReads_${sampleCount}" step="0.1" value="1.0" onchange="updateCalculations()"></td>
+                <td class="calculated-cell"><span id="finalConc_${sampleCount}">-</span></td>
+                <td class="calculated-cell"><span id="volumeForPool_${sampleCount}">-</span></td>
+                <td style="text-align: center;"><input type="checkbox" id="sampleAdded_${sampleCount}" onchange="updateProgress(); updateRowStyle(${sampleCount})" style="transform: scale(1.2); cursor: pointer;"></td>
+                <td><input type="text" class="sample-input" id="plate_${sampleCount}" placeholder="Plate"></td>
+                <td><input type="text" class="sample-input" id="well_${sampleCount}" placeholder="Well"></td>
+                <td>
+                    <select class="sample-input" id="sIndex_${sampleCount}" onchange="updateIndexSequence(${sampleCount}); updateCalculations()">
+                        <option value="">Select S Index</option>
+                        ${Object.keys(sIndexSequences).map(index => `<option value="${index}">${index}</option>`).join('')}
+                    </select>
+                </td>
+                <td>
+                    <select class="sample-input" id="nIndex_${sampleCount}" onchange="updateIndexSequence(${sampleCount}); updateCalculations()">
+                        <option value="">Select N Index</option>
+                        ${Object.keys(nIndexSequences).map(index => `<option value="${index}">${index}</option>`).join('')}
+                    </select>
+                </td>
+                <td class="index-cell"><span id="lrmSIndex_${sampleCount}" onclick="copyToClipboard('lrmSIndex_${sampleCount}')" title="Click to copy S index">-</span></td>
+                <td class="index-cell"><span id="lrmNIndex_${sampleCount}" onclick="copyToClipboard('lrmNIndex_${sampleCount}')" title="Click to copy N index">-</span></td>
+                <td><button class="btn-remove" onclick="removeSample(${sampleCount})">Remove</button></td>
+            `;
+            
+            tableBody.appendChild(row);
+            updateCalculations();
+        }
+
+        function addMultipleSamples() {
+            for (let i = 0; i < 5; i++) {
+                addSample();
+            }
+        }
+
+        function showBulkInput() {
+            document.getElementById('bulkInputModal').style.display = 'block';
+            document.getElementById('bulkInputData').value = '';
+            document.getElementById('previewSection').style.display = 'none';
+            document.getElementById('columnMappingSection').style.display = 'none';
+        }
+
+        function closeBulkInput() {
+            document.getElementById('bulkInputModal').style.display = 'none';
+        }
+
+        function analyzeColumns() {
+            const rawData = document.getElementById('bulkInputData').value.trim();
+            if (!rawData) {
+                document.getElementById('columnMappingSection').style.display = 'none';
+                return;
+            }
+
+            const lines = rawData.split('\n').map(line => line.trim()).filter(line => line);
+            if (lines.length === 0) return;
+
+            const hasHeaders = document.getElementById('hasHeaders').checked;
+            let headers = [];
+            
+            if (hasHeaders && lines.length > 0) {
+                // Use actual headers from first row
+                headers = lines[0].split(/\t|,|\s{2,}/).map(h => h.trim()).filter(h => h);
+            } else {
+                // Generate generic column names
+                const firstRow = lines[0].split(/\t|,|\s{2,}/).map(h => h.trim()).filter(h => h);
+                headers = firstRow.map((_, index) => `Column ${index + 1}`);
+            }
+
+            // Populate dropdown options
+            const selects = ['sampleIdColumn', 'indexColumn', 'qubitColumn', 'plateColumn', 'wellColumn'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                select.innerHTML = '<option value="">-- Select Column --</option>';
+                
+                headers.forEach((header, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${header} (Column ${index + 1})`;
+                    select.appendChild(option);
+                });
+            });
+
+            // Auto-detect likely columns based on header names
+            autoDetectColumns(headers);
+            
+            document.getElementById('columnMappingSection').style.display = 'block';
+        }
+
+        function autoDetectColumns(headers) {
+            const patterns = {
+                sampleId: /sample|id|name/i,
+                index: /index|idx/i,
+                qubit: /qubit|conc|concentration|ng/i,
+                plate: /plate/i,
+                well: /well|position|pos/i
+            };
+
+            const selects = {
+                sampleIdColumn: 'sampleId',
+                indexColumn: 'index', 
+                qubitColumn: 'qubit',
+                plateColumn: 'plate',
+                wellColumn: 'well'
+            };
+
+            Object.entries(selects).forEach(([selectId, patternKey]) => {
+                const select = document.getElementById(selectId);
+                const pattern = patterns[patternKey];
+                
+                for (let i = 0; i < headers.length; i++) {
+                    if (pattern.test(headers[i])) {
+                        select.value = i;
+                        break;
+                    }
+                }
+            });
+        }
+
+        function previewMappedData() {
+            const rawData = document.getElementById('bulkInputData').value.trim();
+            if (!rawData) {
+                alert('Please paste some data first!');
+                return;
+            }
+
+            const mappedData = getMappedData();
+            if (mappedData.length === 0) {
+                alert('No valid data found. Please check your column mapping.');
+                return;
+            }
+
+            // Show preview
+            const previewDiv = document.getElementById('dataPreview');
+            const statsDiv = document.getElementById('previewStats');
+            
+            let previewHTML = '<table style="width: 100%; border-collapse: collapse; font-size: 11px;">';
+            previewHTML += '<tr style="background: #34495e; color: white;"><th style="padding: 4px; border: 1px solid #ddd;">Sample ID</th><th style="padding: 4px; border: 1px solid #ddd;">Index #</th><th style="padding: 4px; border: 1px solid #ddd;">Qubit Conc</th><th style="padding: 4px; border: 1px solid #ddd;">Plate</th><th style="padding: 4px; border: 1px solid #ddd;">Well</th></tr>';
+            
+            mappedData.slice(0, 10).forEach(row => {
+                previewHTML += `<tr><td style="padding: 4px; border: 1px solid #ddd;">${row.sampleId || '-'}</td><td style="padding: 4px; border: 1px solid #ddd;">${row.indexNumber || '-'}</td><td style="padding: 4px; border: 1px solid #ddd;">${row.qubitConc || '-'}</td><td style="padding: 4px; border: 1px solid #ddd;">${row.plate || '-'}</td><td style="padding: 4px; border: 1px solid #ddd;">${row.well || '-'}</td></tr>`;
+            });
+            
+            if (mappedData.length > 10) {
+                previewHTML += `<tr><td colspan="5" style="padding: 4px; text-align: center; font-style: italic; color: #7f8c8d;">... and ${mappedData.length - 10} more rows</td></tr>`;
+            }
+            
+            previewHTML += '</table>';
+            previewDiv.innerHTML = previewHTML;
+            
+            const validRows = mappedData.filter(row => row.sampleId && row.qubitConc && !isNaN(parseFloat(row.qubitConc)));
+            statsDiv.textContent = `Found ${mappedData.length} rows total, ${validRows.length} with valid Sample ID and Qubit concentration`;
+            
+            document.getElementById('previewSection').style.display = 'block';
+        }
+
+        function getMappedData() {
+            const rawData = document.getElementById('bulkInputData').value.trim();
+            const hasHeaders = document.getElementById('hasHeaders').checked;
+            
+            const lines = rawData.split('\n').map(line => line.trim()).filter(line => line);
+            if (lines.length === 0) return [];
+
+            const dataLines = hasHeaders ? lines.slice(1) : lines;
+            
+            const columnMappings = {
+                sampleId: parseInt(document.getElementById('sampleIdColumn').value),
+                indexNumber: parseInt(document.getElementById('indexColumn').value), 
+                qubitConc: parseInt(document.getElementById('qubitColumn').value),
+                plate: parseInt(document.getElementById('plateColumn').value),
+                well: parseInt(document.getElementById('wellColumn').value)
+            };
+
+            const mappedData = [];
+
+            dataLines.forEach(line => {
+                const parts = line.split(/\t|,|\s{2,}/).map(part => part.trim());
+                
+                const row = {};
+                Object.entries(columnMappings).forEach(([field, columnIndex]) => {
+                    if (!isNaN(columnIndex) && columnIndex < parts.length) {
+                        row[field] = parts[columnIndex] || '';
+                    } else {
+                        row[field] = '';
+                    }
+                });
+                
+                mappedData.push(row);
+            });
+
+            return mappedData;
+        }
+
+        function processMappedInput() {
+            const mappedData = getMappedData();
+            
+            if (mappedData.length === 0) {
+                alert('No data found. Please check your column mapping.');
+                return;
+            }
+
+            // Validate required fields
+            const sampleIdCol = document.getElementById('sampleIdColumn').value;
+            const qubitCol = document.getElementById('qubitColumn').value;
+            
+            if (sampleIdCol === '' || qubitCol === '') {
+                alert('Please select columns for Sample ID and Qubit Concentration (required fields).');
+                return;
+            }
+
+            // Add samples for each row of data
+            let addedCount = 0;
+            mappedData.forEach(row => {
+                if (row.sampleId && row.qubitConc && !isNaN(parseFloat(row.qubitConc))) {
+                    addSample();
+                    
+                    // Fill in the data for the newly added sample
+                    const currentSampleId = sampleCount;
+                    
+                    if (row.sampleId) document.getElementById(`sampleId_${currentSampleId}`).value = row.sampleId;
+                    if (row.indexNumber) document.getElementById(`indexNumber_${currentSampleId}`).value = row.indexNumber;
+                    if (row.qubitConc) document.getElementById(`qubitConc_${currentSampleId}`).value = parseFloat(row.qubitConc);
+                    if (row.plate) document.getElementById(`plate_${currentSampleId}`).value = row.plate;
+                    if (row.well) document.getElementById(`well_${currentSampleId}`).value = row.well;
+                    
+                    addedCount++;
+                }
+            });
+
+            // Update calculations and close modal
+            updateCalculations();
+            closeBulkInput();
+            
+            alert(`Successfully imported ${addedCount} samples!`);
+        }
+
+        // Keep old functions for backwards compatibility but point to new ones
+        function previewBulkData() {
+            analyzeColumns();
+            previewMappedData();
+        }
+
+        function parseBulkData(rawData, hasHeaders) {
+            // Legacy function - now handled by getMappedData
+            return [];
+        }
+
+        function processBulkInput() {
+            processMappedInput();
+        }
+
+        // Report Generation Functions
+        function showReportDialog() {
+            document.getElementById('reportModal').style.display = 'block';
+        }
+
+        function closeReportDialog() {
+            document.getElementById('reportModal').style.display = 'none';
+        }
+
+        function closeReportPreview() {
+            document.getElementById('reportPreviewModal').style.display = 'none';
+        }
+
+        function generateReport(action) {
+            const reportHTML = buildReportHTML();
+            
+            if (action === 'preview') {
+                document.getElementById('reportPreviewContent').innerHTML = reportHTML;
+                document.getElementById('reportPreviewModal').style.display = 'block';
+            } else if (action === 'print') {
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>MiSeq Pooling Report</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; }
+                            .report-header { border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; }
+                            .section { margin-bottom: 25px; page-break-inside: avoid; }
+                            .section-title { background-color: #3498db; color: white; padding: 8px; font-weight: bold; }
+                            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                            th, td { border: 1px solid #ddd; padding: 6px; text-align: left; font-size: 12px; }
+                            th { background-color: #f8f9fa; font-weight: bold; }
+                            .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                            .summary-box { border: 1px solid #ddd; padding: 15px; }
+                            .protocol-step { margin: 10px 0; padding: 10px; border-left: 4px solid #3498db; background: #f8f9fa; }
+                            @media print { .no-print { display: none; } }
+                        </style>
+                    </head>
+                    <body>${reportHTML}</body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.print();
+                closeReportDialog();
+            } else if (action === 'download') {
+                const blob = new Blob([`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>MiSeq Pooling Report</title>
+                        <meta charset="utf-8">
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; background: white; }
+                            .report-header { border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-bottom: 20px; }
+                            .section { margin-bottom: 25px; }
+                            .section-title { background-color: #3498db; color: white; padding: 10px; font-weight: bold; font-size: 16px; }
+                            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+                            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                            th { background-color: #f8f9fa; font-weight: bold; }
+                            .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 15px 0; }
+                            .summary-box { border: 1px solid #ddd; padding: 15px; background: #f8f9fa; }
+                            .protocol-step { margin: 10px 0; padding: 15px; border-left: 4px solid #3498db; background: #f0f8ff; }
+                            .index-sequence { font-family: monospace; background: #fff3cd; padding: 2px 4px; }
+                        </style>
+                    </head>
+                    <body>${reportHTML}</body>
+                    </html>
+                `], { type: 'text/html' });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `MiSeq_Pooling_Report_${new Date().toISOString().split('T')[0]}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                closeReportDialog();
+            }
+        }
+
+        function buildReportHTML() {
+            const includeRunInfo = document.getElementById('includeRunInfo').checked;
+            const includeSampleTable = document.getElementById('includeSampleTable').checked;
+            const includePoolSummary = document.getElementById('includePoolSummary').checked;
+            const includeQCResults = document.getElementById('includeQCResults').checked;
+            const includeProtocol = document.getElementById('includeProtocol').checked;
+            const includeIndexes = document.getElementById('includeIndexes').checked;
+            const includeReagents = document.getElementById('includeReagents').checked;
+            const reportFormat = document.querySelector('input[name="reportFormat"]:checked').value;
+            const notes = document.getElementById('reportNotes').value;
+
+            let html = `
+                <div class="report-header">
+                    <h1>Illumina MiSeq Pooling Report</h1>
+                    <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                    <p><strong>Report Type:</strong> ${reportFormat === 'detailed' ? 'Detailed' : 'Summary'}</p>
+                </div>
+            `;
+
+            // Run Information
+            if (includeRunInfo) {
+                html += `
+                    <div class="section">
+                        <div class="section-title">Run Information</div>
+                        <table style="width: 100%;">
+                            <tr><td><strong>Date:</strong></td><td>${document.getElementById('date').value || 'Not specified'}</td></tr>
+                            <tr><td><strong>Lab Name:</strong></td><td>${document.getElementById('labName').value || 'Not specified'}</td></tr>
+                            <tr><td><strong>Run Name:</strong></td><td>${document.getElementById('runName').value || 'Not specified'}</td></tr>
+                            <tr><td><strong>Sample Type:</strong></td><td>${document.getElementById('sampleType').value || 'Not specified'}</td></tr>
+                            <tr><td><strong>Initials:</strong></td><td>${document.getElementById('initials').value || 'Not specified'}</td></tr>
+                            <tr><td><strong>Performed By:</strong></td><td>${document.getElementById('performedBy').value || 'Not specified'}</td></tr>
+                            <tr><td><strong>Qubit Date:</strong></td><td>${document.getElementById('qubitDate').value || 'Not specified'}</td></tr>
+                            <tr><td><strong>Avg Fragment Size:</strong></td><td>${document.getElementById('avgFragmentSize').value} bp</td></tr>
+                            <tr><td><strong>Final Pool Concentration:</strong></td><td>${document.getElementById('finalPoolConc').value} nM</td></tr>
+                            <tr><td><strong>Final Pool Volume:</strong></td><td>${document.getElementById('finalPoolVolume').value} μL</td></tr>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // Sample Table
+            if (includeSampleTable) {
+                html += `<div class="section"><div class="section-title">Sample Information</div>`;
+                html += buildSampleTable(reportFormat === 'detailed');
+                html += `</div>`;
+            }
+
+            // Pool Summary
+            if (includePoolSummary) {
+                html += `
+                    <div class="section">
+                        <div class="section-title">Pool Summary</div>
+                        <div class="summary-grid">
+                            <div class="summary-box">
+                                <h4>Pool Statistics</h4>
+                                <p><strong>Total Samples:</strong> ${document.getElementById('totalSamples').textContent}</p>
+                                <p><strong>Total Library Volume:</strong> ${document.getElementById('totalLibVolume').textContent}</p>
+                                <p><strong>Dilution Buffer Volume:</strong> ${document.getElementById('dilutionBufferVolume').textContent}</p>
+                                <p><strong>Shared Reads Total:</strong> ${document.getElementById('sharedReadsTotal').textContent}</p>
+                                <p><strong>Samples Added to Pool:</strong> ${document.getElementById('samplesAdded').textContent}</p>
+                            </div>
+                            <div class="summary-box">
+                                <h4>Quality Control</h4>
+                                <p><strong>Index Duplicates:</strong> ${document.getElementById('indexDuplicates').textContent}</p>
+                                <p><strong>Concentration Range:</strong> ${document.getElementById('concRange').textContent}</p>
+                                <p><strong>Volume Balance:</strong> ${document.getElementById('volumeBalance').textContent}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // QC Results
+            if (includeQCResults) {
+                html += buildQCSection();
+            }
+
+            // Protocol
+            if (includeProtocol && reportFormat === 'detailed') {
+                html += buildProtocolSection();
+            }
+
+            // Index Sequences
+            if (includeIndexes && reportFormat === 'detailed') {
+                html += buildIndexSection();
+            }
+
+            // Reagent & Instrument Tracking
+            if (includeReagents) {
+                html += buildReagentSection();
+            }
+
+            // Notes
+            if (notes.trim()) {
+                html += `
+                    <div class="section">
+                        <div class="section-title">Additional Notes</div>
+                        <p style="white-space: pre-wrap; padding: 10px; background: #f8f9fa; border: 1px solid #ddd;">${notes}</p>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        function buildSampleTable(detailed) {
+            const tableBody = document.getElementById('samplesTableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            
+            let html = '<table>';
+            if (detailed) {
+                html += `
+                    <thead>
+                        <tr>
+                            <th>Sample ID</th>
+                            <th>Index #</th>
+                            <th>Qubit Conc (ng/μL)</th>
+                            <th>Stock Conc (nM)</th>
+                            <th>Desired Reads (M)</th>
+                            <th>Final Conc (nM)</th>
+                            <th>Volume (μL)</th>
+                            <th>Added</th>
+                            <th>Plate</th>
+                            <th>Well</th>
+                            <th>S Index</th>
+                            <th>N Index</th>
+                        </tr>
+                    </thead>
+                `;
+            } else {
+                html += `
+                    <thead>
+                        <tr>
+                            <th>Sample ID</th>
+                            <th>Qubit Conc (ng/μL)</th>
+                            <th>Volume (μL)</th>
+                            <th>Added</th>
+                        </tr>
+                    </thead>
+                `;
+            }
+            
+            html += '<tbody>';
+            
+            rows.forEach((row, index) => {
+                const sampleId = index + 1;
+                const sampleIdVal = document.getElementById(`sampleId_${sampleId}`)?.value || '';
+                const qubitConc = document.getElementById(`qubitConc_${sampleId}`)?.value || '';
+                
+                if (sampleIdVal && qubitConc) {
+                    html += '<tr>';
+                    if (detailed) {
+                        html += `
+                            <td>${sampleIdVal}</td>
+                            <td>${document.getElementById(`indexNumber_${sampleId}`)?.value || ''}</td>
+                            <td>${qubitConc}</td>
+                            <td>${document.getElementById(`stockConc_${sampleId}`)?.textContent || ''}</td>
+                            <td>${document.getElementById(`desiredReads_${sampleId}`)?.value || ''}</td>
+                            <td>${document.getElementById(`finalConc_${sampleId}`)?.textContent || ''}</td>
+                            <td>${document.getElementById(`volumeForPool_${sampleId}`)?.textContent || ''}</td>
+                            <td>${document.getElementById(`sampleAdded_${sampleId}`)?.checked ? '✓' : '✗'}</td>
+                            <td>${document.getElementById(`plate_${sampleId}`)?.value || ''}</td>
+                            <td>${document.getElementById(`well_${sampleId}`)?.value || ''}</td>
+                            <td>${document.getElementById(`sIndex_${sampleId}`)?.value || ''}</td>
+                            <td>${document.getElementById(`nIndex_${sampleId}`)?.value || ''}</td>
+                        `;
+                    } else {
+                        html += `
+                            <td>${sampleIdVal}</td>
+                            <td>${qubitConc}</td>
+                            <td>${document.getElementById(`volumeForPool_${sampleId}`)?.textContent || ''}</td>
+                            <td>${document.getElementById(`sampleAdded_${sampleId}`)?.checked ? '✓' : '✗'}</td>
+                        `;
+                    }
+                    html += '</tr>';
+                }
+            });
+            
+            html += '</tbody></table>';
+            return html;
+        }
+
+        function buildQCSection() {
+            const avgQubit = document.getElementById('qubitAverage').textContent;
+            const poolConc = document.getElementById('poolConcentrationNM').textContent;
+            const difference = document.getElementById('poolDifference').textContent;
+            
+            return `
+                <div class="section">
+                    <div class="section-title">Post-Pooling QC Results</div>
+                    <table style="width: 50%;">
+                        <tr><td><strong>Average Qubit Reading:</strong></td><td>${avgQubit}</td></tr>
+                        <tr><td><strong>Calculated Pool Concentration:</strong></td><td>${poolConc}</td></tr>
+                        <tr><td><strong>Difference from Expected:</strong></td><td>${difference}</td></tr>
+                        <tr><td><strong>Bioanalyzer Average:</strong></td><td>${document.getElementById('bioAverage').textContent}</td></tr>
+                    </table>
+                </div>
+            `;
+        }
+
+        function buildProtocolSection() {
+            return `
+                <div class="section">
+                    <div class="section-title">MiSeq Loading Protocol</div>
+                    <div class="protocol-step">
+                        <strong>Step 1: Dilute to 4 nM</strong><br>
+                        • ${document.getElementById('step1PoolVol').textContent} μL pool (${document.getElementById('step1PoolConc').textContent} nM)<br>
+                        • ${document.getElementById('step1WaterVol').textContent} μL H₂O<br>
+                        = ${document.getElementById('step1Total').textContent} μL at 4 nM
+                    </div>
+                    <div class="protocol-step">
+                        <strong>Step 2: Prepare 0.2 N NaOH</strong><br>
+                        • ${document.getElementById('step2WaterVol').textContent} μL H₂O first<br>
+                        • ${document.getElementById('step2NaOHVol').textContent} μL 1 N NaOH<br>
+                        = ${document.getElementById('step2Total').textContent} μL 0.2 N NaOH
+                    </div>
+                    <div class="protocol-step">
+                        <strong>Step 3: Denature</strong><br>
+                        • 5 μL of 4 nM pool + 5 μL of 0.2 N NaOH = 10 μL at 2 nM<br>
+                        • Incubate 5 min at RT
+                    </div>
+                    <div class="protocol-step">
+                        <strong>Step 4: First HyB Dilution</strong><br>
+                        • 10 μL of 2 nM pool + 990 μL HyB buffer = 1000 μL at 20 pM
+                    </div>
+                    <div class="protocol-step">
+                        <strong>Step 5: Loading Concentration</strong><br>
+                        • ${document.getElementById('step5PoolVol').textContent} μL of 20 pM<br>
+                        • ${document.getElementById('step5HyBVol').textContent} μL HyB buffer<br>
+                        = 1000 μL at ${document.getElementById('step5FinalConc').textContent} pM
+                    </div>
+                    <div class="protocol-step">
+                        <strong>Step 6: Add PhiX Control</strong><br>
+                        • ${document.getElementById('step6LibraryVol').textContent} μL library<br>
+                        • ${document.getElementById('step6PhiXVol').textContent} μL PhiX<br>
+                        = 1000 μL with ${document.getElementById('step6PhiXPercent').textContent}% PhiX
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildIndexSection() {
+            const tableBody = document.getElementById('samplesTableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            
+            let html = `
+                <div class="section">
+                    <div class="section-title">Index Sequences</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sample ID</th>
+                                <th>S Index</th>
+                                <th>S Sequence</th>
+                                <th>N Index</th>
+                                <th>N Sequence</th>
+                                <th>LRM S Index</th>
+                                <th>LRM N Index</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            rows.forEach((row, index) => {
+                const sampleId = index + 1;
+                const sampleIdVal = document.getElementById(`sampleId_${sampleId}`)?.value || '';
+                const sIndex = document.getElementById(`sIndex_${sampleId}`)?.value || '';
+                const nIndex = document.getElementById(`nIndex_${sampleId}`)?.value || '';
+                
+                if (sampleIdVal && (sIndex || nIndex)) {
+                    html += `
+                        <tr>
+                            <td>${sampleIdVal}</td>
+                            <td>${sIndex}</td>
+                            <td><span class="index-sequence">${sIndexSequences[sIndex] || ''}</span></td>
+                            <td>${nIndex}</td>
+                            <td><span class="index-sequence">${nIndexSequences[nIndex] || ''}</span></td>
+                            <td>${document.getElementById(`lrmSIndex_${sampleId}`)?.textContent || ''}</td>
+                            <td>${document.getElementById(`lrmNIndex_${sampleId}`)?.textContent || ''}</td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function buildReagentSection() {
+            return `
+                <div class="section">
+                    <div class="section-title">Reagent & Instrument Tracking</div>
+                    <div class="summary-grid">
+                        <div class="summary-box">
+                            <h4>🧪 Reagents & Consumables</h4>
+                            <table style="width: 100%; font-size: 12px;">
+                                <tr><td><strong>Qubit Reagent Lot:</strong></td><td>${document.getElementById('qubitLot').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>Library Prep Kit:</strong></td><td>${document.getElementById('prepKit').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>Prep Kit Lot:</strong></td><td>${document.getElementById('prepKitLot').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>Index Kit:</strong></td><td>${document.getElementById('indexKit').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>Index Kit Lot:</strong></td><td>${document.getElementById('indexKitLot').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>MiSeq Reagent Kit:</strong></td><td>${document.getElementById('miseqKit').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>MiSeq Kit Lot:</strong></td><td>${document.getElementById('miseqKitLot').value || 'Not specified'}</td></tr>
+                            </table>
+                        </div>
+                        <div class="summary-box">
+                            <h4>🔬 Instruments & Equipment</h4>
+                            <table style="width: 100%; font-size: 12px;">
+                                <tr><td><strong>Qubit Instrument:</strong></td><td>${document.getElementById('qubitInstrument').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>Bioanalyzer/TapeStation:</strong></td><td>${document.getElementById('bioInstrument').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>Pipettes Used:</strong></td><td>${document.getElementById('pipettes').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>Thermocycler:</strong></td><td>${document.getElementById('thermocycler').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>MiSeq Instrument:</strong></td><td>${document.getElementById('miseqInstrument').value || 'Not specified'}</td></tr>
+                                <tr><td><strong>Other Equipment:</strong></td><td>${document.getElementById('otherEquipment').value || 'Not specified'}</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; padding: 10px; background: #f0fff0; border: 1px solid #27ae60;">
+                        <h4 style="margin-top: 0; color: #27ae60;">📋 Quality Checklist</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+                            <div>• All reagent lots recorded: ${document.getElementById('checkReagents').checked ? '✓ Yes' : '✗ No'}</div>
+                            <div>• All instruments documented: ${document.getElementById('checkInstruments').checked ? '✓ Yes' : '✗ No'}</div>
+                            <div>• Instruments calibrated/QC'd: ${document.getElementById('checkCalibration').checked ? '✓ Yes' : '✗ No'}</div>
+                            <div>• Reagent storage verified: ${document.getElementById('checkStorage').checked ? '✓ Yes' : '✗ No'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function removeSample(sampleId) {
+            const row = document.querySelector(`#sIndex_${sampleId}`).closest('tr');
+            if (row) {
+                row.remove();
+                updateCalculations();
+            }
+        }
+
+        function updateIndexSequence(sampleId) {
+            const sIndex = document.getElementById(`sIndex_${sampleId}`).value;
+            const nIndex = document.getElementById(`nIndex_${sampleId}`).value;
+            const lrmSIndexSpan = document.getElementById(`lrmSIndex_${sampleId}`);
+            const lrmNIndexSpan = document.getElementById(`lrmNIndex_${sampleId}`);
+            
+            if (!lrmSIndexSpan || !lrmNIndexSpan) return;
+            
+            let detectedKit = '-';
+            if (sIndex && nIndex) {
+                for (const [kitName, kitData] of Object.entries(kitCombinations)) {
+                    if (kitData[sIndex] && kitData[sIndex].includes(nIndex)) {
+                        detectedKit = kitName;
+                        break;
+                    }
+                }
+            }
+            
+            let lrmSIndexText = '-';
+            if (sIndex && detectedKit !== '-') {
+                const kitLetter = detectedKit.split(' ')[1];
+                lrmSIndexText = `${kitLetter}-${sIndex}`;
+            }
+            lrmSIndexSpan.textContent = lrmSIndexText;
+            
+            let lrmNIndexText = '-';
+            if (nIndex && detectedKit !== '-') {
+                const kitLetter = detectedKit.split(' ')[1];
+                lrmNIndexText = `${kitLetter}-${nIndex}`;
+            }
+            lrmNIndexSpan.textContent = lrmNIndexText;
+            
+            [lrmSIndexSpan, lrmNIndexSpan].forEach(span => {
+                if (span.textContent === '-') {
+                    span.style.backgroundColor = '';
+                    span.style.color = '';
+                } else {
+                    span.style.backgroundColor = '#e3f2fd';
+                    span.style.color = '#1976d2';
+                    span.style.fontWeight = 'bold';
+                }
+            });
+        }
+
+        function updateCalculations() {
+            const avgFragmentSize = parseFloat(document.getElementById('avgFragmentSize').value) || 520;
+            const finalPoolConc = parseFloat(document.getElementById('finalPoolConc').value) || 10;
+            const finalPoolVolume = parseFloat(document.getElementById('finalPoolVolume').value) || 100;
+            
+            let totalSamples = 0;
+            let totalLibVolume = 0;
+            let totalDesiredReads = 0;
+            let validSamples = [];
+            let usedIndexCombos = new Set();
+            let duplicateIndexCombos = [];
+
+            const tableBody = document.getElementById('samplesTableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            
+            rows.forEach((row, index) => {
+                const sampleId = index + 1;
+                const qubitConcInput = document.getElementById(`qubitConc_${sampleId}`);
+                const desiredReadsInput = document.getElementById(`desiredReads_${sampleId}`);
+                const sIndexInput = document.getElementById(`sIndex_${sampleId}`);
+                const nIndexInput = document.getElementById(`nIndex_${sampleId}`);
+                
+                if (qubitConcInput && desiredReadsInput && sIndexInput && nIndexInput) {
+                    const qubitConc = parseFloat(qubitConcInput.value) || 0;
+                    const desiredReads = parseFloat(desiredReadsInput.value) || 0;
+                    const sIndex = sIndexInput.value;
+                    const nIndex = nIndexInput.value;
+                    
+                    if (qubitConc > 0 && desiredReads > 0) {
+                        totalSamples++;
+                        totalDesiredReads += desiredReads;
+                        
+                        if (sIndex && nIndex) {
+                            const indexCombo = `${sIndex}-${nIndex}`;
+                            if (usedIndexCombos.has(indexCombo)) {
+                                duplicateIndexCombos.push(indexCombo);
+                            } else {
+                                usedIndexCombos.add(indexCombo);
+                            }
+                        }
+                        
+                        const stockConc = (qubitConc * 1000000) / (avgFragmentSize * 650);
+                        document.getElementById(`stockConc_${sampleId}`).textContent = stockConc.toFixed(1);
+                        
+                        validSamples.push({
+                            stockConc: stockConc,
+                            desiredReads: desiredReads
+                        });
+                    }
+                }
+            });
+
+            // Calculate final concentrations and volumes
+            if (totalDesiredReads > 0) {
+                totalLibVolume = 0;
+                rows.forEach((row, index) => {
+                    const sampleId = index + 1;
+                    const desiredReadsInput = document.getElementById(`desiredReads_${sampleId}`);
+                    const qubitConcInput = document.getElementById(`qubitConc_${sampleId}`);
+                    
+                    if (desiredReadsInput && qubitConcInput) {
+                        const desiredReads = parseFloat(desiredReadsInput.value) || 0;
+                        const qubitConc = parseFloat(qubitConcInput.value) || 0;
+                        
+                        if (qubitConc > 0 && desiredReads > 0) {
+                            const stockConc = (qubitConc * 1000000) / (avgFragmentSize * 650);
+                            const finalConc = finalPoolConc * (desiredReads / totalDesiredReads);
+                            const volumeForPool = finalPoolVolume * (finalConc / stockConc);
+                            
+                            document.getElementById(`finalConc_${sampleId}`).textContent = finalConc.toFixed(2);
+                            document.getElementById(`volumeForPool_${sampleId}`).textContent = volumeForPool.toFixed(2);
+                            
+                            totalLibVolume += volumeForPool;
+                        }
+                    }
+                });
+            }
+
+            // Update summary
+            document.getElementById('totalSamples').textContent = totalSamples;
+            document.getElementById('totalLibVolume').textContent = totalLibVolume.toFixed(1) + ' μL';
+            document.getElementById('dilutionBufferVolume').textContent = (finalPoolVolume - totalLibVolume).toFixed(1) + ' μL';
+            document.getElementById('sharedReadsTotal').textContent = totalDesiredReads.toFixed(1) + ' M';
+            document.getElementById('expectedPoolConc').textContent = finalPoolConc + ' nM';
+            
+            updateProgress();
+            
+            // Index duplicates
+            document.getElementById('indexDuplicates').textContent = duplicateIndexCombos.length > 0 ? duplicateIndexCombos.join(', ') : 'None';
+            document.getElementById('indexDuplicates').className = duplicateIndexCombos.length > 0 ? 'summary-value error' : 'summary-value';
+            
+            // Concentration range
+            if (validSamples.length > 0) {
+                const stockConcs = validSamples.map(s => s.stockConc);
+                const minConc = Math.min(...stockConcs);
+                const maxConc = Math.max(...stockConcs);
+                document.getElementById('concRange').textContent = `${minConc.toFixed(1)} - ${maxConc.toFixed(1)} nM`;
+            }
+            
+            // Volume balance
+            const volumeBalance = Math.abs(finalPoolVolume - totalLibVolume) < finalPoolVolume * 0.1 ? 'OK' : 'Check';
+            document.getElementById('volumeBalance').textContent = volumeBalance;
+            document.getElementById('volumeBalance').className = volumeBalance === 'OK' ? 'summary-value' : 'summary-value warning';
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            if (text === '-') {
+                alert('No index to copy - please select both S and N indices first');
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(function() {
+                const originalBg = element.style.backgroundColor;
+                element.style.backgroundColor = '#4caf50';
+                element.style.color = 'white';
+                
+                setTimeout(() => {
+                    element.style.backgroundColor = originalBg;
+                    element.style.color = '#1976d2';
+                }, 500);
+                
+                showTooltip(element, 'Copied!');
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        function showTooltip(element, message) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = message;
+            
+            const rect = element.getBoundingClientRect();
+            tooltip.style.left = rect.left + 'px';
+            tooltip.style.top = (rect.top - 30) + 'px';
+            
+            document.body.appendChild(tooltip);
+            
+            setTimeout(() => {
+                tooltip.remove();
+            }, 1000);
+        }
+
+        function updateProgress() {
+            let totalValidSamples = 0;
+            let samplesAdded = 0;
+            
+            const tableBody = document.getElementById('samplesTableBody');
+            const rows = tableBody.querySelectorAll('tr');
+            
+            rows.forEach((row, index) => {
+                const sampleId = index + 1;
+                const qubitConcInput = document.getElementById(`qubitConc_${sampleId}`);
+                const desiredReadsInput = document.getElementById(`desiredReads_${sampleId}`);
+                const sampleAddedCheckbox = document.getElementById(`sampleAdded_${sampleId}`);
+                
+                if (qubitConcInput && desiredReadsInput && sampleAddedCheckbox) {
+                    const qubitConc = parseFloat(qubitConcInput.value) || 0;
+                    const desiredReads = parseFloat(desiredReadsInput.value) || 0;
+                    
+                    if (qubitConc > 0 && desiredReads > 0) {
+                        totalValidSamples++;
+                        if (sampleAddedCheckbox.checked) {
+                            samplesAdded++;
+                        }
+                    }
+                }
+            });
+            
+            const progressText = `${samplesAdded} / ${totalValidSamples}`;
+            document.getElementById('samplesAdded').textContent = progressText;
+            
+            const progressElement = document.getElementById('samplesAdded');
+            if (samplesAdded === totalValidSamples && totalValidSamples > 0) {
+                progressElement.style.color = '#27ae60';
+                progressElement.style.fontWeight = 'bold';
+            } else if (samplesAdded > 0) {
+                progressElement.style.color = '#f39c12';
+                progressElement.style.fontWeight = 'bold';
+            } else {
+                progressElement.style.color = '#e74c3c';
+                progressElement.style.fontWeight = 'normal';
+            }
+        }
+
+        function updateRowStyle(sampleId) {
+            const checkbox = document.getElementById(`sampleAdded_${sampleId}`);
+            const row = checkbox.closest('tr');
+            
+            if (checkbox.checked) {
+                row.classList.add('sample-added');
+            } else {
+                row.classList.remove('sample-added');
+            }
+        }
+
+        function calculatePoolNM() {
+            const avgQubit = parseFloat(document.getElementById('qubitAverage').textContent) || 0;
+            const fragmentSize = parseFloat(document.getElementById('poolFragmentSize').value) || 520;
+            
+            if (avgQubit > 0) {
+                const poolConcentrationNM = (avgQubit * 1000000) / (fragmentSize * 650);
+                document.getElementById('poolConcentrationNM').textContent = poolConcentrationNM.toFixed(1) + ' nM';
+                document.getElementById('actualPoolConc').textContent = poolConcentrationNM.toFixed(1) + ' nM';
+                
+                document.getElementById('protocolPoolConc').textContent = poolConcentrationNM.toFixed(1) + ' nM';
+                calculateProtocol();
+                
+                const expectedConc = parseFloat(document.getElementById('finalPoolConc').value) || 10;
+                const difference = poolConcentrationNM - expectedConc;
+                const percentDiff = ((difference / expectedConc) * 100);
+                
+                const diffElement = document.getElementById('poolDifference');
+                const diffText = `${difference.toFixed(1)} nM (${percentDiff > 0 ? '+' : ''}${percentDiff.toFixed(1)}%)`;
+                diffElement.textContent = diffText;
+                
+                if (Math.abs(percentDiff) <= 20) {
+                    diffElement.style.color = '#27ae60';
+                } else if (Math.abs(percentDiff) <= 50) {
+                    diffElement.style.color = '#f39c12';
+                } else {
+                    diffElement.style.color = '#e74c3c';
+                }
+            } else {
+                document.getElementById('poolConcentrationNM').textContent = '- nM';
+                document.getElementById('actualPoolConc').textContent = '- nM';
+                document.getElementById('poolDifference').textContent = '-';
+                document.getElementById('protocolPoolConc').textContent = '- nM';
+                calculateProtocol();
+            }
+        }
+
+        function calculateQubitAverage() {
+            const readings = [];
+            for (let i = 1; i <= 3; i++) {
+                const value = parseFloat(document.getElementById(`qubitRep${i}`).value);
+                if (!isNaN(value) && value > 0) {
+                    readings.push(value);
+                }
+            }
+            
+            if (readings.length > 0) {
+                const average = readings.reduce((sum, val) => sum + val, 0) / readings.length;
+                document.getElementById('qubitAverage').textContent = average.toFixed(2) + ' ng/μL';
+                calculatePoolNM();
+            } else {
+                document.getElementById('qubitAverage').textContent = '- ng/μL';
+                calculatePoolNM();
+            }
+        }
+
+        function calculateBioAverage() {
+            const readings = [];
+            for (let i = 1; i <= 11; i++) {
+                const value = parseFloat(document.getElementById(`bioRead${i}`).value);
+                if (!isNaN(value) && value > 0) {
+                    readings.push(value);
+                }
+            }
+            
+            document.getElementById('bioCount').textContent = `${readings.length}/11`;
+            
+            if (readings.length > 0) {
+                const average = readings.reduce((sum, val) => sum + val, 0) / readings.length;
+                document.getElementById('bioAverage').textContent = average.toFixed(1) + ' bp';
+                
+                document.getElementById('poolFragmentSize').value = Math.round(average);
+                calculatePoolNM();
+            } else {
+                document.getElementById('bioAverage').textContent = '-';
+            }
+        }
+
+        function calculateProtocol() {
+            const poolConcText = document.getElementById('protocolPoolConc').textContent;
+            const poolConc = parseFloat(poolConcText.replace(' nM', '')) || 0;
+            const target4nMVolume = parseFloat(document.getElementById('protocol4nMVolume').value) || 100;
+            const naohVolume = parseFloat(document.getElementById('protocolNaOHVolume').value) || 500;
+            const targetLoadingConc = parseFloat(document.getElementById('protocolLoadingConc').value) || 11.75;
+            const phixPercent = parseFloat(document.getElementById('protocolPhiXPercent').value) || 1;
+            
+            if (poolConc > 0 && poolConc > 4) {
+                const dilutionFactor = poolConc / 4;
+                const poolVolume4nM = target4nMVolume / dilutionFactor;
+                const waterVolume4nM = target4nMVolume - poolVolume4nM;
+                
+                document.getElementById('step1PoolVol').textContent = poolVolume4nM.toFixed(1);
+                document.getElementById('step1PoolConc').textContent = poolConc.toFixed(1);
+                document.getElementById('step1WaterVol').textContent = waterVolume4nM.toFixed(1);
+                document.getElementById('step1Total').textContent = target4nMVolume.toFixed(0);
+                
+                const warningDiv = document.getElementById('step1Warning');
+                if (poolVolume4nM < 5) {
+                    warningDiv.style.display = 'block';
+                    warningDiv.style.color = '#d68910';
+                    warningDiv.innerHTML = '⚠️ Serial dilution recommended (volume too low)';
+                } else {
+                    warningDiv.style.display = 'none';
+                }
+            } else if (poolConc > 0 && poolConc <= 4) {
+                document.getElementById('step1PoolVol').textContent = target4nMVolume.toFixed(0);
+                document.getElementById('step1PoolConc').textContent = poolConc.toFixed(1);
+                document.getElementById('step1WaterVol').textContent = '0';
+                document.getElementById('step1Total').textContent = target4nMVolume.toFixed(0);
+                
+                const warningDiv = document.getElementById('step1Warning');
+                warningDiv.style.display = 'block';
+                warningDiv.style.color = '#2980b9';
+                warningDiv.innerHTML = 'ℹ️ No dilution needed - concentration already ≤ 4 nM';
+            } else {
+                document.getElementById('step1PoolVol').textContent = '-';
+                document.getElementById('step1PoolConc').textContent = '-';
+                document.getElementById('step1WaterVol').textContent = '-';
+                document.getElementById('step1Total').textContent = target4nMVolume.toFixed(0);
+                
+                const warningDiv = document.getElementById('step1Warning');
+                warningDiv.style.display = 'none';
+            }
+
+            // Step 2: NaOH preparation
+            const step2WaterVol = naohVolume * 0.8; // 80% water
+            const step2NaOHVol = naohVolume * 0.2;  // 20% 1N NaOH
+            document.getElementById('step2WaterVol').textContent = step2WaterVol.toFixed(0);
+            document.getElementById('step2NaOHVol').textContent = step2NaOHVol.toFixed(0);
+            document.getElementById('step2Total').textContent = naohVolume.toFixed(0);
+
+            // Step 5: Loading concentration calculation
+            const poolVol20pM = (targetLoadingConc / 20) * 1000;
+            const hybVol = 1000 - poolVol20pM;
+            document.getElementById('step5PoolVol').textContent = poolVol20pM.toFixed(1);
+            document.getElementById('step5HyBVol').textContent = hybVol.toFixed(1);
+            document.getElementById('step5FinalConc').textContent = targetLoadingConc.toFixed(2);
+
+            // Step 6: PhiX calculation
+            const phixVol = (phixPercent / 100) * 1000;
+            const libraryVol = 1000 - phixVol;
+            document.getElementById('step6LibraryVol').textContent = libraryVol.toFixed(0);
+            document.getElementById('step6PhiXVol').textContent = phixVol.toFixed(0);
+            document.getElementById('step6PhiXConc').textContent = targetLoadingConc.toFixed(2);
+            document.getElementById('step6PhiXPercent').textContent = phixPercent.toFixed(1);
+
+            // Materials summary
+            if (poolConc > 4) {
+                const poolNeeded = poolVolume4nM + 5; // 5 μL for denaturation
+                document.getElementById('totalPoolNeeded').textContent = poolNeeded.toFixed(1);
+                document.getElementById('totalWaterNeeded').textContent = (waterVolume4nM + step2WaterVol).toFixed(0);
+            } else if (poolConc > 0) {
+                document.getElementById('totalPoolNeeded').textContent = (target4nMVolume + 5).toFixed(0);
+                document.getElementById('totalWaterNeeded').textContent = step2WaterVol.toFixed(0);
+            } else {
+                document.getElementById('totalPoolNeeded').textContent = '-';
+                document.getElementById('totalWaterNeeded').textContent = step2WaterVol.toFixed(0);
+            }
+            
+            document.getElementById('totalNaOHNeeded').textContent = step2NaOHVol.toFixed(0);
+            document.getElementById('totalHyBNeeded').textContent = (990 + hybVol).toFixed(0);
+            document.getElementById('totalPhiXNeeded').textContent = phixVol.toFixed(0);
+
+            // Final results
+            document.getElementById('finalLoadingResult').textContent = targetLoadingConc.toFixed(2);
+            document.getElementById('finalPhiXResult').textContent = phixPercent.toFixed(1);
+        }
+
+        // Initialize the application
+        function init() {
+            // Set today's date
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            
+            // Add one sample to start
+            addSample();
+            
+            // Initialize calculations
+            updateCalculations();
+            calculateProtocol();
+        }
+
+        // Call init when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
