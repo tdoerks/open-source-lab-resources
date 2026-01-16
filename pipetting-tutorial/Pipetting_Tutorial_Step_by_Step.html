@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Step-by-Step Pipetting Technique</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .step-counter {
+            background: #2196F3;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .step-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 400px;
+            position: relative;
+            margin: 40px 0;
+        }
+
+        .step-label {
+            background: #2196F3;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 100px;
+            text-align: center;
+            min-width: 80px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pipette {
+            position: relative;
+            transition: transform 1s ease;
+            top: -50px;
+        }
+
+        .pipette-body {
+            width: 35px;
+            height: 80px;
+            background: linear-gradient(to bottom, #4A90E2 0%, #2E5AAA 50%, #4A90E2 100%);
+            border-radius: 8px;
+            position: relative;
+            box-shadow: inset 2px 0 4px rgba(255,255,255,0.3), inset -2px 0 4px rgba(0,0,0,0.1);
+        }
+
+        .pipette-shaft {
+            width: 6px;
+            height: 90px;
+            background: linear-gradient(to right, #E8E8E8, #FFFFFF, #D0D0D0);
+            position: absolute;
+            bottom: -90px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 0 0 1px 1px;
+        }
+
+        .plunger {
+            width: 25px;
+            height: 50px;
+            background: linear-gradient(to bottom, #4A90E2 0%, #2E5AAA 50%, #4A90E2 100%);
+            border-radius: 6px 6px 3px 3px;
+            position: absolute;
+            top: -30px;
+            left: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 1s ease;
+        }
+
+        .plunger-button {
+            width: 20px;
+            height: 15px;
+            background: linear-gradient(to bottom, #FFC107, #FF9800);
+            border-radius: 3px 3px 8px 8px;
+            position: absolute;
+            top: -10px;
+            left: 2.5px;
+        }
+
+        .tip {
+            width: 8px;
+            height: 25px;
+            background: linear-gradient(to bottom, rgba(200, 230, 255, 0.9), rgba(150, 200, 250, 0.8));
+            position: absolute;
+            bottom: -115px;
+            left: 50%;
+            transform: translateX(-50%);
+            clip-path: polygon(25% 0%, 75% 0%, 85% 70%, 70% 100%, 30% 100%, 15% 70%);
+            border: 1px solid rgba(100, 150, 200, 0.4);
+        }
+
+        .liquid-in-tip {
+            width: 6px;
+            height: 0;
+            background: #FF5722;
+            position: absolute;
+            bottom: 2px;
+            left: 1px;
+            border-radius: 0 0 1px 1px;
+            transition: height 1s ease;
+        }
+
+        .tube {
+            width: 30px;
+            height: 60px;
+            background: rgba(200, 200, 200, 0.3);
+            border: 2px solid #666;
+            border-radius: 0 0 15px 15px;
+            position: absolute;
+            bottom: 0;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .tube.show {
+            opacity: 1;
+        }
+
+        .tube.step4 {
+            bottom: 50px;
+        }
+
+        .liquid-in-tube {
+            width: 26px;
+            height: 30px;
+            background: #FF5722;
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            border-radius: 0 0 13px 13px;
+        }
+
+        .liquid-in-tube.empty {
+            height: 0;
+            transition: height 1s ease;
+        }
+
+        .controls {
+            margin-top: 30px;
+        }
+
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #1976D2;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .description {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .navigation {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-button {
+            background: #4CAF50;
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        .nav-button:hover {
+            background: #45a049;
+        }
+
+        .progress {
+            display: flex;
+            gap: 5px;
+        }
+
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            transition: background 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: #2196F3;
+        }
+
+        .progress-dot.completed {
+            background: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="title">Step 1: Push to First Stop</h1>
+        
+        <div class="step-counter" id="counter">Step 1 of 4</div>
+        
+        <div class="step-container" id="stepContainer">
+            <!-- Content will be dynamically generated -->
+        </div>
+
+        <div class="description" id="description">
+            Press the plunger to the first stop to expel air from the tip.
+        </div>
+
+        <div class="controls">
+            <button onclick="startStepAnimation()" id="animateBtn">Start Animation</button>
+            <button onclick="resetStepAnimation()" id="resetBtn">Reset</button>
+        </div>
+
+        <div class="navigation">
+            <button class="nav-button" onclick="previousStep()" id="prevBtn" disabled>← Previous</button>
+            
+            <div class="progress">
+                <div class="progress-dot active" id="dot1"></div>
+                <div class="progress-dot" id="dot2"></div>
+                <div class="progress-dot" id="dot3"></div>
+                <div class="progress-dot" id="dot4"></div>
+            </div>
+            
+            <button class="nav-button" onclick="nextStep()" id="nextBtn">Next →</button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let isAnimating = false;
+
+        const stepData = {
+            1: {
+                title: "Step 1: Push to First Stop",
+                description: "Press the plunger to the first stop to expel air from the tip.",
+                html: `
+                    <div class="step-label">Push to<br>first stop</div>
+                    <div class="pipette" id="pipette">
+                        <div class="pipette-body">
+                            <div class="plunger" id="plunger">
+                                <div class="plunger-button"></div>
+                            </div>
+                        </div>
+                        <div class="pipette-shaft"></div>
+                        <div class="tip">
+                            <div class="liquid-in-tip" id="liquidInTip"></div>
+                        </div>
+                    </div>
+                `,
+                animate: function() {
+                    document.getElementById('plunger').style.transform = 'translateY(25px)';
+                },
+                reset: function() {
+                    document.getElementById('plunger').style.transform = 'translateY(0)';
+                }
+            },
+            2: {
+                title: "Step 2: Insert Into Liquid", 
+                description: "Insert the pipette tip into the sample liquid while maintaining the first stop position.",
+                html: `
+                    <div class="step-label" style="margin-bottom: 35px;">Insert into<br>liquid</div>
+                    <div class="pipette" id="pipette" style="transform: translateY(50px);">
+                        <div class="pipette-body">
+                            <div class="plunger" id="plunger" style="transform: translateY(25px); transition: none;">
+                                <div class="plunger-button"></div>
+                            </div>
+                        </div>
+                        <div class="pipette-shaft"></div>
+                        <div class="tip">
+                            <div class="liquid-in-tip" id="liquidInTip"></div>
+                        </div>
+                    </div>
+                    <div class="tube" id="tube">
+                        <div class="liquid-in-tube"></div>
+                    </div>
+                `,
+                animate: function() {
+                    // Show the tube first
+                    document.getElementById('tube').classList.add('show');
+                    
+                    // After a short delay, move the pipette down into the liquid
+                    setTimeout(() => {
+                        const pipette = document.getElementById('pipette');
+                        pipette.style.transform = 'translateY(145px)';
+                        pipette.style.transition = 'transform 1s ease';
+                    }, 500);
+                },
+                reset: function() {
+                    // Hide tube
+                    document.getElementById('tube').classList.remove('show');
+                    
+                    // Reset pipette position
+                    const pipette = document.getElementById('pipette');
+                    pipette.style.transform = 'translateY(0)';
+                    pipette.style.transition = '';
+                }
+            },
+            3: {
+                title: "Step 3: Slowly Release",
+                description: "Slowly release the plunger to draw liquid into the tip while keeping the pipette in the sample.",
+                html: `
+                    <div class="step-label">Slowly<br>Release</div>
+                    <div class="pipette" id="pipette" style="transform: translateY(75px);">
+                        <div class="pipette-body">
+                            <div class="plunger" id="plunger" style="transform: translateY(25px);">
+                                <div class="plunger-button"></div>
+                            </div>
+                        </div>
+                        <div class="pipette-shaft"></div>
+                        <div class="tip">
+                            <div class="liquid-in-tip" id="liquidInTip"></div>
+                        </div>
+                    </div>
+                    <div class="tube show" id="tube">
+                        <div class="liquid-in-tube"></div>
+                    </div>
+                `,
+                animate: function() {
+                    // Release plunger back to top (aspirate)
+                    document.getElementById('plunger').style.transform = 'translateY(0)';
+                    
+                    // Fill tip with liquid
+                    setTimeout(() => {
+                        document.getElementById('liquidInTip').style.height = '15px';
+                    }, 500);
+                },
+                reset: function() {
+                    // Reset plunger to soft stop
+                    document.getElementById('plunger').style.transform = 'translateY(25px)';
+                    
+                    // Empty tip
+                    document.getElementById('liquidInTip').style.height = '0';
+                }
+            },
+            4: {
+                title: "Step 4: Push to First Stop, Then Second Stop",
+                description: "Move to the target location and dispense the liquid by pushing to the first stop, then the second stop to expel all remaining liquid.",
+                html: `
+                    <div class="step-label">Push to first stop,<br>then second stop</div>
+                    <div class="pipette" id="pipette" style="transform: translateY(55px);">
+                        <div class="pipette-body">
+                            <div class="plunger" id="plunger">
+                                <div class="plunger-button"></div>
+                            </div>
+                        </div>
+                        <div class="pipette-shaft"></div>
+                        <div class="tip">
+                            <div class="liquid-in-tip" id="liquidInTip" style="height: 15px;"></div>
+                        </div>
+                    </div>
+                    <div class="tube show" id="tube">
+                        <div class="liquid-in-tube empty" id="liquidInTube"></div>
+                    </div>
+                `,
+                animate: function() {
+                    // Set initial state with liquid in tip
+                    document.getElementById('plunger').style.transform = 'translateY(0)';
+                    document.getElementById('liquidInTip').style.height = '15px';
+                    
+                    setTimeout(() => {
+                        // First stop
+                        document.getElementById('plunger').style.transform = 'translateY(25px)';
+                        setTimeout(() => {
+                            document.getElementById('liquidInTip').style.height = '5px';
+                            document.getElementById('liquidInTube').style.height = '15px';
+                            setTimeout(() => {
+                                // Second stop
+                                document.getElementById('plunger').style.transform = 'translateY(35px)';
+                                setTimeout(() => {
+                                    document.getElementById('liquidInTip').style.height = '0px';
+                                    document.getElementById('liquidInTube').style.height = '20px';
+                                }, 500);
+                            }, 1000);
+                        }, 500);
+                    }, 300);
+                },
+                reset: function() {
+                    document.getElementById('plunger').style.transform = 'translateY(0)';
+                    document.getElementById('liquidInTip').style.height = '15px';
+                    document.getElementById('liquidInTube').style.height = '0px';
+                }
+            }
+        };
+
+        function loadStep(stepNum) {
+            const step = stepData[stepNum];
+            document.getElementById('title').textContent = step.title;
+            document.getElementById('counter').textContent = `Step ${stepNum} of 4`;
+            document.getElementById('description').textContent = step.description;
+            document.getElementById('stepContainer').innerHTML = step.html;
+            
+            // Update progress dots
+            for (let i = 1; i <= 4; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                dot.classList.remove('active', 'completed');
+                if (i < stepNum) {
+                    dot.classList.add('completed');
+                } else if (i === stepNum) {
+                    dot.classList.add('active');
+                }
+            }
+            
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = (stepNum === 1);
+            document.getElementById('nextBtn').disabled = (stepNum === 4);
+            document.getElementById('nextBtn').textContent = (stepNum === 4) ? 'Complete!' : 'Next →';
+        }
+
+        function startStepAnimation() {
+            if (isAnimating) return;
+            isAnimating = true;
+            document.getElementById('animateBtn').disabled = true;
+            
+            stepData[currentStep].animate();
+            
+            setTimeout(() => {
+                isAnimating = false;
+                document.getElementById('animateBtn').disabled = false;
+            }, 3000);
+        }
+
+        function resetStepAnimation() {
+            if (isAnimating) return;
+            stepData[currentStep].reset();
+        }
+
+        function nextStep() {
+            if (currentStep < 4) {
+                currentStep++;
+                loadStep(currentStep);
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                loadStep(currentStep);
+            }
+        }
+
+        // Initialize
+        loadStep(1);
+    </script>
+</body>
+</html>

@@ -54,6 +54,29 @@ Comprehensive box-level sample inventory management system:
   - Statistics dashboard
   - Auto-saves in browser
 
+#### 🎓 [Pipetting Tutorial](./pipetting-tutorial/)
+Interactive animated tutorial for learning proper pipetting technique:
+- **Step-by-Step Version** - Guided 4-step walkthrough for beginners
+- **Complete Animation** - Full demonstration for quick reference
+- **Features:**
+  - Visual animations of plunger movement
+  - Liquid transfer visualization
+  - Detailed descriptions for each step
+  - Best practices and common mistakes
+  - Perfect for training new lab members
+
+#### 🦠 [Bacterial Isolation Tracker](./bacterial-isolation-tracker/)
+Complete LIMS for bacterial culture and sequencing workflows:
+- **8-Stage Workflow** - Receipt → Culture → Extraction → QC → Sequencing
+- **Batch Processing** - Handle multiple samples simultaneously
+- **Comprehensive Tracking** - Reagent lots, technicians, equipment, QC data
+- **Features:**
+  - Auto-save with browser LocalStorage
+  - CSV/JSON export for records
+  - Search and filter capabilities
+  - Status dashboard with visualizations
+  - Dark mode support
+
 ---
 
 ## 🚀 Quick Start
@@ -85,6 +108,24 @@ Comprehensive box-level sample inventory management system:
 4. **Add boxes** with shelf, rack, drawer, position details
 5. **Click "Box Map"** to track individual samples
 6. **Export CSV** or backup all data regularly
+
+### Pipetting Tutorial
+
+1. **Download** your version:
+   - [Step-by-Step](./pipetting-tutorial/Pipetting_Tutorial_Step_by_Step.html) - For learning
+   - [Complete Animation](./pipetting-tutorial/Pipetting_Tutorial_Complete.html) - For reference
+2. **Open** in any web browser
+3. **Watch** animations and read descriptions
+4. **Practice** with actual pipettes alongside tutorial
+
+### Bacterial Isolation Tracker
+
+1. **Download** the [Bacterial Tracker](./bacterial-isolation-tracker/Bacterial_Isolation_Tracker.html)
+2. **Open** in any web browser
+3. **Add samples** using single or bulk input
+4. **Process through workflow** stages with batch capabilities
+5. **Track reagents, QC data, and technicians**
+6. **Export** CSV for analysis or JSON for backup
 
 No installation required! Works offline after first load.
 
