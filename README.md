@@ -40,6 +40,20 @@ Interactive calculators for Illumina MiSeq library pooling:
   - Auto-saves in browser
   - Print-ready protocols
 
+#### 🗂️ [Freezer & Fridge Inventory](./freezer-inventory/)
+Comprehensive box-level sample inventory management system:
+- **Multi-Freezer Support** - Manage unlimited freezers/fridges
+- **Box-Level Tracking** - Track location and contents of each box
+- **Visual Box Maps** - Interactive grid view of sample positions
+- **Features:**
+  - Shelf → Rack → Drawer → Box hierarchy
+  - Sample types, box sizes, research/clinical flags
+  - CSV import/export for bulk operations
+  - Individual sample tracking within boxes
+  - Backup/restore functionality
+  - Statistics dashboard
+  - Auto-saves in browser
+
 ---
 
 ## 🚀 Quick Start
@@ -62,6 +76,15 @@ Interactive calculators for Illumina MiSeq library pooling:
 3. **Enter** run details and sample data (ID, concentration, size)
 4. **Watch** automatic molarity and volume calculations
 5. **Export** or print your pooling protocol
+
+### Freezer Inventory Manager
+
+1. **Download** the [Inventory Manager](./freezer-inventory/Freezer_Inventory_Manager.html)
+2. **Open** in any web browser
+3. **Add freezers** with "Add Freezer" button
+4. **Add boxes** with shelf, rack, drawer, position details
+5. **Click "Box Map"** to track individual samples
+6. **Export CSV** or backup all data regularly
 
 No installation required! Works offline after first load.
 
@@ -110,7 +133,6 @@ We welcome contributions from the laboratory community!
 
 ## 🛠️ Coming Soon
 
-- Sample inventory tracker
 - Equipment maintenance logs
 - Laboratory safety checklists
 - More SOPs and templates

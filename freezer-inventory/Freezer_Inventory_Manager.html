@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freezer & Fridge Inventory Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        input, select, textarea, button {
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 12px 25px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-secondary:hover, .btn-danger:hover {
+            opacity: 0.8;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 0 30px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .checkbox-cell {
+            text-align: center;
+            width: 60px;
+        }
+
+        .checkbox-cell input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .position-cell {
+            font-weight: 600;
+            color: #495057;
+            width: 60px;
+            text-align: center;
+        }
+
+        .sample-type-cell {
+            max-width: 150px;
+            word-wrap: break-word;
+        }
+
+        .comments-cell {
+            max-width: 200px;
+            word-wrap: break-word;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .freezer-selector {
+            margin-bottom: 20px;
+        }
+
+        .freezer-details-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .current-freezer-info {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .freezer-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .freezer-tab {
+            padding: 12px 20px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .freezer-tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .backup-dropdown {
+            position: relative;
+            display: inline-block;
+            margin-left: auto;
+        }
+
+        .backup-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            min-width: 200px;
+            margin-top: 5px;
+        }
+
+        .backup-menu.show {
+            display: block;
+        }
+
+        .backup-menu button {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            border: none;
+            background: white;
+            color: #495057;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+            border-radius: 0;
+        }
+
+        .backup-menu button:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+
+        .backup-menu button:last-child {
+            border-radius: 0 0 6px 6px;
+            border-bottom: none;
+        }
+
+        .backup-menu button:hover {
+            background-color: #f8f9fa;
+        }
+
+        .backup-menu button:not(:last-child) {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+
+        .sample-types-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .sample-type-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .sample-type-checkbox:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .sample-type-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .sample-type-checkbox label {
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0;
+            color: #495057;
+        }
+
+        .sample-type-checkbox.custom-type {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .sample-type-checkbox.custom-type input[type="text"] {
+            border: 1px solid #dee2e6;
+            padding: 6px 10px;
+            font-size: 0.85em;
+            border-radius: 4px;
+            margin: 0;
+        }
+
+        .sample-type-checkbox.custom-type input[type="text"]:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .sample-type-checkbox.custom-type input[type="checkbox"] {
+            align-self: flex-start;
+        }
+
+        .number-input {
+            width: 80px;
+        }
+
+        .box-map-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .box-map-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: auto;
+        }
+
+        .box-map-header {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .box-map-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .box-grid {
+            display: grid;
+            gap: 2px;
+            border: 2px solid #2c3e50;
+            padding: 10px;
+            background: #f8f9fa;
+            margin: 20px 0;
+        }
+
+        .box-grid.grid-8x12 {
+            grid-template-columns: repeat(12, 1fr);
+        }
+
+        .box-grid.grid-9x9 {
+            grid-template-columns: repeat(9, 1fr);
+        }
+
+        .box-grid.grid-10x10 {
+            grid-template-columns: repeat(10, 1fr);
+        }
+
+        .box-grid.grid-5x10 {
+            grid-template-columns: repeat(10, 1fr);
+        }
+
+        .box-position {
+            width: 35px;
+            height: 35px;
+            border: 1px solid #ccc;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .box-position:hover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+
+        .box-position.occupied {
+            background: #c8e6c9;
+            border-color: #4caf50;
+        }
+
+        .box-position.selected {
+            background: #ffecb3;
+            border-color: #ff9800;
+            box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+        }
+
+        .position-label {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .sample-input-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .sample-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .sample-input-row input {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .sample-input-row button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .csv-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+        }
+
+        .csv-section h4 {
+            margin: 0 0 10px 0;
+            color: #856404;
+        }
+
+        @media (max-width: 768px) {
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .form-group {
+                width: 100%;
+            }
+
+            .stats {
+                justify-content: center;
+            }
+
+            .freezer-tabs {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧊 Freezer & Fridge Inventory</h1>
+            <p>Box-Level Sample Management System</p>
+        </div>
+
+        <div class="controls">
+            <div class="freezer-selector">
+                <div class="freezer-tabs">
+                    <button class="freezer-tab active" onclick="switchFreezer('Freezer 6 (-70)')">Freezer 6 (-70°)</button>
+                    <button class="freezer-tab" onclick="addFreezer()">+ Add Freezer</button>
+                    <div class="backup-dropdown">
+                        <button class="freezer-tab" onclick="toggleBackupMenu()" style="background: #6f42c1; color: white;">
+                            💾 Backup/Restore ▼
+                        </button>
+                        <div class="backup-menu" id="backupMenu">
+                            <button onclick="backupAllData()">📤 Backup All Data</button>
+                            <button onclick="restoreFromBackup()">📥 Restore from Backup</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="freezer-details-section">
+                    <button class="btn-secondary" onclick="showFreezerDetails()" style="background: #17a2b8; margin-bottom: 15px;">
+                        📋 View/Edit Freezer Details
+                    </button>
+                    <div class="current-freezer-info">
+                        <span id="currentFreezerInfo">Freezer 6 (-70°) - L200</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalBoxes">0</div>
+                    <div class="stat-label">Total Boxes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="researchBoxes">0</div>
+                    <div class="stat-label">Research</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="clinicalBoxes">0</div>
+                    <div class="stat-label">Clinical</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="occupiedSlots">0</div>
+                    <div class="stat-label">Occupied Slots</div>
+                </div>
+            </div>
+
+            <div class="controls-row">
+                <div class="form-group">
+                    <label>Shelf</label>
+                    <input type="number" id="shelf" min="1" max="10" value="1" class="number-input">
+                </div>
+                <div class="form-group">
+                    <label>Rack</label>
+                    <input type="number" id="rack" min="1" max="10" value="1" class="number-input">
+                </div>
+                <div class="form-group">
+                    <label>Drawer</label>
+                    <input type="number" id="drawer" min="1" max="10" value="1" class="number-input">
+                </div>
+                <div class="form-group">
+                    <label>Box Position</label>
+                    <input type="number" id="boxPosition" min="1" max="100" value="1" class="number-input">
+                </div>
+                <div class="form-group">
+                    <label>Box Label/ID</label>
+                    <input type="text" id="boxLabel" placeholder="e.g., Mouse-001, RNA-2024-01">
+                </div>
+            </div>
+
+            <div class="controls-row">
+                <div class="form-group">
+                    <label>Sample Types in Box</label>
+                    <div class="sample-types-container">
+                        <div class="sample-type-checkbox">
+                            <input type="checkbox" id="type-feces" value="Feces">
+                            <label for="type-feces">Feces</label>
+                        </div>
+                        <div class="sample-type-checkbox">
+                            <input type="checkbox" id="type-tissue" value="Tissue">
+                            <label for="type-tissue">Tissue</label>
+                        </div>
+                        <div class="sample-type-checkbox">
+                            <input type="checkbox" id="type-viral" value="Viral Isolate">
+                            <label for="type-viral">Viral Isolate</label>
+                        </div>
+                        <div class="sample-type-checkbox">
+                            <input type="checkbox" id="type-blood" value="Blood">
+                            <label for="type-blood">Blood</label>
+                        </div>
+                        <div class="sample-type-checkbox">
+                            <input type="checkbox" id="type-serum" value="Serum">
+                            <label for="type-serum">Serum</label>
+                        </div>
+                        <div class="sample-type-checkbox">
+                            <input type="checkbox" id="type-plasma" value="Plasma">
+                            <label for="type-plasma">Plasma</label>
+                        </div>
+                        <div class="sample-type-checkbox">
+                            <input type="checkbox" id="type-other" value="Other">
+                            <label for="type-other">Other</label>
+                        </div>
+                        <div class="sample-type-checkbox custom-type">
+                            <input type="checkbox" id="type-custom" value="">
+                            <input type="text" id="custom-type-input" placeholder="Write custom type..." maxlength="50">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Box Size</label>
+                    <select id="boxSize">
+                        <option value="">Select size</option>
+                        <option value="8x12 (96 tubes)">8x12 (96 tubes)</option>
+                        <option value="9x9 (81 tubes)">9x9 (81 tubes)</option>
+                        <option value="10x10 (100 tubes)">10x10 (100 tubes)</option>
+                        <option value="5x10 (50 tubes)">5x10 (50 tubes)</option>
+                        <option value="Custom">Custom</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Research</label>
+                    <input type="checkbox" id="research">
+                </div>
+                <div class="form-group">
+                    <label>Clinical</label>
+                    <input type="checkbox" id="clinical">
+                </div>
+            </div>
+
+            <div class="controls-row">
+                <div class="form-group" style="flex: 1;">
+                    <label>Comments/Description</label>
+                    <textarea id="comments" rows="2" placeholder="Additional notes about this box..."></textarea>
+                </div>
+                <button class="btn-primary" onclick="addBox()">Add Box</button>
+                <button class="btn-primary" onclick="exportData()">Export CSV</button>
+                <button class="btn-secondary" onclick="clearAllData()" style="background: #dc3545;">Clear All Data</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Shelf</th>
+                        <th>Rack</th>
+                        <th>Drawer</th>
+                        <th>Box#</th>
+                        <th>Box Label/ID</th>
+                        <th>Sample Types</th>
+                        <th>Box Size</th>
+                        <th>Research</th>
+                        <th>Clinical</th>
+                        <th>Comments</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentFreezer = 'Freezer 6 (-70)';
+        let inventoryData = {
+            'Freezer 6 (-70)': []
+        };
+        let freezerDetails = {
+            'Freezer 6 (-70)': {
+                location: 'L200',
+                serialNumber: 'ULT-2023-001',
+                temperature: '-70°C',
+                model: 'Thermo Scientific ULT2586',
+                manufacturer: 'Thermo Fisher Scientific',
+                installDate: '2023-01-15',
+                lastMaintenance: '2024-06-15',
+                notes: 'Main research freezer - backup power connected'
+            }
+        };
+
+        // Define all functions first
+        function updateFreezerInfo() {
+            const details = freezerDetails[currentFreezer];
+            const infoElement = document.getElementById('currentFreezerInfo');
+            
+            if (details) {
+                const temp = details.temperature ? ` - ${details.temperature}` : '';
+                const location = details.location ? ` - ${details.location}` : '';
+                infoElement.textContent = `${currentFreezer}${temp}${location}`;
+            } else {
+                infoElement.textContent = currentFreezer;
+            }
+        }
+
+        function updateStats() {
+            const boxes = inventoryData[currentFreezer] || [];
+            
+            document.getElementById('totalBoxes').textContent = boxes.length;
+            document.getElementById('researchBoxes').textContent = boxes.filter(b => b.research).length;
+            document.getElementById('clinicalBoxes').textContent = boxes.filter(b => b.clinical).length;
+            document.getElementById('occupiedSlots').textContent = boxes.length;
+        }
+
+        function refreshTable() {
+            const tbody = document.getElementById('inventoryBody');
+            const boxes = inventoryData[currentFreezer] || [];
+            
+            if (boxes.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="empty-state">
+                            <div>
+                                <div style="font-size: 3em; margin-bottom: 15px;">📦</div>
+                                <h3>No boxes in ${currentFreezer}</h3>
+                                <p>Add your first box using the form above</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = boxes
+                .sort((a, b) => a.shelf - b.shelf || a.rack - b.rack || a.drawer - b.drawer || a.boxPosition - b.boxPosition)
+                .map(box => `
+                    <tr>
+                        <td class="position-cell">${box.shelf}</td>
+                        <td class="position-cell">${box.rack}</td>
+                        <td class="position-cell">${box.drawer}</td>
+                        <td class="position-cell">${box.boxPosition}</td>
+                        <td>${box.boxLabel || '-'}</td>
+                        <td class="sample-type-cell">${box.sampleTypes && box.sampleTypes.length > 0 ? box.sampleTypes.join(', ') : '-'}</td>
+                        <td>${box.boxSize || '-'}</td>
+                        <td class="checkbox-cell">
+                            <input type="checkbox" ${box.research ? 'checked' : ''} 
+                                   onchange="updateBox(${box.id}, 'research', this.checked)">
+                        </td>
+                        <td class="checkbox-cell">
+                            <input type="checkbox" ${box.clinical ? 'checked' : ''} 
+                                   onchange="updateBox(${box.id}, 'clinical', this.checked)">
+                        </td>
+                        <td class="comments-cell">${box.comments || '-'}</td>
+                        <td>
+                            <button class="btn-secondary" onclick="openBoxMap(${box.id})" style="background: #28a745; margin-right: 5px;">Box Map</button>
+                            <button class="btn-secondary btn-danger" onclick="deleteBox(${box.id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+        }
+
+        // Data persistence functions
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('freezerInventoryData', JSON.stringify(inventoryData));
+                localStorage.setItem('freezerDetailsData', JSON.stringify(freezerDetails));
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedInventory = localStorage.getItem('freezerInventoryData');
+                const savedDetails = localStorage.getItem('freezerDetailsData');
+                
+                if (savedInventory) {
+                    inventoryData = JSON.parse(savedInventory);
+                }
+                
+                if (savedDetails) {
+                    freezerDetails = JSON.parse(savedDetails);
+                }
+                
+                if (Object.keys(inventoryData).length > 1 || !inventoryData['Freezer 6 (-70)']) {
+                    recreateFreezerTabs();
+                }
+                
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+                inventoryData = { 'Freezer 6 (-70)': [] };
+                freezerDetails = {
+                    'Freezer 6 (-70)': {
+                        location: 'L200',
+                        serialNumber: 'ULT-2023-001',
+                        temperature: '-70°C',
+                        model: 'Thermo Scientific ULT2586',
+                        manufacturer: 'Thermo Fisher Scientific',
+                        installDate: '2023-01-15',
+                        lastMaintenance: '2024-06-15',
+                        notes: 'Main research freezer - backup power connected'
+                    }
+                };
+            }
+        }
+
+        function recreateFreezerTabs() {
+            const tabsContainer = document.querySelector('.freezer-tabs');
+            const addButton = tabsContainer.children[1];
+            const backupDropdown = tabsContainer.querySelector('.backup-dropdown');
+            
+            // Clear existing tabs except add button and backup
+            const existingTabs = Array.from(tabsContainer.children);
+            existingTabs.forEach(tab => {
+                if (tab !== addButton && tab !== backupDropdown) {
+                    tab.remove();
+                }
+            });
+            
+            // Recreate tabs
+            Object.keys(inventoryData).forEach(freezerName => {
+                const newTab = document.createElement('button');
+                newTab.className = 'freezer-tab';
+                
+                if (freezerName === 'Freezer 6 (-70)') {
+                    newTab.textContent = 'Freezer 6 (-70°)';
+                    newTab.classList.add('active');
+                } else {
+                    newTab.innerHTML = `${freezerName} <span onclick="event.stopPropagation(); removeFreezer('${freezerName}')" title="Remove freezer">×</span>`;
+                }
+                
+                newTab.addEventListener('click', function(e) {
+                    if (e.target.tagName === 'SPAN') return;
+                    switchFreezer(freezerName);
+                });
+                
+                tabsContainer.insertBefore(newTab, addButton);
+            });
+        }
+
+        function switchFreezer(freezerName) {
+            currentFreezer = freezerName;
+            
+            document.querySelectorAll('.freezer-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.includes(freezerName) || 
+                    (freezerName === 'Freezer 6 (-70)' && tab.textContent === 'Freezer 6 (-70°)')) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            updateFreezerInfo();
+            refreshTable();
+            updateStats();
+        }
+
+        function toggleBackupMenu() {
+            const menu = document.getElementById('backupMenu');
+            menu.classList.toggle('show');
+            
+            document.addEventListener('click', function closeMenu(e) {
+                if (!e.target.closest('.backup-dropdown')) {
+                    menu.classList.remove('show');
+                    document.removeEventListener('click', closeMenu);
+                }
+            });
+        }
+
+        function backupAllData() {
+            try {
+                const backupData = {
+                    version: '1.0',
+                    timestamp: new Date().toISOString(),
+                    inventoryData: inventoryData,
+                    freezerDetails: freezerDetails,
+                    currentFreezer: currentFreezer
+                };
+                
+                const jsonString = JSON.stringify(backupData, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `freezer_inventory_backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                document.getElementById('backupMenu').classList.remove('show');
+                alert('✅ Backup created successfully!');
+                
+            } catch (error) {
+                alert('❌ Error creating backup: ' + error.message);
+            }
+        }
+
+        function restoreFromBackup() {
+            document.getElementById('backupMenu').classList.remove('show');
+            
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = '.json';
+            fileInput.style.display = 'none';
+            
+            fileInput.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                try {
+                    const text = await file.text();
+                    const backupData = JSON.parse(text);
+                    
+                    if (!backupData.inventoryData || !backupData.freezerDetails) {
+                        throw new Error('Invalid backup file format');
+                    }
+                    
+                    const backupDate = backupData.timestamp ? 
+                        new Date(backupData.timestamp).toLocaleString() : 'Unknown date';
+                    const freezerCount = Object.keys(backupData.inventoryData).length;
+                    let totalBoxes = 0;
+                    Object.values(backupData.inventoryData).forEach(boxes => {
+                        totalBoxes += boxes.length;
+                    });
+                    
+                    const confirmMessage = `🔄 RESTORE FROM BACKUP\n\nBackup Date: ${backupDate}\nFreezers: ${freezerCount}\nTotal Boxes: ${totalBoxes}\n\n⚠️ WARNING: This will replace ALL current data!\n\nContinue with restore?`;
+                    
+                    if (confirm(confirmMessage)) {
+                        inventoryData = backupData.inventoryData;
+                        freezerDetails = backupData.freezerDetails;
+                        currentFreezer = backupData.currentFreezer || Object.keys(inventoryData)[0];
+                        
+                        saveToLocalStorage();
+                        recreateFreezerTabs();
+                        switchFreezer(currentFreezer);
+                        
+                        alert('✅ Restore completed successfully!');
+                    }
+                    
+                } catch (error) {
+                    alert('❌ Error restoring backup:\n\n' + error.message);
+                }
+                
+                document.body.removeChild(fileInput);
+            };
+            
+            document.body.appendChild(fileInput);
+            fileInput.click();
+        }
+
+        function showFreezerDetails() {
+            const details = freezerDetails[currentFreezer] || {};
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                max-width: 500px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+            `;
+            
+            dialog.innerHTML = `
+                <h3 style="margin: 0 0 25px 0; color: #2c3e50; border-bottom: 2px solid #e9ecef; padding-bottom: 15px;">Freezer Details - ${currentFreezer}</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 5px;">Location</label>
+                    <input type="text" id="detailLocation" value="${details.location || ''}" placeholder="e.g., Room L200, Lab 3A" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 5px;">Serial Number</label>
+                    <input type="text" id="detailSerialNumber" value="${details.serialNumber || ''}" placeholder="e.g., ULT-2023-001" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 5px;">Temperature Setting</label>
+                    <input type="text" id="detailTemperature" value="${details.temperature || ''}" placeholder="e.g., -70°C, -20°C, 4°C" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 5px;">Model</label>
+                    <input type="text" id="detailModel" value="${details.model || ''}" placeholder="e.g., Thermo Scientific ULT2586" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 5px;">Manufacturer</label>
+                    <input type="text" id="detailManufacturer" value="${details.manufacturer || ''}" placeholder="e.g., Thermo Fisher Scientific" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 5px;">Install Date</label>
+                    <input type="date" id="detailInstallDate" value="${details.installDate || ''}" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 5px;">Last Maintenance</label>
+                    <input type="date" id="detailLastMaintenance" value="${details.lastMaintenance || ''}" style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; font-weight: 600; color: #495057; margin-bottom: 5px;">Notes</label>
+                    <textarea id="detailNotes" placeholder="Additional notes about this freezer..." style="width: 100%; padding: 10px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px; resize: vertical; min-height: 80px;">${details.notes || ''}</textarea>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                    <button id="cancelBtn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancel</button>
+                    <button id="saveBtn" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Save Details</button>
+                </div>
+            `;
+            
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+            
+            // Focus first input
+            document.getElementById('detailLocation').focus();
+            
+            // Handle cancel
+            document.getElementById('cancelBtn').onclick = function() {
+                document.body.removeChild(modal);
+            };
+            
+            // Handle save
+            document.getElementById('saveBtn').onclick = function() {
+                // Get all values
+                const location = document.getElementById('detailLocation').value.trim();
+                const serialNumber = document.getElementById('detailSerialNumber').value.trim();
+                const temperature = document.getElementById('detailTemperature').value.trim();
+                const model = document.getElementById('detailModel').value.trim();
+                const manufacturer = document.getElementById('detailManufacturer').value.trim();
+                const installDate = document.getElementById('detailInstallDate').value;
+                const lastMaintenance = document.getElementById('detailLastMaintenance').value;
+                const notes = document.getElementById('detailNotes').value.trim();
+                
+                // Update details
+                freezerDetails[currentFreezer] = {
+                    location, serialNumber, temperature, model,
+                    manufacturer, installDate, lastMaintenance, notes
+                };
+                
+                saveToLocalStorage();
+                updateFreezerInfo();
+                document.body.removeChild(modal);
+                alert('Freezer details saved successfully!');
+            };
+            
+            // Handle clicking outside modal
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+            
+            // Handle Escape key
+            document.addEventListener('keydown', function escapeHandler(e) {
+                if (e.key === 'Escape') {
+                    document.body.removeChild(modal);
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            });
+        }
+
+        function addFreezer() {
+            // Create modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                max-width: 400px;
+                width: 90%;
+            `;
+            
+            dialog.innerHTML = `
+                <h3 style="margin: 0 0 20px 0; color: #2c3e50;">Add New Freezer</h3>
+                <p style="margin: 0 0 15px 0; color: #6c757d;">Enter a name for your new freezer or fridge unit:</p>
+                <input type="text" id="freezerNameInput" placeholder="e.g., Freezer 7, Lab Fridge A" 
+                       style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 8px; font-size: 14px; margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button id="cancelBtn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer;">Cancel</button>
+                    <button id="addBtn" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer;">Add Freezer</button>
+                </div>
+            `;
+            
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+            
+            // Focus the input
+            const input = document.getElementById('freezerNameInput');
+            input.focus();
+            
+            // Handle cancel
+            document.getElementById('cancelBtn').onclick = function() {
+                document.body.removeChild(modal);
+            };
+            
+            // Handle add
+            function handleAdd() {
+                const name = input.value.trim();
+                
+                if (!name) {
+                    alert('Please enter a valid freezer name!');
+                    input.focus();
+                    return;
+                }
+                
+                if (inventoryData[name]) {
+                    alert('A freezer with that name already exists!');
+                    input.focus();
+                    return;
+                }
+                
+                // Create new freezer data
+                inventoryData[name] = [];
+                freezerDetails[name] = {
+                    location: '', serialNumber: '', temperature: '', model: '',
+                    manufacturer: '', installDate: '', lastMaintenance: '', notes: ''
+                };
+                
+                saveToLocalStorage();
+                recreateFreezerTabs();
+                switchFreezer(name);
+                
+                // Remove modal
+                document.body.removeChild(modal);
+                
+                // Show success message
+                setTimeout(() => {
+                    alert(`Successfully added "${name}"! You can now add boxes to this freezer.`);
+                }, 100);
+            }
+            
+            document.getElementById('addBtn').onclick = handleAdd;
+            
+            // Handle Enter key
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    handleAdd();
+                }
+            });
+            
+            // Handle clicking outside modal
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+            
+            // Handle Escape key
+            document.addEventListener('keydown', function escapeHandler(e) {
+                if (e.key === 'Escape') {
+                    document.body.removeChild(modal);
+                    document.removeEventListener('keydown', escapeHandler);
+                }
+            });
+        }
+
+        function removeFreezer(freezerName) {
+            if (freezerName === 'Freezer 6 (-70)') {
+                alert('Cannot remove the default freezer!');
+                return;
+            }
+            
+            if (confirm(`Remove "${freezerName}"?`)) {
+                delete inventoryData[freezerName];
+                delete freezerDetails[freezerName];
+                saveToLocalStorage();
+                
+                if (currentFreezer === freezerName) {
+                    switchFreezer('Freezer 6 (-70)');
+                }
+                recreateFreezerTabs();
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ WARNING: Delete ALL data?')) {
+                localStorage.clear();
+                inventoryData = { 'Freezer 6 (-70)': [] };
+                freezerDetails = {
+                    'Freezer 6 (-70)': {
+                        location: 'L200', serialNumber: 'ULT-2023-001', temperature: '-70°C',
+                        model: 'Thermo Scientific ULT2586', manufacturer: 'Thermo Fisher Scientific',
+                        installDate: '2023-01-15', lastMaintenance: '2024-06-15',
+                        notes: 'Main research freezer - backup power connected'
+                    }
+                };
+                currentFreezer = 'Freezer 6 (-70)';
+                recreateFreezerTabs();
+                switchFreezer('Freezer 6 (-70)');
+                alert('All data cleared!');
+            }
+        }
+
+        function addBox() {
+            const shelf = document.getElementById('shelf').value;
+            const rack = document.getElementById('rack').value;
+            const drawer = document.getElementById('drawer').value;
+            const boxPosition = document.getElementById('boxPosition').value;
+            const boxLabel = document.getElementById('boxLabel').value;
+            
+            const sampleTypeCheckboxes = document.querySelectorAll('.sample-type-checkbox input[type="checkbox"]:checked');
+            const sampleTypes = [];
+            
+            sampleTypeCheckboxes.forEach(cb => {
+                if (cb.id === 'type-custom') {
+                    const customInput = document.getElementById('custom-type-input');
+                    const customValue = customInput.value.trim();
+                    if (customValue) {
+                        sampleTypes.push(customValue);
+                    }
+                } else {
+                    sampleTypes.push(cb.value);
+                }
+            });
+            
+            const boxSize = document.getElementById('boxSize').value;
+            const research = document.getElementById('research').checked;
+            const clinical = document.getElementById('clinical').checked;
+            const comments = document.getElementById('comments').value;
+
+            if (!shelf || !rack || !drawer || !boxPosition) {
+                alert('Please fill in all position fields');
+                return;
+            }
+
+            // Check for duplicate position
+            const boxes = inventoryData[currentFreezer] || [];
+            const duplicatePosition = boxes.find(box => 
+                box.shelf === parseInt(shelf) && 
+                box.rack === parseInt(rack) && 
+                box.drawer === parseInt(drawer) && 
+                box.boxPosition === parseInt(boxPosition)
+            );
+
+            if (duplicatePosition) {
+                alert(`Position ${shelf}-${rack}-${drawer}-${boxPosition} is already occupied!`);
+                return;
+            }
+
+            const box = {
+                id: Date.now(),
+                shelf: parseInt(shelf),
+                rack: parseInt(rack),
+                drawer: parseInt(drawer),
+                boxPosition: parseInt(boxPosition),
+                boxLabel,
+                sampleTypes,
+                boxSize,
+                research,
+                clinical,
+                comments,
+                dateAdded: new Date().toLocaleDateString(),
+                sampleMap: {}
+            };
+
+            inventoryData[currentFreezer].push(box);
+            saveToLocalStorage();
+            
+            // Clear form
+            document.getElementById('boxLabel').value = '';
+            document.querySelectorAll('.sample-type-checkbox input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.getElementById('custom-type-input').value = '';
+            document.getElementById('boxSize').value = '';
+            document.getElementById('research').checked = false;
+            document.getElementById('clinical').checked = false;
+            document.getElementById('comments').value = '';
+
+            // Increment box position
+            document.getElementById('boxPosition').value = parseInt(boxPosition) + 1;
+
+            refreshTable();
+            updateStats();
+        }
+
+        function deleteBox(id) {
+            if (confirm('Delete this box?')) {
+                inventoryData[currentFreezer] = inventoryData[currentFreezer].filter(box => box.id !== id);
+                saveToLocalStorage();
+                refreshTable();
+                updateStats();
+            }
+        }
+
+        function updateBox(id, field, value) {
+            const box = inventoryData[currentFreezer].find(b => b.id === id);
+            if (box) {
+                box[field] = value;
+                saveToLocalStorage();
+                updateStats();
+            }
+        }
+
+        function exportData() {
+            const boxes = inventoryData[currentFreezer] || [];
+            if (boxes.length === 0) {
+                alert('No data to export');
+                return;
+            }
+
+            const headers = ['Freezer', 'Shelf', 'Rack', 'Drawer', 'Box Position', 'Box Label/ID', 'Sample Types', 'Box Size', 'Research', 'Clinical', 'Comments', 'Date Added'];
+            const csvContent = [
+                headers.join(','),
+                ...boxes.map(box => [
+                    currentFreezer,
+                    box.shelf,
+                    box.rack,
+                    box.drawer,
+                    box.boxPosition,
+                    `"${box.boxLabel || ''}"`,
+                    `"${box.sampleTypes && box.sampleTypes.length > 0 ? box.sampleTypes.join('; ') : ''}"`,
+                    `"${box.boxSize || ''}"`,
+                    box.research ? 'Yes' : 'No',
+                    box.clinical ? 'Yes' : 'No',
+                    `"${box.comments || ''}"`,
+                    box.dateAdded
+                ].join(','))
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentFreezer}_box_inventory_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function openBoxMap(boxId) {
+            const box = inventoryData[currentFreezer].find(b => b.id === boxId);
+            if (!box) return;
+            
+            // Initialize sample map if it doesn't exist
+            if (!box.sampleMap) {
+                box.sampleMap = {};
+            }
+            
+            // Determine grid dimensions based on box size
+            let gridClass, rows, cols;
+            switch(box.boxSize) {
+                case '8x12 (96 tubes)':
+                    gridClass = 'grid-8x12';
+                    rows = 8;
+                    cols = 12;
+                    break;
+                case '9x9 (81 tubes)':
+                    gridClass = 'grid-9x9';
+                    rows = 9;
+                    cols = 9;
+                    break;
+                case '10x10 (100 tubes)':
+                    gridClass = 'grid-10x10';
+                    rows = 10;
+                    cols = 10;
+                    break;
+                case '5x10 (50 tubes)':
+                    gridClass = 'grid-5x10';
+                    rows = 5;
+                    cols = 10;
+                    break;
+                default:
+                    gridClass = 'grid-8x12';
+                    rows = 8;
+                    cols = 12;
+            }
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'box-map-modal';
+            
+            modal.innerHTML = `
+                <div class="box-map-content">
+                    <div class="box-map-header">
+                        <h3>Box Map - ${box.boxLabel || 'Box ' + box.boxPosition}</h3>
+                        <span>${box.boxSize || '8x12 (96 tubes)'}</span>
+                    </div>
+                    
+                    <div class="box-map-controls">
+                        <button class="btn-secondary" onclick="downloadBoxTemplate(${boxId})" style="background: #28a745;">📥 Download Template</button>
+                        <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="uploadBoxMap(${boxId})">
+                        <button class="btn-secondary" style="background: #17a2b8;" onclick="document.getElementById('csvFileInput').click()">📤 Upload CSV</button>
+                        <button class="btn-secondary" style="background: #ffc107; color: black;" onclick="clearBoxMap(${boxId})">🗑️ Clear All</button>
+                    </div>
+                    
+                    <div class="box-grid ${gridClass}" id="boxGrid">
+                        ${generateBoxGrid(rows, cols, box.sampleMap)}
+                    </div>
+                    
+                    <div class="sample-input-section" style="display: none;" id="sampleInputSection">
+                        <h4>Edit Sample at Position: <span id="selectedPosition"></span></h4>
+                        <div class="sample-input-row">
+                            <label>Sample ID:</label>
+                            <input type="text" id="sampleId" placeholder="e.g., MS001, RNA-001">
+                            <label>Description:</label>
+                            <input type="text" id="sampleDescription" placeholder="Optional description">
+                            <button class="btn-secondary" style="background: #28a745;" onclick="saveSampleToPosition(${boxId})">Save</button>
+                            <button class="btn-secondary" onclick="removeSampleFromPosition(${boxId})">Remove</button>
+                            <button class="btn-secondary" onclick="cancelSampleEdit()">Cancel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="csv-section">
+                        <h4>📋 CSV Format Instructions</h4>
+                        <p><strong>Template columns:</strong> Position, Sample_ID, Description</p>
+                        <p><strong>Position format:</strong> A1, B2, C3, etc. (Letter = Row, Number = Column)</p>
+                        <p><strong>Example:</strong> A1,MS001,Mouse tissue sample</p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 25px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                        <button class="btn-secondary" onclick="closeBoxMap()">Close</button>
+                        <button class="btn-secondary" style="background: #28a745;" onclick="saveBoxMap(${boxId})">Save & Close</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Add click handlers to grid positions
+            addGridClickHandlers(boxId);
+            
+            // Handle clicking outside modal to close
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeBoxMap();
+                }
+            });
+        }
+
+        function generateBoxGrid(rows, cols, sampleMap) {
+            let html = '';
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const position = String.fromCharCode(65 + row) + (col + 1); // A1, A2, B1, etc.
+                    const sample = sampleMap[position];
+                    const occupied = sample ? 'occupied' : '';
+                    const title = sample ? `${sample.id}${sample.description ? ' - ' + sample.description : ''}` : position;
+                    
+                    html += `
+                        <div class="box-position ${occupied}" 
+                             data-position="${position}" 
+                             title="${title}">
+                            <div class="position-label">${position}</div>
+                            ${sample ? sample.id.substring(0, 4) : ''}
+                        </div>
+                    `;
+                }
+            }
+            return html;
+        }
+
+        function addGridClickHandlers(boxId) {
+            document.querySelectorAll('.box-position').forEach(pos => {
+                pos.addEventListener('click', function() {
+                    // Clear previous selection
+                    document.querySelectorAll('.box-position').forEach(p => p.classList.remove('selected'));
+                    
+                    // Select this position
+                    this.classList.add('selected');
+                    
+                    const position = this.dataset.position;
+                    const box = inventoryData[currentFreezer].find(b => b.id === boxId);
+                    const sample = box.sampleMap[position];
+                    
+                    // Show input section
+                    const inputSection = document.getElementById('sampleInputSection');
+                    inputSection.style.display = 'block';
+                    
+                    // Update position label
+                    document.getElementById('selectedPosition').textContent = position;
+                    
+                    // Fill in existing data if available
+                    document.getElementById('sampleId').value = sample ? sample.id : '';
+                    document.getElementById('sampleDescription').value = sample ? sample.description : '';
+                    
+                    // Focus on sample ID input
+                    document.getElementById('sampleId').focus();
+                });
+            });
+        }
+
+        function saveSampleToPosition(boxId) {
+            const position = document.querySelector('.box-position.selected')?.dataset.position;
+            if (!position) {
+                alert('Please select a position first!');
+                return;
+            }
+            
+            const sampleId = document.getElementById('sampleId').value.trim();
+            const sampleDescription = document.getElementById('sampleDescription').value.trim();
+            
+            if (!sampleId) {
+                alert('Please enter a Sample ID!');
+                return;
+            }
+            
+            const box = inventoryData[currentFreezer].find(b => b.id === boxId);
+            if (!box.sampleMap) box.sampleMap = {};
+            
+            box.sampleMap[position] = {
+                id: sampleId,
+                description: sampleDescription
+            };
+            
+            saveToLocalStorage();
+            
+            // Refresh the grid
+            refreshBoxGrid(boxId);
+            
+            // Clear the form
+            document.getElementById('sampleId').value = '';
+            document.getElementById('sampleDescription').value = '';
+            document.getElementById('sampleInputSection').style.display = 'none';
+            
+            // Clear selection
+            document.querySelectorAll('.box-position').forEach(p => p.classList.remove('selected'));
+        }
+
+        function removeSampleFromPosition(boxId) {
+            const position = document.querySelector('.box-position.selected')?.dataset.position;
+            if (!position) return;
+            
+            const box = inventoryData[currentFreezer].find(b => b.id === boxId);
+            if (box.sampleMap && box.sampleMap[position]) {
+                delete box.sampleMap[position];
+                saveToLocalStorage();
+            }
+            
+            // Refresh the grid
+            refreshBoxGrid(boxId);
+            
+            // Clear the form
+            document.getElementById('sampleId').value = '';
+            document.getElementById('sampleDescription').value = '';
+            document.getElementById('sampleInputSection').style.display = 'none';
+            
+            // Clear selection
+            document.querySelectorAll('.box-position').forEach(p => p.classList.remove('selected'));
+        }
+
+        function cancelSampleEdit() {
+            document.getElementById('sampleInputSection').style.display = 'none';
+            document.querySelectorAll('.box-position').forEach(p => p.classList.remove('selected'));
+        }
+
+        function refreshBoxGrid(boxId) {
+            const box = inventoryData[currentFreezer].find(b => b.id === boxId);
+            let rows, cols;
+            
+            switch(box.boxSize) {
+                case '8x12 (96 tubes)': rows = 8; cols = 12; break;
+                case '9x9 (81 tubes)': rows = 9; cols = 9; break;
+                case '10x10 (100 tubes)': rows = 10; cols = 10; break;
+                case '5x10 (50 tubes)': rows = 5; cols = 10; break;
+                default: rows = 8; cols = 12;
+            }
+            
+            const grid = document.getElementById('boxGrid');
+            grid.innerHTML = generateBoxGrid(rows, cols, box.sampleMap || {});
+            addGridClickHandlers(boxId);
+        }
+
+        function clearBoxMap(boxId) {
+            if (confirm('Are you sure you want to clear all samples from this box map?')) {
+                const box = inventoryData[currentFreezer].find(b => b.id === boxId);
+                box.sampleMap = {};
+                saveToLocalStorage();
+                refreshBoxGrid(boxId);
+                cancelSampleEdit();
+            }
+        }
+
+        function downloadBoxTemplate(boxId) {
+            const box = inventoryData[currentFreezer].find(b => b.id === boxId);
+            let rows, cols;
+            
+            switch(box.boxSize) {
+                case '8x12 (96 tubes)': rows = 8; cols = 12; break;
+                case '9x9 (81 tubes)': rows = 9; cols = 9; break;
+                case '10x10 (100 tubes)': rows = 10; cols = 10; break;
+                case '5x10 (50 tubes)': rows = 5; cols = 10; break;
+                default: rows = 8; cols = 12;
+            }
+            
+            // Generate template with all positions
+            const templateData = ['Position,Sample_ID,Description'];
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const position = String.fromCharCode(65 + row) + (col + 1);
+                    const sample = box.sampleMap[position];
+                    templateData.push(`${position},${sample ? sample.id : ''},${sample ? sample.description : ''}`);
+                }
+            }
+            
+            const csvContent = templateData.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${box.boxLabel || 'Box_' + box.boxPosition}_template.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        async function uploadBoxMap(boxId) {
+            const fileInput = document.getElementById('csvFileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            try {
+                const text = await file.text();
+                const lines = text.split('\n');
+                const box = inventoryData[currentFreezer].find(b => b.id === boxId);
+                
+                if (!box.sampleMap) box.sampleMap = {};
+                
+                // Skip header row
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const [position, sampleId, description] = line.split(',').map(item => item.trim().replace(/"/g, ''));
+                    
+                    if (position && sampleId) {
+                        box.sampleMap[position] = {
+                            id: sampleId,
+                            description: description || ''
+                        };
+                    } else if (position && !sampleId) {
+                        // Empty row - remove sample if it exists
+                        delete box.sampleMap[position];
+                    }
+                }
+                
+                saveToLocalStorage();
+                refreshBoxGrid(boxId);
+                alert('CSV uploaded successfully!');
+                
+            } catch (error) {
+                alert('Error reading CSV file: ' + error.message);
+            }
+            
+            // Clear file input
+            fileInput.value = '';
+        }
+
+        function saveBoxMap(boxId) {
+            // Data is already saved in real-time, just close the modal
+            closeBoxMap();
+            alert('Box map saved successfully!');
+        }
+
+        function closeBoxMap() {
+            const modal = document.querySelector('.box-map-modal');
+            if (modal) {
+                document.body.removeChild(modal);
+            }
+        }
+
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for custom type functionality
+            const customCheckbox = document.getElementById('type-custom');
+            const customInput = document.getElementById('custom-type-input');
+            
+            customInput.addEventListener('input', function() {
+                if (this.value.trim()) {
+                    customCheckbox.checked = true;
+                } else {
+                    customCheckbox.checked = false;
+                }
+            });
+            
+            customCheckbox.addEventListener('change', function() {
+                if (!this.checked) {
+                    customInput.value = '';
+                }
+            });
+            
+            customCheckbox.addEventListener('click', function() {
+                if (this.checked) {
+                    customInput.focus();
+                }
+            });
+
+            // Initialize app
+            loadFromLocalStorage();
+            refreshTable();
+            updateStats();
+            updateFreezerInfo();
+        });
+    </script>
+</body>
+</html>
+            
