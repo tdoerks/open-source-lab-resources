@@ -77,6 +77,18 @@ Complete LIMS for bacterial culture and sequencing workflows:
   - Status dashboard with visualizations
   - Dark mode support
 
+#### 🏷️ [DYMO Label Converter](./dymo-label-converter/)
+Convert images to high-contrast black & white for thermal label printers:
+- **Real-time Preview** - See original vs converted side-by-side
+- **Adjustable Settings** - Threshold, contrast, brightness controls
+- **DYMO 450 Optimized** - Perfect for thermal label printing
+- **Features:**
+  - Drag & drop image upload
+  - All image formats (TIF, PNG, JPG, BMP, GIF)
+  - Invert option for white-on-black
+  - Download as PNG or JPG
+  - Perfect for logos, calibration stickers, equipment labels
+
 ---
 
 ## 🚀 Quick Start
@@ -126,6 +138,15 @@ Complete LIMS for bacterial culture and sequencing workflows:
 4. **Process through workflow** stages with batch capabilities
 5. **Track reagents, QC data, and technicians**
 6. **Export** CSV for analysis or JSON for backup
+
+### DYMO Label Converter
+
+1. **Download** the [Label Converter](./dymo-label-converter/DYMO_Label_Converter.html)
+2. **Open** in any web browser
+3. **Upload** your image (drag & drop or browse)
+4. **Adjust** threshold, contrast, and brightness sliders
+5. **Preview** the black & white conversion
+6. **Download** as PNG for printing on DYMO 450
 
 No installation required! Works offline after first load.
 
