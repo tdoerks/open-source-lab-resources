@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProLab Inventory - Kansas Plains</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(0.8);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.1;
+            }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            font-family: 'Arial Black', sans-serif;
+        }
+
+        .header-text h1 {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header-text p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .stats-bar {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 20px;
+            display: flex;
+            justify-content: space-around;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            min-width: 120px;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+
+        .controls {
+            padding: 25px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .search-container {
+            position: relative;
+            flex-grow: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            font-size: 18px;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .inventory-table th,
+        .inventory-table td {
+            padding: 18px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .inventory-table th {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            font-weight: 700;
+            color: #374151;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        .inventory-table tr {
+            transition: all 0.3s ease;
+        }
+
+        .inventory-table tr:hover {
+            background: #f8fafc;
+            transform: scale(1.01);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .quantity {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-available {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-low {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-out {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+            border-radius: 8px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .modal-header h2 {
+            color: #1f2937;
+            font-size: 1.5rem;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #6b7280;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #ef4444;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .no-items {
+            text-align: center;
+            padding: 80px 40px;
+            color: #6b7280;
+            background: white;
+        }
+
+        .no-items-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #1f2937;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            z-index: 1001;
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .footer {
+            background: #1f2937;
+            color: #9ca3af;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .container {
+                background: rgba(31, 41, 55, 0.95);
+                color: #f9fafb;
+            }
+            
+            .inventory-table th {
+                background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+                color: #f9fafb;
+            }
+            
+            .modal-content {
+                background: #1f2937;
+                color: #f9fafb;
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .header-text h1 {
+                font-size: 1.8rem;
+            }
+            
+            .stats-bar {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .inventory-table {
+                font-size: 0.9rem;
+            }
+            
+            .inventory-table th,
+            .inventory-table td {
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">PL</div>
+                    <div class="header-text">
+                        <h1>ProLab Inventory System</h1>
+                        <p>Kansas Plains Laboratory Solutions - Advanced Equipment Management</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-number" id="totalItems">0</div>
+                <div class="stat-label">Total Items</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="lowStockItems">0</div>
+                <div class="stat-label">Low Stock</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="outOfStockItems">0</div>
+                <div class="stat-label">Out of Stock</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number" id="totalValue">$0</div>
+                <div class="stat-label">Total Value</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="openAddModal()">
+                ✨ Add Item
+            </button>
+            <button class="btn btn-secondary" onclick="openReferenceModal()">
+                📋 Load Reference
+            </button>
+            <button class="btn btn-secondary" onclick="openBackupModal()">
+                💾 Backup
+            </button>
+            <button class="btn btn-warning" onclick="openReportModal()">
+                📊 Reports
+            </button>
+            <div class="search-container">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search items, brands, categories..." onkeyup="searchItems()">
+            </div>
+        </div>
+
+        <div id="inventoryContainer">
+            <table class="inventory-table" id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Image</th>
+                        <th>Category</th>
+                        <th>Brand</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Last Activity</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryBody">
+                    <!-- Items will be added here -->
+                </tbody>
+            </table>
+            <div id="noItems" class="no-items" style="display: none;">
+                <div class="no-items-icon">📦</div>
+                <h3>No items in inventory</h3>
+                <p>Click "Add Item" to get started with your inventory management!</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2024 ProLab Kansas Plains | Professional Laboratory Equipment Management Solutions</p>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Add Item Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✨ Add New Item</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="addItemForm">
+                <div class="form-group">
+                    <label for="itemName">Item Name *</label>
+                    <select id="itemName" onchange="updateFormFields()">
+                        <option value="">-- Select an item or enter custom --</option>
+                        <option value="CUSTOM">🖊️ Enter custom item name</option>
+                    </select>
+                    <input type="text" id="customItemName" placeholder="Enter custom item name..." style="display: none; margin-top: 10px;">
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <input type="text" id="category" placeholder="Auto-filled from reference or enter manually">
+                </div>
+                <div class="form-group">
+                    <label for="brand">Brand</label>
+                    <input type="text" id="brand" placeholder="Auto-filled from reference or enter manually">
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity *</label>
+                    <input type="number" id="quantity" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="minStock">Minimum Stock Level</label>
+                    <input type="number" id="minStock" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="compatibility">Compatibility</label>
+                    <textarea id="compatibility" rows="2" placeholder="Compatible equipment/models"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" rows="3" placeholder="Additional notes"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="itemImage">Item Photo</label>
+                    <input type="file" id="itemImage" accept="image/*" onchange="previewImage(event)" style="width: 100%; padding: 12px; border: 2px dashed #d1d5db; border-radius: 8px; background: white;">
+                    <div id="imagePreview" style="margin-top: 10px; display: none;">
+                        <img id="previewImg" style="max-width: 200px; max-height: 150px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <button type="button" onclick="removeImage()" style="display: block; margin-top: 8px; padding: 4px 8px; background: #ef4444; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">Remove Image</button>
+                    </div>
+                    <p style="margin-top: 8px; color: #6b7280; font-size: 12px;">Supports JPG, PNG, GIF. Max size: 5MB</p>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Item</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Use Item Modal -->
+    <div id="useModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📤 Use Item</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="useItemForm">
+                <div class="form-group">
+                    <label for="useQuantity">Quantity to Use *</label>
+                    <input type="number" id="useQuantity" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="invoiceNumber">Invoice/Job Number</label>
+                    <input type="text" id="invoiceNumber" placeholder="Enter invoice or job number">
+                </div>
+                <div class="form-group">
+                    <label for="usedBy">Used By</label>
+                    <input type="text" id="usedBy" placeholder="Technician name">
+                </div>
+                <div class="form-group">
+                    <label for="useNotes">Notes</label>
+                    <input type="text" id="useNotes" placeholder="Optional notes about usage">
+                </div>
+                <button type="submit" class="btn btn-primary">Use Item</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reference Modal -->
+    <div id="referenceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📋 Load Reference File</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; color: #1e40af;">📄 How to use reference files:</h4>
+                <p style="margin-bottom: 8px; color: #1f2937; font-size: 14px;"><strong>JSON Format:</strong> Upload a .json file with your parts catalog</p>
+                <p style="margin-bottom: 8px; color: #1f2937; font-size: 14px;"><strong>CSV Format:</strong> Upload a .csv file with columns: name, category, brand, compatibility, notes</p>
+                <p style="margin-bottom: 0; color: #1f2937; font-size: 14px;"><strong>Template:</strong> Download our template below to get started quickly</p>
+            </div>
+
+            <div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; color: #065f46;">📥 Download Template</h4>
+                <p style="margin-bottom: 15px; color: #6b7280; font-size: 14px;">Get a template file to create your own reference catalog</p>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="downloadCSVTemplate()" style="flex: 1;">
+                        📄 CSV Template
+                    </button>
+                    <button class="btn btn-secondary" onclick="downloadJSONTemplate()" style="flex: 1;">
+                        📄 JSON Template
+                    </button>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                <h4 style="margin-bottom: 15px; color: #374151;">📁 Upload Reference File</h4>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <input type="file" id="referenceFile" accept=".json,.csv" onchange="loadReferenceFile(event)" style="width: 100%; padding: 12px; border: 2px dashed #d1d5db; border-radius: 8px; background: white;">
+                </div>
+                <p style="margin-top: 10px; color: #6b7280; font-size: 12px;">Supports .json and .csv files</p>
+            </div>
+            
+            <div id="referenceStatus" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Backup Modal -->
+    <div id="backupModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💾 Backup Options</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; color: #374151;">📤 Export Backup</h4>
+                <p style="margin-bottom: 15px; color: #6b7280; font-size: 14px;">Save your current inventory to a file</p>
+                <button class="btn btn-primary" onclick="exportInventory()" style="width: 100%;">
+                    💾 Create Backup File
+                </button>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; color: #374151;">📥 Import Backup</h4>
+                <p style="margin-bottom: 15px; color: #6b7280; font-size: 14px;">Restore inventory from a backup file</p>
+                <input type="file" id="importBackup" accept=".json" style="display: none;" onchange="importInventory(event)">
+                <button class="btn btn-secondary" onclick="document.getElementById('importBackup').click()" style="width: 100%;">
+                    📁 Select Backup File
+                </button>
+            </div>
+
+            <div style="background: #f0fdf4; border: 1px solid #10b981; border-radius: 12px; padding: 20px;">
+                <h4 style="margin-bottom: 15px; color: #065f46;">⚙️ Auto-Backup Settings</h4>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; margin-bottom: 10px;">
+                    <input type="checkbox" id="autoBackupEnabled" checked onchange="updateAutoBackupSetting()" style="transform: scale(1.2);">
+                    <span>Automatically create backup when closing browser</span>
+                </label>
+                <p style="font-size: 12px; color: #6b7280; margin: 0;">
+                    When enabled, a backup file will automatically download when you close your browser tab. This ensures your data is always safe!
+                </p>
+                <div id="autoBackupStatus" style="margin-top: 10px; padding: 8px; border-radius: 6px; font-size: 12px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2>📊 Inventory Reports</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px; color: #374151;">⚙️ Report Settings</h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Report Type</label>
+                        <select id="reportType" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                            <option value="summary">📋 Summary Report</option>
+                            <option value="low-stock">⚠️ Low Stock Report</option>
+                            <option value="activity">📈 Activity Report</option>
+                            <option value="detailed">📊 Detailed Inventory</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Time Window</label>
+                        <select id="timeWindow" onchange="updateDateRange()" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                            <option value="all">📅 All Time</option>
+                            <option value="today">📆 Today</option>
+                            <option value="week">📅 Last 7 Days</option>
+                            <option value="month">📅 Last 30 Days</option>
+                            <option value="quarter">📅 Last 3 Months</option>
+                            <option value="year">📅 Last Year</option>
+                            <option value="custom">🗓️ Custom Range</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="customDateRange" style="display: none; margin-bottom: 15px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>From Date</label>
+                            <input type="date" id="reportStartDate" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>To Date</label>
+                            <input type="date" id="reportEndDate" style="width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="generateReport()" style="flex: 1;">
+                        📊 Generate Report
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportReport()" id="exportReportBtn" style="display: none;">
+                        📄 Export PDF
+                    </button>
+                </div>
+            </div>
+            
+            <div id="reportContent" style="background: white; border-radius: 12px; padding: 20px;">
+                <div style="text-align: center; color: #6b7280; padding: 40px;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">📊</div>
+                    <h3>Ready to Generate Report</h3>
+                    <p>Select your report type and time window, then click "Generate Report"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Viewer Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content" style="max-width: 800px; text-align: center;">
+            <div class="modal-header">
+                <h2 id="imageModalTitle">View Image</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <img id="modalImage" style="max-width: 100%; max-height: 500px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let inventory = [];
+        let referenceData = [];
+        let currentItemId = null;
+        let currentImageData = null;
+
+        // Image handling functions
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('Image size must be less than 5MB', 'error');
+                event.target.value = '';
+                return;
+            }
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showNotification('Please select a valid image file', 'error');
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentImageData = e.target.result;
+                const preview = document.getElementById('imagePreview');
+                const img = document.getElementById('previewImg');
+                
+                img.src = currentImageData;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            currentImageData = null;
+            document.getElementById('itemImage').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+        }
+
+        function viewImage(imageSrc, itemName) {
+            document.getElementById('imageModalTitle').textContent = itemName;
+            document.getElementById('modalImage').src = imageSrc;
+            document.getElementById('imageModal').style.display = 'block';
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadInventory();
+            renderInventory();
+            updateStats();
+            loadAutoBackupSetting();
+            
+            // Add some sample data if inventory is empty
+            if (inventory.length === 0) {
+                addSampleData();
+            }
+        });
+
+        // Auto-backup when page is about to unload (browser closing)
+        window.addEventListener('beforeunload', function(e) {
+            const autoBackupEnabled = localStorage.getItem('autoBackupEnabled') !== 'false';
+            if (autoBackupEnabled && inventory.length > 0) {
+                createAutoBackup();
+                // Show a brief message (most browsers limit this)
+                e.returnValue = 'Auto-backup created! Your data has been saved.';
+            }
+        });
+
+        function loadAutoBackupSetting() {
+            const autoBackupEnabled = localStorage.getItem('autoBackupEnabled') !== 'false'; // Default to true
+            document.getElementById('autoBackupEnabled').checked = autoBackupEnabled;
+        }
+
+        function updateAutoBackupSetting() {
+            const enabled = document.getElementById('autoBackupEnabled').checked;
+            localStorage.setItem('autoBackupEnabled', enabled);
+            
+            const statusDiv = document.getElementById('autoBackupStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.style.background = enabled ? '#dcfce7' : '#fee2e2';
+            statusDiv.style.color = enabled ? '#166534' : '#991b1b';
+            statusDiv.style.border = `1px solid ${enabled ? '#16a34a' : '#dc2626'}`;
+            statusDiv.textContent = enabled ? 
+                '✅ Auto-backup enabled! Your data will be automatically saved when you close the browser.' :
+                '❌ Auto-backup disabled. Remember to manually backup your data regularly.';
+                
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function createAutoBackup() {
+            const backupData = {
+                inventory: inventory,
+                exportDate: new Date().toISOString(),
+                type: 'auto-backup',
+                itemCount: inventory.length,
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'prolab_auto_backup_' + new Date().toISOString().split('T')[0] + '.json';
+            
+            // Try to download silently
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function addSampleData() {
+            const sampleItems = [
+                {
+                    id: 1,
+                    name: "Seal P1000",
+                    category: "Seals & O-Rings",
+                    brand: "Gilson",
+                    quantity: 25,
+                    minStock: 10,
+                    compatibility: "Gilson P1000",
+                    notes: "Standard seal for P1000 pipettors",
+                    image: null
+                },
+                {
+                    id: 2,
+                    name: "O-ring R200",
+                    category: "Seals & O-Rings",
+                    brand: "Rainin",
+                    quantity: 8,
+                    minStock: 15,
+                    compatibility: "Rainin R200",
+                    notes: "Critical for volume accuracy",
+                    image: null
+                },
+                {
+                    id: 3,
+                    name: "Ejector Classic Blue Tip",
+                    category: "Ejectors",
+                    brand: "Gilson",
+                    quantity: 0,
+                    minStock: 5,
+                    compatibility: "Gilson P1000/P200/P100",
+                    notes: "Standard blue tip ejector",
+                    image: null
+                }
+            ];
+            
+            inventory = sampleItems;
+            saveInventory();
+            renderInventory();
+            updateStats();
+        }
+
+        function updateStats() {
+            const totalItems = inventory.length;
+            const lowStockItems = inventory.filter(item => item.quantity <= item.minStock && item.minStock > 0).length;
+            const outOfStockItems = inventory.filter(item => item.quantity === 0).length;
+            const totalValue = inventory.reduce((sum, item) => sum + (item.quantity * 15), 0); // $15 avg per item
+            
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('lowStockItems').textContent = lowStockItems;
+            document.getElementById('outOfStockItems').textContent = outOfStockItems;
+            document.getElementById('totalValue').textContent = `${totalValue.toLocaleString()}`;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Modal functions
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'block';
+        }
+
+        function openReferenceModal() {
+            document.getElementById('referenceModal').style.display = 'block';
+        }
+
+        function openBackupModal() {
+            document.getElementById('backupModal').style.display = 'block';
+        }
+
+        function openReportModal() {
+            // Set default time window to last 30 days
+            document.getElementById('timeWindow').value = 'month';
+            updateDateRange();
+            document.getElementById('reportModal').style.display = 'block';
+        }
+
+        function openUseModal(itemId) {
+            currentItemId = itemId;
+            const item = inventory.find(item => item.id === itemId);
+            
+            if (item.quantity === 0) {
+                showNotification('No items available to use!', 'error');
+                return;
+            }
+            
+            document.getElementById('useQuantity').max = item.quantity;
+            document.getElementById('useModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
+        function updateDateRange() {
+            const timeWindow = document.getElementById('timeWindow').value;
+            const customDateRange = document.getElementById('customDateRange');
+            const startDate = document.getElementById('reportStartDate');
+            const endDate = document.getElementById('reportEndDate');
+            
+            if (timeWindow === 'custom') {
+                customDateRange.style.display = 'block';
+                // Set default custom range to last 30 days
+                const end = new Date();
+                const start = new Date();
+                start.setDate(end.getDate() - 30);
+                
+                endDate.value = end.toISOString().split('T')[0];
+                startDate.value = start.toISOString().split('T')[0];
+            } else {
+                customDateRange.style.display = 'none';
+                
+                // Calculate date range based on selection
+                const end = new Date();
+                const start = new Date();
+                
+                switch(timeWindow) {
+                    case 'today':
+                        start.setHours(0, 0, 0, 0);
+                        break;
+                    case 'week':
+                        start.setDate(end.getDate() - 7);
+                        break;
+                    case 'month':
+                        start.setDate(end.getDate() - 30);
+                        break;
+                    case 'quarter':
+                        start.setMonth(end.getMonth() - 3);
+                        break;
+                    case 'year':
+                        start.setFullYear(end.getFullYear() - 1);
+                        break;
+                    case 'all':
+                        start.setFullYear(2020); // Set to far back date
+                        break;
+                }
+                
+                endDate.value = end.toISOString().split('T')[0];
+                startDate.value = start.toISOString().split('T')[0];
+            }
+        }
+
+        function getReportDateRange() {
+            const timeWindow = document.getElementById('timeWindow').value;
+            
+            if (timeWindow === 'all') {
+                return {
+                    start: new Date('2020-01-01'),
+                    end: new Date(),
+                    label: 'All Time'
+                };
+            }
+            
+            const startDate = new Date(document.getElementById('reportStartDate').value);
+            const endDate = new Date(document.getElementById('reportEndDate').value);
+            endDate.setHours(23, 59, 59, 999); // Include full end date
+            
+            const labels = {
+                'today': 'Today',
+                'week': 'Last 7 Days',
+                'month': 'Last 30 Days',
+                'quarter': 'Last 3 Months',
+                'year': 'Last Year',
+                'custom': `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
+            };
+            
+            return {
+                start: startDate,
+                end: endDate,
+                label: labels[timeWindow] || 'Custom Range'
+            };
+        }
+
+        function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            const dateRange = getReportDateRange();
+            const reportContent = document.getElementById('reportContent');
+            const exportBtn = document.getElementById('exportReportBtn');
+            
+            let html = '';
+            
+            if (reportType === 'summary') {
+                html = generateSummaryReport(dateRange);
+            } else if (reportType === 'low-stock') {
+                html = generateLowStockReport(dateRange);
+            } else if (reportType === 'activity') {
+                html = generateActivityReport(dateRange);
+            } else if (reportType === 'detailed') {
+                html = generateDetailedReport(dateRange);
+            }
+            
+            reportContent.innerHTML = html;
+            exportBtn.style.display = 'inline-block';
+        }
+
+        function generateSummaryReport(dateRange) {
+            const totalItems = inventory.length;
+            const lowStockItems = inventory.filter(item => item.quantity <= item.minStock && item.minStock > 0).length;
+            const outOfStockItems = inventory.filter(item => item.quantity === 0).length;
+            const totalQuantity = inventory.reduce((sum, item) => sum + item.quantity, 0);
+            const estimatedValue = inventory.reduce((sum, item) => sum + (item.quantity * 15), 0); // $15 avg per item
+            
+            const categories = [...new Set(inventory.map(item => item.category).filter(cat => cat))];
+            const brands = [...new Set(inventory.map(item => item.brand).filter(brand => brand))];
+            
+            return `
+                <div style="background: #f8fafc; padding: 25px; border-radius: 12px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="color: #1f2937; margin-bottom: 5px;">📋 Summary Report</h3>
+                            <p style="color: #6b7280; margin: 0;"><strong>Period:</strong> ${dateRange.label}</p>
+                            <p style="color: #6b7280; margin: 0;"><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6;">${totalItems}</div>
+                            <div style="color: #6b7280;">Total Items</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 2rem; font-weight: bold; color: #10b981;">${totalQuantity}</div>
+                            <div style="color: #6b7280; font-size: 0.9rem;">Total Quantity</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;">${lowStockItems}</div>
+                            <div style="color: #6b7280; font-size: 0.9rem;">Low Stock</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 2rem; font-weight: bold; color: #ef4444;">${outOfStockItems}</div>
+                            <div style="color: #6b7280; font-size: 0.9rem;">Out of Stock</div>
+                        </div>
+                        <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="font-size: 2rem; font-weight: bold; color: #8b5cf6;">${estimatedValue.toLocaleString()}</div>
+                            <div style="color: #6b7280; font-size: 0.9rem;">Est. Value</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div style="background: white; padding: 15px; border-radius: 8px;">
+                            <h5 style="margin-bottom: 10px; color: #374151;">📦 Categories (${categories.length})</h5>
+                            <div style="max-height: 120px; overflow-y: auto;">
+                                ${categories.map(cat => `<div style="padding: 4px 0; border-bottom: 1px solid #f3f4f6;">${cat}</div>`).join('')}
+                            </div>
+                        </div>
+                        <div style="background: white; padding: 15px; border-radius: 8px;">
+                            <h5 style="margin-bottom: 10px; color: #374151;">🏷️ Brands (${brands.length})</h5>
+                            <div style="max-height: 120px; overflow-y: auto;">
+                                ${brands.map(brand => `<div style="padding: 4px 0; border-bottom: 1px solid #f3f4f6;">${brand}</div>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateLowStockReport(dateRange) {
+            const lowStockItems = inventory.filter(item => item.quantity <= item.minStock && item.minStock > 0);
+            const criticalItems = inventory.filter(item => item.quantity === 0);
+            
+            return `
+                <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 25px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="color: #92400e; margin-bottom: 5px;">⚠️ Low Stock Alert Report</h3>
+                            <p style="color: #78350f; margin: 0;"><strong>Period:</strong> ${dateRange.label}</p>
+                            <p style="color: #78350f; margin: 0;"><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #dc2626;">${criticalItems.length + lowStockItems.length}</div>
+                            <div style="color: #78350f;">Items Need Attention</div>
+                        </div>
+                    </div>
+                    
+                    ${criticalItems.length > 0 ? `
+                        <div style="background: #fee2e2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <h4 style="color: #991b1b; margin-bottom: 15px;">🚨 Critical - Out of Stock (${criticalItems.length})</h4>
+                            ${criticalItems.map(item => `
+                                <div style="background: white; padding: 12px; margin: 8px 0; border-radius: 6px; border-left: 4px solid #dc2626;">
+                                    <div style="font-weight: bold; color: #991b1b;">${item.name}</div>
+                                    <div style="font-size: 0.9rem; color: #6b7280;">${item.category} | ${item.brand}</div>
+                                    <div style="font-size: 0.8rem; color: #991b1b; margin-top: 4px;">Current: 0, Min Required: ${item.minStock}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    ${lowStockItems.length > 0 ? `
+                        <div style="background: #fef3c7; border: 1px solid #fcd34d; padding: 15px; border-radius: 8px;">
+                            <h4 style="color: #92400e; margin-bottom: 15px;">⚠️ Low Stock Warning (${lowStockItems.length})</h4>
+                            ${lowStockItems.map(item => `
+                                <div style="background: white; padding: 12px; margin: 8px 0; border-radius: 6px; border-left: 4px solid #f59e0b;">
+                                    <div style="font-weight: bold; color: #92400e;">${item.name}</div>
+                                    <div style="font-size: 0.9rem; color: #6b7280;">${item.category} | ${item.brand}</div>
+                                    <div style="font-size: 0.8rem; color: #92400e; margin-top: 4px;">Current: ${item.quantity}, Min Required: ${item.minStock}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                    
+                    ${criticalItems.length === 0 && lowStockItems.length === 0 ? `
+                        <div style="background: #dcfce7; border: 1px solid #16a34a; padding: 20px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 10px;">✅</div>
+                            <h4 style="color: #166534; margin-bottom: 10px;">All Good!</h4>
+                            <p style="color: #15803d; margin: 0;">All items are adequately stocked. No immediate restocking required.</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function generateDetailedReport(dateRange) {
+            const sortedInventory = [...inventory].sort((a, b) => a.name.localeCompare(b.name));
+            
+            return `
+                <div style="background: #f0fdf4; border: 1px solid #16a34a; padding: 25px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="color: #166534; margin-bottom: 5px;">📊 Detailed Inventory Report</h3>
+                            <p style="color: #15803d; margin: 0;"><strong>Period:</strong> ${dateRange.label}</p>
+                            <p style="color: #15803d; margin: 0;"><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                        </div>
+                    </div>
+                    
+                    <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; font-weight: 600;">Item Name</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; font-weight: 600;">Category</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; font-weight: 600;">Brand</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb; font-weight: 600;">Qty</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb; font-weight: 600;">Min</th>
+                                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb; font-weight: 600;">Status</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb; font-weight: 600;">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${sortedInventory.map((item, index) => {
+                                    const isOutOfStock = item.quantity === 0;
+                                    const isLowStock = item.quantity <= item.minStock && item.minStock > 0;
+                                    const rowBg = index % 2 === 0 ? '#f9fafb' : 'white';
+                                    
+                                    let statusBadge, statusColor;
+                                    if (isOutOfStock) {
+                                        statusBadge = 'Out';
+                                        statusColor = '#dc2626';
+                                    } else if (isLowStock) {
+                                        statusBadge = 'Low';
+                                        statusColor = '#f59e0b';
+                                    } else {
+                                        statusBadge = 'OK';
+                                        statusColor = '#10b981';
+                                    }
+                                    
+                                    return `
+                                        <tr style="background: ${rowBg};">
+                                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${item.name}</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.category || '-'}</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${item.brand || '-'}</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center; font-weight: bold;">${item.quantity}</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.minStock}</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: center;">
+                                                <span style="background: ${statusColor}; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">${statusBadge}</span>
+                                            </td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-size: 0.9rem; color: #6b7280;">${(item.notes || '').substring(0, 50)}${item.notes && item.notes.length > 50 ? '...' : ''}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateActivityReport(dateRange) {
+            return `
+                <div style="background: #eff6ff; border: 1px solid #3b82f6; padding: 25px; border-radius: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            <h3 style="color: #1e40af; margin-bottom: 5px;">📈 Activity Report</h3>
+                            <p style="color: #1d4ed8; margin: 0;"><strong>Period:</strong> ${dateRange.label}</p>
+                            <p style="color: #1d4ed8; margin: 0;"><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                        </div>
+                    </div>
+                    
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;">📊</div>
+                        <h4 style="color: #374151; margin-bottom: 10px;">Activity Tracking Coming Soon</h4>
+                        <p style="color: #6b7280; margin: 0;">This feature will track inventory usage, restocking activities, and provide detailed analytics once usage history is implemented.</p>
+                        <div style="margin-top: 15px; padding: 12px; background: #f3f4f6; border-radius: 6px;">
+                            <p style="margin: 0; font-size: 0.9rem; color: #4b5563;"><strong>Future features:</strong> Usage trends, peak activity times, user activity logs, and predictive restocking recommendations.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function exportReport() {
+            const reportContent = document.getElementById('reportContent').innerHTML;
+            const reportType = document.getElementById('reportType').value;
+            const dateRange = getReportDateRange();
+            
+            const reportTypeNames = {
+                'summary': 'Summary Report',
+                'low-stock': 'Low Stock Report',
+                'activity': 'Activity Report',
+                'detailed': 'Detailed Inventory Report'
+            };
+            
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>ProLab ${reportTypeNames[reportType]}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f8fafc; }
+                        .header { text-align: center; margin-bottom: 30px; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                        .logo { display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 20px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">ProLab Kansas Plains</div>
+                        <h1>${reportTypeNames[reportType]}</h1>
+                        <p><strong>Period:</strong> ${dateRange.label}</p>
+                        <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+                    </div>
+                    ${reportContent}
+                    <div style="margin-top: 40px; text-align: center; font-size: 0.8rem; color: #6b7280;">
+                        This report was automatically generated by ProLab Inventory System - Kansas Plains Laboratory Solutions
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `prolab_${reportType}_report_${dateRange.label.replace(/\s+/g, '_').toLowerCase()}.html`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('📄 Report exported successfully!', 'success');
+        }
+
+        function updateFormFields() {
+            const select = document.getElementById('itemName');
+            const customInput = document.getElementById('customItemName');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (select.value === 'CUSTOM') {
+                customInput.style.display = 'block';
+                customInput.required = true;
+                customInput.focus();
+                // Clear auto-filled fields when custom is selected
+                document.getElementById('category').value = '';
+                document.getElementById('brand').value = '';
+                document.getElementById('compatibility').value = '';
+                document.getElementById('notes').value = '';
+                removeImage(); // Clear any uploaded image
+            } else {
+                customInput.style.display = 'none';
+                customInput.required = false;
+                
+                if (selectedOption && selectedOption.dataset) {
+                    document.getElementById('category').value = selectedOption.dataset.category || '';
+                    document.getElementById('brand').value = selectedOption.dataset.brand || '';
+                    document.getElementById('compatibility').value = selectedOption.dataset.compatibility || '';
+                    document.getElementById('notes').value = selectedOption.dataset.notes || '';
+                }
+            }
+        }
+
+        function addStock(itemId) {
+            const item = inventory.find(item => item.id === itemId);
+            const quantity = prompt('Enter quantity to add:', '1');
+            
+            if (quantity && !isNaN(quantity) && quantity > 0) {
+                item.quantity += parseInt(quantity);
+                saveInventory();
+                renderInventory();
+                updateStats();
+                showNotification(`Added ${quantity} units to ${item.name}`, 'success');
+            }
+        }
+
+        function deleteItem(itemId) {
+            if (confirm('Are you sure you want to delete this item?')) {
+                inventory = inventory.filter(item => item.id !== itemId);
+                saveInventory();
+                renderInventory();
+                updateStats();
+                showNotification('Item deleted successfully', 'success');
+            }
+        }
+
+        function searchItems() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredInventory = inventory.filter(item => 
+                item.name.toLowerCase().includes(searchTerm) ||
+                item.category.toLowerCase().includes(searchTerm) ||
+                item.brand.toLowerCase().includes(searchTerm) ||
+                item.notes.toLowerCase().includes(searchTerm)
+            );
+            renderInventory(filteredInventory);
+        }
+
+        function renderInventory(items = inventory) {
+            const tbody = document.getElementById('inventoryBody');
+            const noItems = document.getElementById('noItems');
+            const table = document.getElementById('inventoryTable');
+            
+            if (items.length === 0) {
+                table.style.display = 'none';
+                noItems.style.display = 'block';
+                return;
+            }
+            
+            table.style.display = 'table';
+            noItems.style.display = 'none';
+
+            tbody.innerHTML = items.map(item => {
+                const isLowStock = item.quantity <= item.minStock && item.minStock > 0;
+                const isOutOfStock = item.quantity === 0;
+                
+                let statusBadge;
+                if (isOutOfStock) {
+                    statusBadge = '<span class="status-badge status-out">Out of Stock</span>';
+                } else if (isLowStock) {
+                    statusBadge = '<span class="status-badge status-low">Low Stock</span>';
+                } else {
+                    statusBadge = '<span class="status-badge status-available">Available</span>';
+                }
+
+                return `
+                    <tr>
+                        <td><strong>${item.name}</strong></td>
+                        <td>
+                            ${item.image ? 
+                                `<img src="${item.image}" alt="${item.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;" onclick="viewImage('${item.image}', '${item.name}')">` : 
+                                '<div style="width: 50px; height: 50px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px;">No Image</div>'
+                            }
+                        </td>
+                        <td>${item.category || '-'}</td>
+                        <td>${item.brand || '-'}</td>
+                        <td class="quantity">${item.quantity}</td>
+                        <td>${statusBadge}</td>
+                        <td>Recently added</td>
+                        <td class="actions">
+                            <button class="btn btn-primary btn-small" onclick="openUseModal(${item.id})" ${item.quantity === 0 ? 'disabled' : ''}>
+                                📤 Use
+                            </button>
+                            <button class="btn btn-success btn-small" onclick="addStock(${item.id})">
+                                📥 Restock
+                            </button>
+                            <button class="btn btn-danger btn-small" onclick="deleteItem(${item.id})">
+                                🗑️ Delete
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Form submissions
+        document.getElementById('addItemForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const select = document.getElementById('itemName');
+            const customInput = document.getElementById('customItemName');
+            
+            let itemName;
+            if (select.value === 'CUSTOM') {
+                itemName = customInput.value.trim();
+                if (!itemName) {
+                    showNotification('Please enter a custom item name.', 'error');
+                    return;
+                }
+            } else if (select.value) {
+                itemName = select.value;
+            } else {
+                showNotification('Please select an item or enter a custom name.', 'error');
+                return;
+            }
+            
+            const newItem = {
+                id: Date.now(),
+                name: itemName,
+                category: document.getElementById('category').value || '',
+                brand: document.getElementById('brand').value || '',
+                quantity: parseInt(document.getElementById('quantity').value) || 0,
+                minStock: parseInt(document.getElementById('minStock').value) || 0,
+                compatibility: document.getElementById('compatibility').value || '',
+                notes: document.getElementById('notes').value || '',
+                image: currentImageData || null
+            };
+
+            inventory.push(newItem);
+            saveInventory();
+            renderInventory();
+            updateStats();
+            closeModal();
+            
+            document.getElementById('addItemForm').reset();
+            customInput.style.display = 'none';
+            customInput.required = false;
+            removeImage(); // Clear any uploaded image
+            
+            showNotification(`✨ ${itemName} added successfully!`, 'success');
+        });
+
+        document.getElementById('useItemForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const useQuantity = parseInt(document.getElementById('useQuantity').value);
+            const item = inventory.find(item => item.id === currentItemId);
+            
+            if (useQuantity > item.quantity) {
+                showNotification('Cannot use more than available quantity!', 'error');
+                return;
+            }
+
+            item.quantity -= useQuantity;
+            saveInventory();
+            renderInventory();
+            updateStats();
+            closeModal();
+            document.getElementById('useItemForm').reset();
+            
+            const invoiceNumber = document.getElementById('invoiceNumber').value;
+            const confirmMsg = invoiceNumber 
+                ? `✅ Used ${useQuantity} ${item.name}(s) - Invoice: ${invoiceNumber}`
+                : `✅ Used ${useQuantity} ${item.name}(s)`;
+            showNotification(confirmMsg, 'success');
+        });
+
+        function loadReferenceFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    if (file.name.endsWith('.json')) {
+                        referenceData = JSON.parse(e.target.result);
+                    } else if (file.name.endsWith('.csv')) {
+                        referenceData = parseCSV(e.target.result);
+                    }
+                    populateDropdown();
+                    showReferenceStatus(`✅ Reference file loaded successfully! ${referenceData.length} items available.`, 'success');
+                    showNotification(`📋 Reference file loaded: ${referenceData.length} items`, 'success');
+                } catch (error) {
+                    showReferenceStatus('❌ Error loading reference file: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showReferenceStatus(message, type) {
+            const statusDiv = document.getElementById('referenceStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = message;
+            statusDiv.style.background = type === 'success' ? '#dcfce7' : '#fee2e2';
+            statusDiv.style.color = type === 'success' ? '#166534' : '#991b1b';
+            statusDiv.style.border = type === 'success' ? '1px solid #16a34a' : '1px solid #dc2626';
+        }
+
+        function downloadCSVTemplate() {
+            const csvTemplate = `name,category,brand,compatibility,notes
+"Seal P1000","Seals & O-Rings","Gilson","Gilson P1000","Standard seal for P1000 pipettors"
+"O-ring R200","Seals & O-Rings","Rainin","Rainin R200","Critical for volume accuracy"
+"Ejector Classic Blue Tip","Ejectors","Gilson","Gilson P1000/P200/P100","Standard blue tip ejector"
+"LTS Shaft 1000","Cylinders","Rainin","Rainin LTS 1000","Replacement shaft for LTS series"
+"Piston Spring","Springs","Fisher/Finn","Fisher/Finn P1000","Replacement spring component"
+"Micrometer Assembly","Calibration Tools","Gilson","Gilson P200/P100","For calibration adjustments"
+"Filter 5ML","Valves","Generic","Various Models","Standard 5ML filter"
+"Plunger Cap Set","Tips & Cones","VWR","VWR Erg HP All Sizes","Complete plunger cap replacement"
+"Teflon Seal","Seals & O-Rings","Thermo","Thermo Finnpipette","High-temperature resistant seal"
+"Spring Assembly","Springs","Eppendorf","Eppendorf Research Plus","Precision spring mechanism"`;
+
+            const blob = new Blob([csvTemplate], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'prolab_parts_template.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showReferenceStatus('📄 CSV template downloaded! Edit it with Excel or Google Sheets, then upload it back.', 'success');
+            showNotification('📄 CSV template downloaded successfully!', 'success');
+        }
+
+        function downloadJSONTemplate() {
+            const jsonTemplate = [
+                {
+                    "name": "Seal P1000",
+                    "category": "Seals & O-Rings",
+                    "brand": "Gilson",
+                    "compatibility": "Gilson P1000",
+                    "notes": "Standard seal for P1000 pipettors"
+                },
+                {
+                    "name": "O-ring R200",
+                    "category": "Seals & O-Rings", 
+                    "brand": "Rainin",
+                    "compatibility": "Rainin R200",
+                    "notes": "Critical for volume accuracy"
+                },
+                {
+                    "name": "Ejector Classic Blue Tip",
+                    "category": "Ejectors",
+                    "brand": "Gilson",
+                    "compatibility": "Gilson P1000/P200/P100",
+                    "notes": "Standard blue tip ejector"
+                },
+                {
+                    "name": "LTS Shaft 1000",
+                    "category": "Cylinders",
+                    "brand": "Rainin",
+                    "compatibility": "Rainin LTS 1000",
+                    "notes": "Replacement shaft for LTS series"
+                },
+                {
+                    "name": "Piston Spring",
+                    "category": "Springs",
+                    "brand": "Fisher/Finn",
+                    "compatibility": "Fisher/Finn P1000",
+                    "notes": "Replacement spring component"
+                },
+                {
+                    "name": "Micrometer Assembly",
+                    "category": "Calibration Tools",
+                    "brand": "Gilson",
+                    "compatibility": "Gilson P200/P100",
+                    "notes": "For calibration adjustments"
+                },
+                {
+                    "name": "Filter 5ML",
+                    "category": "Valves",
+                    "brand": "Generic",
+                    "compatibility": "Various Models",
+                    "notes": "Standard 5ML filter"
+                },
+                {
+                    "name": "Plunger Cap Set",
+                    "category": "Tips & Cones",
+                    "brand": "VWR",
+                    "compatibility": "VWR Erg HP All Sizes",
+                    "notes": "Complete plunger cap replacement"
+                },
+                {
+                    "name": "Teflon Seal",
+                    "category": "Seals & O-Rings",
+                    "brand": "Thermo",
+                    "compatibility": "Thermo Finnpipette",
+                    "notes": "High-temperature resistant seal"
+                },
+                {
+                    "name": "Spring Assembly",
+                    "category": "Springs",
+                    "brand": "Eppendorf",
+                    "compatibility": "Eppendorf Research Plus",
+                    "notes": "Precision spring mechanism"
+                }
+            ];
+
+            const dataStr = JSON.stringify(jsonTemplate, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'prolab_parts_template.json';
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showReferenceStatus('📄 JSON template downloaded! Edit it with any text editor, then upload it back.', 'success');
+            showNotification('📄 JSON template downloaded successfully!', 'success');
+        }
+
+        function populateDropdown() {
+            const select = document.getElementById('itemName');
+            
+            while (select.children.length > 2) {
+                select.removeChild(select.lastChild);
+            }
+            
+            referenceData.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.textContent = item.name;
+                option.dataset.category = item.category || '';
+                option.dataset.brand = item.brand || '';
+                option.dataset.compatibility = item.compatibility || '';
+                option.dataset.notes = item.notes || '';
+                select.appendChild(option);
+            });
+        }
+
+        function parseCSV(csv) {
+            const lines = csv.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                    const item = {};
+                    headers.forEach((header, index) => {
+                        item[header] = values[index] || '';
+                    });
+                    data.push(item);
+                }
+            }
+            return data;
+        }
+
+        function exportInventory() {
+            if (inventory.length === 0) {
+                showNotification('No inventory data to export!', 'error');
+                return;
+            }
+
+            const backupData = {
+                inventory: inventory,
+                exportDate: new Date().toISOString(),
+                type: 'manual-backup',
+                itemCount: inventory.length,
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(backupData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'prolab_backup_' + new Date().toISOString().split('T')[0] + '.json';
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('💾 Backup exported successfully!', 'success');
+        }
+
+        function importInventory(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (!importedData.inventory || !Array.isArray(importedData.inventory)) {
+                        throw new Error('Invalid backup file format');
+                    }
+                    
+                    if (confirm(`Import ${importedData.inventory.length} items? This will replace current inventory.`)) {
+                        inventory = importedData.inventory;
+                        saveInventory();
+                        renderInventory();
+                        updateStats();
+                        showNotification(`✅ Imported ${inventory.length} items successfully!`, 'success');
+                    }
+                } catch (error) {
+                    showNotification('Error importing backup: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function saveInventory() {
+            localStorage.setItem('prolabInventory', JSON.stringify(inventory));
+        }
+
+        function loadInventory() {
+            const saved = localStorage.getItem('prolabInventory');
+            if (saved) {
+                inventory = JSON.parse(saved);
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'n':
+                        e.preventDefault();
+                        openAddModal();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        exportInventory();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        document.getElementById('searchInput').focus();
+                        break;
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
