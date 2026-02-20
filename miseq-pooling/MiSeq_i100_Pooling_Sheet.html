@@ -712,8 +712,8 @@ Sample3        18.5            A03              Plate1      3"
                 <!-- Controls -->
                 <div class="controls-grid">
                     <div class="control-item">
-                        <span class="control-label">Pool Concentration</span>
-                        <span class="control-value" id="protocolPoolConc">- nM</span>
+                        <span class="control-label">Pool Concentration (nM)</span>
+                        <input type="number" class="control-input" id="protocolPoolConc" placeholder="Auto" step="0.1" min="0" onchange="calculateProtocol()">
                     </div>
                     <div class="control-item">
                         <span class="control-label">10x Conc Volume (μL)</span>
@@ -1924,8 +1924,8 @@ Sample3        18.5            A03              Plate1      3"
                 const poolConcentrationNM = (avgQubit * 1000000) / (fragmentSize * 650);
                 document.getElementById('poolConcentrationNM').textContent = poolConcentrationNM.toFixed(1) + ' nM';
                 document.getElementById('actualPoolConc').textContent = poolConcentrationNM.toFixed(1) + ' nM';
-                
-                document.getElementById('protocolPoolConc').textContent = poolConcentrationNM.toFixed(1) + ' nM';
+
+                document.getElementById('protocolPoolConc').value = poolConcentrationNM.toFixed(1);
                 calculateProtocol();
                 
                 const expectedConc = parseFloat(document.getElementById('finalPoolConc').value) || 10;
@@ -1947,7 +1947,7 @@ Sample3        18.5            A03              Plate1      3"
                 document.getElementById('poolConcentrationNM').textContent = '- nM';
                 document.getElementById('actualPoolConc').textContent = '- nM';
                 document.getElementById('poolDifference').textContent = '-';
-                document.getElementById('protocolPoolConc').textContent = '- nM';
+                document.getElementById('protocolPoolConc').value = '';
                 calculateProtocol();
             }
         }
@@ -2015,8 +2015,7 @@ Sample3        18.5            A03              Plate1      3"
         }
 
         function calculateProtocol() {
-            const poolConcText = document.getElementById('protocolPoolConc').textContent;
-            const poolConc = parseFloat(poolConcText.replace(' nM', '')) || 0;
+            const poolConc = parseFloat(document.getElementById('protocolPoolConc').value) || 0;
             const target10xVolume = parseFloat(document.getElementById('protocol4nMVolume').value) || 30;
             const naohVolume = parseFloat(document.getElementById('protocolNaOHVolume').value) || 500;
             const targetLoadingConc = parseFloat(document.getElementById('protocolLoadingConc').value) || 100;
