@@ -751,6 +751,16 @@ Sample3        18.5            A03              Plate1      3"
                     <div class="step-note" style="color: #1976d2;">Example: For 100 pM final → dilute to 1 nM (10x)</div>
                 </div>
 
+                <div class="step-box" id="phixStepBox" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5; display: none;">
+                    <h4 style="color: #7b1fa2;">Step 1b: Add PhiX Control (at 10x)</h4>
+                    <div class="step-content">
+                        • <span id="step1b_LibraryVol">-</span> μL from Step 1 (library at 10x)<br>
+                        • <span id="step1b_PhiXVol">-</span> μL PhiX Control (at 10x = <span id="step1b_PhiXConc">-</span> nM)<br>
+                        = <span id="step1b_Total">30</span> μL total with <span id="step1b_PhiXPercent">-</span>% PhiX
+                    </div>
+                    <div class="step-note" style="color: #7b1fa2;">Mix library and PhiX at 10x concentration before adding KLD buffer (Step 2)</div>
+                </div>
+
                 <div class="step-box" style="border-left: 4px solid #27ae60; background-color: #f0fff0;">
                     <h4 style="color: #27ae60;">Step 2: Add KLD Buffer (Library Denaturation Buffer)</h4>
                     <div class="step-content">
@@ -769,16 +779,6 @@ Sample3        18.5            A03              Plate1      3"
                         • [Optional] Add custom primers to appropriate ports
                     </div>
                     <div class="step-note" style="color: #2980b9;">Use dry cartridge within 4 hours of opening foil</div>
-                </div>
-
-                <div class="step-box" id="phixStepBox" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5; display: none;">
-                    <h4 style="color: #7b1fa2;">Step 4: PhiX Spike-In</h4>
-                    <div class="step-content">
-                        <strong>For ≥10% PhiX:</strong> Dilute PhiX to 10x loading conc, mix with library to 30 μL total<br>
-                        <strong>For <10% PhiX:</strong> Dilute PhiX to 6x loading conc, add 1 μL to 29 μL library (≈2%)<br>
-                        Then proceed with KLD dilution (270 μL KLD to final 30 μL mixture)
-                    </div>
-                    <div class="step-note" style="color: #7b1fa2;">⚠️ PhiX spike-in done BEFORE KLD step (Step 2)</div>
                 </div>
 
                 <!-- Hidden old steps for backwards compatibility -->
@@ -2062,6 +2062,15 @@ Sample3        18.5            A03              Plate1      3"
                 const warningDiv = document.getElementById('step1Warning');
                 warningDiv.style.display = 'none';
             }
+
+            // Step 1b: PhiX at 10x concentration
+            const phixVol10x = (phixPercent / 100) * target10xVolume;
+            const libraryVol10x = target10xVolume - phixVol10x;
+            document.getElementById('step1b_LibraryVol').textContent = libraryVol10x.toFixed(2);
+            document.getElementById('step1b_PhiXVol').textContent = phixVol10x.toFixed(2);
+            document.getElementById('step1b_PhiXConc').textContent = target10xConc.toFixed(2);
+            document.getElementById('step1b_Total').textContent = target10xVolume.toFixed(0);
+            document.getElementById('step1b_PhiXPercent').textContent = phixPercent.toFixed(1);
 
             // Step 2: NaOH preparation
             const step2WaterVol = naohVolume * 0.8; // 80% water
