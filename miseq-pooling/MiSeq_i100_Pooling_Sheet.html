@@ -321,11 +321,196 @@
             z-index: 1000;
             pointer-events: none;
         }
+
+        /* Save/Load Controls */
+        .save-load-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .save-load-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+        }
+
+        .save-controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .control-box {
+            background: rgba(255,255,255,0.15);
+            padding: 15px;
+            border-radius: 6px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-box label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .control-box input,
+        .control-box select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+            color: #333;
+            box-sizing: border-box;
+        }
+
+        .save-button,
+        .load-button,
+        .clear-button,
+        .export-button,
+        .import-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .save-button {
+            background: #4caf50;
+            color: white;
+        }
+
+        .save-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .load-button {
+            background: #2196f3;
+            color: white;
+        }
+
+        .load-button:hover {
+            background: #1976d2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .clear-button {
+            background: #f44336;
+            color: white;
+        }
+
+        .clear-button:hover {
+            background: #d32f2f;
+        }
+
+        .export-button,
+        .import-button {
+            background: #ff9800;
+            color: white;
+            padding: 8px 15px;
+            font-size: 13px;
+        }
+
+        .export-button:hover,
+        .import-button:hover {
+            background: #f57c00;
+        }
+
+        .autosave-status {
+            font-size: 13px;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 15px;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 8px 15px;
+            background: #ff9800;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .file-input-label:hover {
+            background: #f57c00;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Illumina MiSeq i100 Pooling Sheet</h1>
+
+        <!-- Save/Load Controls -->
+        <div class="save-load-section">
+            <h3>💾 Save & Load Sessions</h3>
+
+            <div class="autosave-status" id="autosaveStatus">
+                ✓ Auto-save enabled (Last saved: Never)
+            </div>
+
+            <div class="save-controls-grid">
+                <!-- Save Session -->
+                <div class="control-box">
+                    <label>Save Current Session</label>
+                    <input type="text" id="sessionName" placeholder="Enter session name (e.g., Pool_2026-02-21)" />
+                    <button class="save-button" onclick="saveSession()">💾 Save Session</button>
+                </div>
+
+                <!-- Load Session -->
+                <div class="control-box">
+                    <label>Load Saved Session</label>
+                    <select id="sessionSelect">
+                        <option value="">-- Select a session --</option>
+                    </select>
+                    <button class="load-button" onclick="loadSession()">📂 Load Session</button>
+                </div>
+
+                <!-- Clear Form -->
+                <div class="control-box">
+                    <label>Reset Form</label>
+                    <button class="clear-button" onclick="clearForm()">🗑️ Clear All Data</button>
+                    <div style="font-size: 12px; margin-top: 8px; opacity: 0.9;">⚠️ This will reset all inputs</div>
+                </div>
+
+                <!-- Export/Import -->
+                <div class="control-box">
+                    <label>Export / Import</label>
+                    <button class="export-button" onclick="exportData()">⬇️ Export JSON</button>
+                    <label for="importFile" class="file-input-label" style="margin-top: 10px; display: block; text-align: center;">
+                        ⬆️ Import JSON
+                    </label>
+                    <input type="file" id="importFile" accept=".json" onchange="importData(event)" />
+                </div>
+            </div>
+        </div>
 
         <div style="background: #fff3cd; border: 2px solid #ff9800; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
             <h3 style="color: #d68910; margin-top: 0;">⚠️ MiSeq i100 Protocol Notes</h3>
@@ -747,25 +932,43 @@ Sample3        18.5            A03              Plate1      3"
 
                 <!-- Protocol Steps -->
                 <div class="protocol-container">
-                <div class="step-box" style="border-left: 4px solid #2196f3; background-color: #e3f2fd;">
-                    <h4 style="color: #1976d2;">Step 1: Dilute to 10x Loading Concentration</h4>
-                    <div class="step-content">
+                <div class="step-box" id="step1Box" style="border-left: 4px solid #2196f3; background-color: #e3f2fd;">
+                    <h4 style="color: #1976d2;" id="step1Title">Step 1: Dilute to 10x Loading Concentration</h4>
+
+                    <!-- WITHOUT PhiX: Simple single step -->
+                    <div id="step1NoPhiX" class="step-content">
                         • <span id="step1PoolVol">-</span> μL pool (<span id="step1PoolConc">-</span> nM)<br>
                         • <span id="step1WaterVol">-</span> μL RSB (Resuspension Buffer)<br>
                         = <span id="step1Total">30</span> μL at 10x target concentration
                     </div>
+
+                    <!-- WITH PhiX: Sub-steps a, b, c -->
+                    <div id="step1WithPhiX" style="display: none;">
+                        <div class="step-content" style="margin-bottom: 15px;">
+                            <strong>a) Dilute library pool to 10x concentration</strong><br>
+                            <span style="margin-left: 20px;">• <span id="step1a_PoolVol">-</span> μL pool (<span id="step1a_PoolConc">-</span> nM)</span><br>
+                            <span style="margin-left: 20px;">• <span id="step1a_WaterVol">-</span> μL RSB (Resuspension Buffer)</span><br>
+                            <span style="margin-left: 20px;">= <span id="step1a_Total">30</span> μL at <span id="step1a_TargetConc">1</span> nM (10x)</span>
+                        </div>
+
+                        <div class="step-content" style="margin-bottom: 15px; background-color: #f3e5f5; padding: 10px; border-radius: 4px; border-left: 3px solid #9c27b0;">
+                            <strong style="color: #7b1fa2;">b) Dilute PhiX stock to 10x concentration</strong><br>
+                            <span style="margin-left: 20px;">• <span id="step1b_PhiXStockVol">-</span> μL PhiX stock (10 nM)</span><br>
+                            <span style="margin-left: 20px;">• <span id="step1b_PhiXBufferVol">-</span> μL RSB (Resuspension Buffer)</span><br>
+                            <span style="margin-left: 20px;">= <span id="step1b_PhiXTotal">30</span> μL at <span id="step1b_PhiXTargetConc">1</span> nM (10x)</span><br>
+                            <span style="margin-left: 20px; font-size: 13px; color: #7b1fa2; font-style: italic;">⚠ PhiX must be diluted to match library concentration before mixing</span>
+                        </div>
+
+                        <div class="step-content" style="background-color: #f3e5f5; padding: 10px; border-radius: 4px; border-left: 3px solid #9c27b0;">
+                            <strong style="color: #7b1fa2;">c) Mix library + PhiX (both at 10x)</strong><br>
+                            <span style="margin-left: 20px;">• <span id="step1c_LibraryVol">-</span> μL from Step 1a (library at 10x)</span><br>
+                            <span style="margin-left: 20px;">• <span id="step1c_PhiXVol">-</span> μL from Step 1b (PhiX at 10x)</span><br>
+                            <span style="margin-left: 20px;">= <span id="step1c_Total">30</span> μL total with <span id="step1c_PhiXPercent">-</span>% PhiX</span>
+                        </div>
+                    </div>
+
                     <div id="step1Warning" class="step-note" style="display: none;"></div>
                     <div class="step-note" style="color: #1976d2;">Example: For 100 pM final → dilute to 1 nM (10x)</div>
-                </div>
-
-                <div class="step-box" id="phixStepBox" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5; display: none;">
-                    <h4 style="color: #7b1fa2;">Step 1b: Add PhiX Control (at 10x)</h4>
-                    <div class="step-content">
-                        • <span id="step1b_LibraryVol">-</span> μL from Step 1 (library at 10x)<br>
-                        • <span id="step1b_PhiXVol">-</span> μL PhiX Control (at 10x = <span id="step1b_PhiXConc">-</span> nM)<br>
-                        = <span id="step1b_Total">30</span> μL total with <span id="step1b_PhiXPercent">-</span>% PhiX
-                    </div>
-                    <div class="step-note" style="color: #7b1fa2;">Mix library and PhiX at 10x concentration before adding KLD buffer (Step 2)</div>
                 </div>
 
                 <div class="step-box" style="border-left: 4px solid #27ae60; background-color: #f0fff0;">
@@ -2004,19 +2207,25 @@ Sample3        18.5            A03              Plate1      3"
         function togglePhiX() {
             const checkbox = document.getElementById('includePhiX');
             const phixPercentInput = document.getElementById('protocolPhiXPercent');
-            const phixStepBox = document.getElementById('phixStepBox');
             const phixPercentControl = document.getElementById('phixPercentControl');
+            const step1NoPhiX = document.getElementById('step1NoPhiX');
+            const step1WithPhiX = document.getElementById('step1WithPhiX');
+            const step1Title = document.getElementById('step1Title');
 
             if (checkbox.checked) {
-                // Enable PhiX
+                // Enable PhiX - show sub-steps
                 phixPercentInput.disabled = false;
-                phixStepBox.style.display = 'block';
                 phixPercentControl.style.opacity = '1';
+                step1NoPhiX.style.display = 'none';
+                step1WithPhiX.style.display = 'block';
+                step1Title.textContent = 'Step 1: Prepare Library and PhiX at 10x Concentration';
             } else {
-                // Disable PhiX
+                // Disable PhiX - show simple step
                 phixPercentInput.disabled = true;
-                phixStepBox.style.display = 'none';
                 phixPercentControl.style.opacity = '0.5';
+                step1NoPhiX.style.display = 'block';
+                step1WithPhiX.style.display = 'none';
+                step1Title.textContent = 'Step 1: Dilute to 10x Loading Concentration';
             }
 
             calculateProtocol(); // Recalculate with new PhiX setting
@@ -2070,14 +2279,31 @@ Sample3        18.5            A03              Plate1      3"
                 warningDiv.style.display = 'none';
             }
 
-            // Step 1b: PhiX at 10x concentration
+            // Step 1a: Library dilution (copy values to new IDs)
+            document.getElementById('step1a_PoolVol').textContent = document.getElementById('step1PoolVol').textContent;
+            document.getElementById('step1a_PoolConc').textContent = document.getElementById('step1PoolConc').textContent;
+            document.getElementById('step1a_WaterVol').textContent = document.getElementById('step1WaterVol').textContent;
+            document.getElementById('step1a_Total').textContent = document.getElementById('step1Total').textContent;
+            document.getElementById('step1a_TargetConc').textContent = target10xConc.toFixed(2);
+
+            // Step 1b: PhiX dilution calculation
+            const phixStockConc = 10; // PhiX stock is 10 nM from Illumina
+            const phixDilutionVolume = target10xVolume; // Use same volume as library dilution
+            const phixStockVol = (target10xConc / phixStockConc) * phixDilutionVolume;
+            const phixBufferVol = phixDilutionVolume - phixStockVol;
+
+            document.getElementById('step1b_PhiXStockVol').textContent = phixStockVol.toFixed(2);
+            document.getElementById('step1b_PhiXBufferVol').textContent = phixBufferVol.toFixed(2);
+            document.getElementById('step1b_PhiXTotal').textContent = phixDilutionVolume.toFixed(0);
+            document.getElementById('step1b_PhiXTargetConc').textContent = target10xConc.toFixed(2);
+
+            // Step 1c: Mix library and PhiX (both at 10x)
             const phixVol10x = (phixPercent / 100) * target10xVolume;
             const libraryVol10x = target10xVolume - phixVol10x;
-            document.getElementById('step1b_LibraryVol').textContent = libraryVol10x.toFixed(2);
-            document.getElementById('step1b_PhiXVol').textContent = phixVol10x.toFixed(2);
-            document.getElementById('step1b_PhiXConc').textContent = target10xConc.toFixed(2);
-            document.getElementById('step1b_Total').textContent = target10xVolume.toFixed(0);
-            document.getElementById('step1b_PhiXPercent').textContent = phixPercent.toFixed(1);
+            document.getElementById('step1c_LibraryVol').textContent = libraryVol10x.toFixed(2);
+            document.getElementById('step1c_PhiXVol').textContent = phixVol10x.toFixed(2);
+            document.getElementById('step1c_Total').textContent = target10xVolume.toFixed(0);
+            document.getElementById('step1c_PhiXPercent').textContent = phixPercent.toFixed(1);
 
             // Step 2: NaOH preparation
             const step2WaterVol = naohVolume * 0.8; // 80% water
@@ -2128,6 +2354,273 @@ Sample3        18.5            A03              Plate1      3"
             // Initialize calculations
             updateCalculations();
             calculateProtocol();
+        }
+
+        // ============================================
+        // SAVE/LOAD FUNCTIONALITY
+        // ============================================
+
+        // Auto-save current state to localStorage
+        function autoSave() {
+            const data = gatherFormData();
+            try {
+                localStorage.setItem('miseq_i100_autosave', JSON.stringify(data));
+                const now = new Date().toLocaleString();
+                document.getElementById('autosaveStatus').innerHTML = `✓ Auto-saved at ${now}`;
+            } catch (e) {
+                console.error('Auto-save failed:', e);
+            }
+        }
+
+        // Gather all form data into an object
+        function gatherFormData() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                samples: [],
+                protocol: {
+                    poolConc: document.getElementById('protocolPoolConc').value,
+                    loadingConc: document.getElementById('protocolLoadingConc').value,
+                    volume: document.getElementById('protocol4nMVolume').value,
+                    naohVolume: document.getElementById('protocolNaOHVolume').value,
+                    includePhiX: document.getElementById('includePhiX').checked,
+                    phixPercent: document.getElementById('protocolPhiXPercent').value
+                }
+            };
+
+            // Collect all sample data
+            const sampleRows = document.querySelectorAll('.sample-row');
+            sampleRows.forEach((row, index) => {
+                const sampleData = {
+                    name: row.querySelector(`#sampleName${index}`).value,
+                    qubit: row.querySelector(`#qubitConc${index}`).value,
+                    bio260: row.querySelector(`#bio260${index}`).value,
+                    bio280: row.querySelector(`#bio280${index}`).value
+                };
+                data.samples.push(sampleData);
+            });
+
+            return data;
+        }
+
+        // Restore form data from an object
+        function restoreFormData(data) {
+            if (!data) return;
+
+            // Restore protocol settings
+            if (data.protocol) {
+                if (data.protocol.poolConc) document.getElementById('protocolPoolConc').value = data.protocol.poolConc;
+                if (data.protocol.loadingConc) document.getElementById('protocolLoadingConc').value = data.protocol.loadingConc;
+                if (data.protocol.volume) document.getElementById('protocol4nMVolume').value = data.protocol.volume;
+                if (data.protocol.naohVolume) document.getElementById('protocolNaOHVolume').value = data.protocol.naohVolume;
+                if (data.protocol.includePhiX !== undefined) {
+                    document.getElementById('includePhiX').checked = data.protocol.includePhiX;
+                    togglePhiX();
+                }
+                if (data.protocol.phixPercent) document.getElementById('protocolPhiXPercent').value = data.protocol.phixPercent;
+            }
+
+            // Restore samples
+            if (data.samples && data.samples.length > 0) {
+                // Clear existing samples
+                document.getElementById('samplesTableBody').innerHTML = '';
+                sampleCount = 0;
+
+                // Add each sample
+                data.samples.forEach(sampleData => {
+                    addSample();
+                    const index = sampleCount - 1;
+                    if (sampleData.name) document.getElementById(`sampleName${index}`).value = sampleData.name;
+                    if (sampleData.qubit) document.getElementById(`qubitConc${index}`).value = sampleData.qubit;
+                    if (sampleData.bio260) document.getElementById(`bio260${index}`).value = sampleData.bio260;
+                    if (sampleData.bio280) document.getElementById(`bio280${index}`).value = sampleData.bio280;
+                });
+            }
+
+            // Recalculate everything
+            updateCalculations();
+            calculateProtocol();
+        }
+
+        // Save current session with a name
+        function saveSession() {
+            const sessionName = document.getElementById('sessionName').value.trim();
+            if (!sessionName) {
+                alert('Please enter a session name');
+                return;
+            }
+
+            const data = gatherFormData();
+            const sessions = getSessions();
+            sessions[sessionName] = data;
+
+            try {
+                localStorage.setItem('miseq_i100_sessions', JSON.stringify(sessions));
+                alert(`✓ Session "${sessionName}" saved successfully!`);
+                updateSessionSelect();
+                document.getElementById('sessionName').value = ''; // Clear input
+            } catch (e) {
+                alert('Failed to save session: ' + e.message);
+            }
+        }
+
+        // Load selected session
+        function loadSession() {
+            const sessionName = document.getElementById('sessionSelect').value;
+            if (!sessionName) {
+                alert('Please select a session to load');
+                return;
+            }
+
+            const sessions = getSessions();
+            const data = sessions[sessionName];
+
+            if (data) {
+                restoreFormData(data);
+                alert(`✓ Session "${sessionName}" loaded successfully!`);
+            } else {
+                alert('Session not found');
+            }
+        }
+
+        // Get all saved sessions
+        function getSessions() {
+            try {
+                const sessions = localStorage.getItem('miseq_i100_sessions');
+                return sessions ? JSON.parse(sessions) : {};
+            } catch (e) {
+                console.error('Failed to load sessions:', e);
+                return {};
+            }
+        }
+
+        // Update the session select dropdown
+        function updateSessionSelect() {
+            const sessions = getSessions();
+            const select = document.getElementById('sessionSelect');
+
+            // Clear existing options (except first)
+            select.innerHTML = '<option value="">-- Select a session --</option>';
+
+            // Add session options
+            Object.keys(sessions).forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                const date = sessions[name].timestamp ?
+                    new Date(sessions[name].timestamp).toLocaleString() : 'Unknown date';
+                option.textContent = `${name} (${date})`;
+                select.appendChild(option);
+            });
+        }
+
+        // Clear form data
+        function clearForm() {
+            if (!confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+                return;
+            }
+
+            // Clear samples
+            document.getElementById('samplesTableBody').innerHTML = '';
+            sampleCount = 0;
+
+            // Reset protocol settings
+            document.getElementById('protocolPoolConc').value = '';
+            document.getElementById('protocolLoadingConc').value = '100';
+            document.getElementById('protocol4nMVolume').value = '30';
+            document.getElementById('protocolNaOHVolume').value = '500';
+            document.getElementById('includePhiX').checked = false;
+            document.getElementById('protocolPhiXPercent').value = '1';
+            togglePhiX();
+
+            // Add one sample
+            addSample();
+
+            // Recalculate
+            updateCalculations();
+            calculateProtocol();
+
+            alert('✓ Form cleared');
+        }
+
+        // Export data as JSON file
+        function exportData() {
+            const data = gatherFormData();
+            const sessionName = prompt('Enter a name for this export:', 'MiSeq_Pool_' + new Date().toISOString().split('T')[0]);
+
+            if (!sessionName) return;
+
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${sessionName}.json`;
+            a.click();
+
+            URL.revokeObjectURL(url);
+            alert(`✓ Data exported as ${sessionName}.json`);
+        }
+
+        // Import data from JSON file
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    restoreFormData(data);
+                    alert('✓ Data imported successfully!');
+                } catch (error) {
+                    alert('Failed to import data: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+
+            // Reset file input
+            event.target.value = '';
+        }
+
+        // Load autosave on page load
+        function loadAutosave() {
+            try {
+                const autosave = localStorage.getItem('miseq_i100_autosave');
+                if (autosave) {
+                    const data = JSON.parse(autosave);
+                    restoreFormData(data);
+                    const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleString() : 'Unknown';
+                    document.getElementById('autosaveStatus').innerHTML = `✓ Auto-loaded from ${timestamp}`;
+                }
+            } catch (e) {
+                console.error('Failed to load autosave:', e);
+            }
+        }
+
+        // Set up auto-save on input changes
+        function setupAutoSave() {
+            // Auto-save when any input changes
+            const container = document.querySelector('.container');
+            container.addEventListener('input', function() {
+                // Debounce auto-save (wait 2 seconds after last change)
+                clearTimeout(window.autoSaveTimer);
+                window.autoSaveTimer = setTimeout(autoSave, 2000);
+            });
+        }
+
+        // Modified init function to include save/load setup
+        const originalInit = init;
+        function init() {
+            originalInit(); // Call original init
+
+            // Load autosave data
+            loadAutosave();
+
+            // Update session dropdown
+            updateSessionSelect();
+
+            // Setup auto-save
+            setupAutoSave();
         }
 
         // Call init when page loads
