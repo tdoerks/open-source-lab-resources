@@ -272,10 +272,12 @@ tail -f /fastscratch/tylerdoe/COMPASS_Validation_Results_v1.0.0_6810451/logs/com
 - [ ] Document any differences in tool outputs
 
 ### Next (When Ready)
-- [ ] Pull diverse_bacteria_1000/ to Beocat
-- [ ] Run download script for SRA accessions
-- [ ] Generate samplesheet
-- [ ] Submit diverse bacteria job
+- [ ] Pull diverse_bacteria_1000/ to Beocat (from scratch branch)
+- [ ] Run download script for SRA accessions: `python3 scripts/download_diverse_bacteria.py`
+- [ ] Generate samplesheet: `python3 scripts/create_samplesheet.py`
+- [ ] Submit diverse bacteria job: `sbatch run_diverse_bacteria_1000.sh`
+
+**Note**: Download script now uses HTTP API (like E. coli monthly 100), so can run directly on Beocat
 
 ### Future
 - [ ] Archive validation results (~500GB)
@@ -318,6 +320,23 @@ python scripts/download_diverse_bacteria.py --delay 3
 - Diverse bacteria project intentionally excludes E. coli, Salmonella, Campylobacter jejuni (already heavily studied in NARMS)
 - Rate limiting is critical for NCBI downloads to avoid IP blocking
 
+### Important: How SRA Accession Download Works (E. coli Monthly 100 Approach)
+
+**Research findings from 2026-03-09:**
+
+The E. coli monthly 100 project (`fetch_ecoli_monthly_v2.py`) uses **Python requests library** to query NCBI E-utilities HTTP API, NOT EDirect command-line tools:
+
+1. **What gets downloaded**: Only SRR accession lists (tiny text files, ~few KB)
+2. **Where it runs**: Any machine with Python + internet (including Beocat)
+3. **No EDirect needed**: Uses `requests.get('https://eutils.ncbi.nlm.nih.gov/...')`
+4. **Actual sequencing data**: Downloaded by COMPASS pipeline on Beocat via `fasterq-dump`
+
+This approach was applied to `diverse_bacteria_1000/scripts/download_diverse_bacteria.py`:
+- Replaced EDirect subprocess calls with HTTP API requests
+- Same filtering logic (organism, platform, size 1-10GB, random sampling)
+- Can run directly on Beocat without module dependencies
+- No local machine storage needed (only creates small text files)
+
 ---
 
 ## Contact
@@ -329,5 +348,6 @@ python scripts/download_diverse_bacteria.py --delay 3
 
 ---
 
-*Session end: 2026-03-07 afternoon*
+*Session start: 2026-03-07 afternoon*
+*Session update: 2026-03-09 - Fixed download script to use HTTP API (no EDirect needed)*
 *Next session: Review validation results and/or start diverse bacteria download*

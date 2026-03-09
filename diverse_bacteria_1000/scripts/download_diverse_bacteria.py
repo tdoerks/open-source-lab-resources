@@ -5,25 +5,30 @@ Download Diverse Bacterial Pathogen SRA Accessions
 Queries NCBI SRA for 20 different bacterial pathogens and downloads
 N random samples per organism to create a diverse 1,000-sample dataset.
 
+Uses NCBI E-utilities HTTP API (same approach as fetch_ecoli_monthly_v2.py)
+No EDirect command-line tools required - just Python with 'requests' library.
+
 Usage:
     python download_diverse_bacteria.py --output data/
 """
 
 import argparse
-import subprocess
-import sys
-import time
+import requests
 import random
+import time
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from collections import defaultdict
 
-def run_esearch(organism, max_samples=50):
+def fetch_sra_accessions(organism, max_samples=50, min_size_gb=1, max_size_gb=10):
     """
-    Query NCBI SRA for bacterial samples using esearch/efetch
+    Query NCBI SRA for bacterial samples using E-utilities HTTP API
 
     Args:
         organism: Scientific name of organism
         max_samples: Maximum number of samples to retrieve
+        min_size_gb: Minimum file size in GB
+        max_size_gb: Maximum file size in GB
 
     Returns:
         List of SRR accessions
@@ -38,85 +43,97 @@ def run_esearch(organism, max_samples=50):
 
     print(f"Query: {query}")
 
+    # Step 1: Search for matching samples
+    search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    search_params = {
+        'db': 'sra',
+        'term': query,
+        'retmax': max_samples * 3,  # Get more than needed for filtering
+        'retmode': 'json',
+        'usehistory': 'y'
+    }
+
     try:
-        # Count total results
-        count_cmd = [
-            'esearch',
-            '-db', 'sra',
-            '-query', query
-        ]
-
         print("Counting available samples...")
-        result = subprocess.run(count_cmd, capture_output=True, text=True, check=True)
+        response = requests.get(search_url, params=search_params, timeout=30)
+        response.raise_for_status()
+        data = response.json()
 
-        # Extract count from XML
-        count_line = [line for line in result.stdout.split('\n') if '<Count>' in line]
-        if count_line:
-            count = int(count_line[0].replace('<Count>', '').replace('</Count>', '').strip())
-            print(f"  Found {count} total samples")
-        else:
-            print("  Warning: Could not determine count")
-            count = max_samples * 2  # Assume enough samples
+        id_list = data.get('esearchresult', {}).get('idlist', [])
+        count = int(data.get('esearchresult', {}).get('count', 0))
 
-        # Fetch SRR accessions
-        # Get more than needed to allow for random sampling
-        fetch_count = min(count, max_samples * 3)
+        print(f"  Found {count} total samples")
 
-        fetch_cmd = count_cmd + [
-            '|', 'efetch', '-format', 'runinfo'
-        ]
-
-        print(f"Fetching up to {fetch_count} sample records...")
-
-        # Run as shell command to allow piping
-        full_cmd = ' '.join(count_cmd) + ' | efetch -format runinfo'
-        result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True, check=True)
-
-        # Parse runinfo CSV
-        lines = result.stdout.strip().split('\n')
-        if len(lines) < 2:
+        if not id_list:
             print(f"  Warning: No results found for {organism}")
             return []
 
-        header = lines[0].split(',')
-        run_col = header.index('Run') if 'Run' in header else 0
-        bytes_col = header.index('bytes') if 'bytes' in header else None
+        # Step 2: Fetch run information in batches
+        print(f"Fetching sample details (batches of 100)...")
 
-        # Extract SRR accessions and filter by size
-        srr_accessions = []
-        for line in lines[1:]:
-            if not line.strip():
-                continue
-            fields = line.split(',')
-            if len(fields) > run_col:
-                srr = fields[run_col]
+        accessions = []
 
-                # Filter by size (1GB to 10GB is reasonable for bacteria)
-                if bytes_col and len(fields) > bytes_col:
+        # Process in batches of 100 to avoid timeout
+        for i in range(0, min(len(id_list), max_samples * 3), 100):
+            batch_ids = id_list[i:i+100]
+
+            fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+            fetch_params = {
+                'db': 'sra',
+                'id': ','.join(batch_ids),
+                'rettype': 'full',
+                'retmode': 'xml'
+            }
+
+            time.sleep(0.4)  # Rate limiting - be nice to NCBI
+
+            try:
+                response = requests.get(fetch_url, params=fetch_params, timeout=60)
+                response.raise_for_status()
+
+                # Parse XML to extract Run accessions and sizes
+                root = ET.fromstring(response.content)
+
+                for run in root.findall('.//RUN'):
+                    acc = run.get('accession')
+
+                    if not acc or not acc.startswith(('SRR', 'ERR', 'DRR')):
+                        continue
+
+                    # Try to get file size for filtering
+                    size_valid = True
                     try:
-                        size_bytes = int(fields[bytes_col])
-                        size_gb = size_bytes / (1024**3)
-                        if size_gb < 1 or size_gb > 10:
-                            continue  # Skip too small or too large
+                        # Find total_bases or size attributes
+                        total_bases = run.get('total_bases')
+                        if total_bases:
+                            # Rough estimate: 1GB fastq ~ 4M bases
+                            estimated_gb = int(total_bases) / (4_000_000 * 1_000_000_000)
+                            if estimated_gb < min_size_gb or estimated_gb > max_size_gb:
+                                size_valid = False
                     except:
-                        pass  # Keep if we can't parse size
+                        pass  # If we can't determine size, include it
 
-                if srr.startswith('SRR') or srr.startswith('ERR') or srr.startswith('DRR'):
-                    srr_accessions.append(srr)
+                    if size_valid:
+                        accessions.append(acc)
 
-        print(f"  Retrieved {len(srr_accessions)} valid accessions")
+            except ET.ParseError as e:
+                print(f"  Warning: XML parse error in batch {i//100 + 1}: {e}")
+                continue
+            except requests.RequestException as e:
+                print(f"  Warning: Request error in batch {i//100 + 1}: {e}")
+                continue
 
-        # Randomly sample if we have more than needed
-        if len(srr_accessions) > max_samples:
-            srr_accessions = random.sample(srr_accessions, max_samples)
+        print(f"  Retrieved {len(accessions)} valid accessions")
+
+        # Step 3: Randomly sample if we have more than needed
+        if len(accessions) > max_samples:
+            accessions = random.sample(accessions, max_samples)
             print(f"  Randomly sampled {max_samples} accessions")
 
-        return srr_accessions
+        return accessions
 
-    except subprocess.CalledProcessError as e:
+    except requests.RequestException as e:
         print(f"  Error querying NCBI: {e}")
-        print(f"  stdout: {e.stdout}")
-        print(f"  stderr: {e.stderr}")
         return []
     except Exception as e:
         print(f"  Unexpected error: {e}")
@@ -140,7 +157,7 @@ def save_srr_list(organism, srr_list, output_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Download diverse bacterial pathogen SRA accessions'
+        description='Download diverse bacterial pathogen SRA accessions using HTTP API'
     )
     parser.add_argument(
         '--targets',
@@ -161,7 +178,7 @@ def main():
         '--delay',
         type=int,
         default=3,
-        help='Delay between queries in seconds (default: 3)'
+        help='Delay between organism queries in seconds (default: 3)'
     )
 
     args = parser.parse_args()
@@ -198,8 +215,8 @@ def main():
     for i, organism in enumerate(organisms, 1):
         print(f"\n[{i}/{len(organisms)}] Processing: {organism}")
 
-        # Query NCBI
-        srr_list = run_esearch(organism, max_samples=target_counts[organism])
+        # Query NCBI via HTTP API
+        srr_list = fetch_sra_accessions(organism, max_samples=target_counts[organism])
 
         # Save to file
         if srr_list:
@@ -211,7 +228,7 @@ def main():
             print(f"  Warning: No accessions retrieved for {organism}")
             results_summary.append(f"{organism}: 0 samples (FAILED)")
 
-        # Rate limiting
+        # Rate limiting between organisms
         if i < len(organisms):
             print(f"  Waiting {args.delay} seconds before next query...")
             time.sleep(args.delay)

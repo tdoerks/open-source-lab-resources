@@ -57,21 +57,24 @@ diverse_bacteria_1000/
 
 ### Step 1: Download SRA Accessions
 
-Run on a machine with internet access and NCBI E-utilities installed:
+Run on any machine with Python and internet access (including Beocat):
 
 ```bash
 cd diverse_bacteria_1000/
 
-# Install E-utilities if needed (on Beocat):
-module load EDirect   # or: conda install -c bioconda entrez-direct
-
-# Download accessions (takes ~10-15 minutes)
-python scripts/download_diverse_bacteria.py
+# Download accessions using HTTP API (takes ~10-15 minutes)
+# No EDirect module needed - just Python with 'requests' library
+python3 scripts/download_diverse_bacteria.py
 
 # Check results
 ls -lh data/srr_accessions_by_organism/
 cat data/combined_srr_list.txt | wc -l
 ```
+
+**What this does:**
+- Queries NCBI SRA via HTTP API (same approach as `fetch_ecoli_monthly_v2.py`)
+- Downloads only SRR accession lists (~few KB total, NOT sequencing data)
+- COMPASS pipeline will download actual FASTQ files later on Beocat
 
 **Expected output:**
 - `data/srr_accessions_by_organism/`: 20 files (one per organism)
@@ -175,10 +178,14 @@ nano scripts/organism_targets.txt
 
 ### Download script fails?
 
-Check E-utilities installation:
+Check Python and requests library:
 ```bash
-which esearch efetch
-# If missing: module load EDirect
+python3 --version  # Should be Python 3.6+
+python3 -c "import requests; print('requests OK')"
+
+# If requests missing, install:
+pip install requests
+# or on Beocat: pip3 install --user requests
 ```
 
 ### Pipeline runs slowly?
