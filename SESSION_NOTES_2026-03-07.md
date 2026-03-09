@@ -349,5 +349,6 @@ This approach was applied to `diverse_bacteria_1000/scripts/download_diverse_bac
 ---
 
 *Session start: 2026-03-07 afternoon*
-*Session update: 2026-03-09 - Fixed download script to use HTTP API (no EDirect needed)*
-*Next session: Review validation results and/or start diverse bacteria download*
+*Session continued: 2026-03-09 - Fixed download script, launched diverse bacteria 1000 on COMPASS 1.0.0*
+*See SESSION_NOTES_2026-03-09.md for complete 03-09 session details*
+*Next session: Monitor diverse bacteria job (6818330), review validation results*
