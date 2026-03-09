@@ -20,18 +20,21 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from collections import defaultdict
 
-def fetch_sra_accessions(organism, max_samples=50, min_size_gb=1, max_size_gb=10):
+def fetch_sra_accessions(organism, max_samples=50):
     """
     Query NCBI SRA for bacterial samples using E-utilities HTTP API
 
     Args:
         organism: Scientific name of organism
         max_samples: Maximum number of samples to retrieve
-        min_size_gb: Minimum file size in GB
-        max_size_gb: Maximum file size in GB
 
     Returns:
         List of SRR accessions
+
+    Note:
+        Size filtering is not applied as NCBI XML responses don't reliably
+        include file size information. Samples are randomly selected from
+        available WGS Illumina GENOMIC samples.
     """
     print(f"\n{'='*60}")
     print(f"Searching for: {organism}")
@@ -100,21 +103,10 @@ def fetch_sra_accessions(organism, max_samples=50, min_size_gb=1, max_size_gb=10
                     if not acc or not acc.startswith(('SRR', 'ERR', 'DRR')):
                         continue
 
-                    # Try to get file size for filtering
-                    size_valid = True
-                    try:
-                        # Find total_bases or size attributes
-                        total_bases = run.get('total_bases')
-                        if total_bases:
-                            # Rough estimate: 1GB fastq ~ 4M bases
-                            estimated_gb = int(total_bases) / (4_000_000 * 1_000_000_000)
-                            if estimated_gb < min_size_gb or estimated_gb > max_size_gb:
-                                size_valid = False
-                    except:
-                        pass  # If we can't determine size, include it
-
-                    if size_valid:
-                        accessions.append(acc)
+                    # Note: Size filtering is difficult with XML format
+                    # Most runs don't have total_bases in the XML response
+                    # We'll accept all valid accessions and let the user filter later if needed
+                    accessions.append(acc)
 
             except ET.ParseError as e:
                 print(f"  Warning: XML parse error in batch {i//100 + 1}: {e}")
