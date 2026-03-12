@@ -21,7 +21,10 @@ echo "Node: $(hostname)"
 echo ""
 
 # Change to pipeline directory
-PIPELINE_DIR="/fastscratch/tylerdoe/COMPASS-pipeline"
+# NOTE: Update this path based on which COMPASS version you're using
+# For 1.0.0: /fastscratch/tylerdoe/COMPASS-pipeline-1.0.0
+# For scratch: /fastscratch/tylerdoe/COMPASS-pipeline
+PIPELINE_DIR="/fastscratch/tylerdoe/COMPASS-pipeline-1.0.0"
 PROJECT_DIR="$PIPELINE_DIR/pseudomonas_phage_hunter_monthly"
 
 cd "$PIPELINE_DIR" || {
