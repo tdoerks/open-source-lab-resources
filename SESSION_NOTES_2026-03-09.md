@@ -446,6 +446,185 @@ This ensures:
 
 ---
 
+## Part 3: Pseudomonas Phage Hunter Monthly Project (NEW - Evening Session)
+
+### Objective
+Create temporal analysis dataset for phage-plasmid-AMR dynamics in Pseudomonas aeruginosa (highest prophage burden organism).
+
+### Project Overview
+
+**Name**: Pseudomonas Phage Hunter - Monthly Temporal Sampling (2020-2026)
+
+**Rationale for Pseudomonas aeruginosa:**
+- Highest prophage burden: 5-10 prophages per genome average
+- High plasmid prevalence: Extensive mobile genetic elements
+- Clinical importance: CF, nosocomial infections, biofilms
+- AMR crisis: XDR/MDR, carbapenem resistance
+- No NARMS restrictions: Publicly available global data
+- Well-studied phage biology: Rich literature for comparison
+
+**Sampling Strategy:**
+- 50 Pseudomonas aeruginosa per month
+- January 2020 - March 2026 (75 months)
+- Total expected: ~3,750 samples
+- Random sampling from WGS Illumina GENOMIC
+
+**Research Questions:**
+1. How does prophage prevalence change over time (2020-2026)?
+2. What are plasmid-prophage co-occurrence patterns?
+3. How do AMR genes move (chromosome vs plasmid vs prophage)?
+4. Can we detect phage-mediated HGT events temporally?
+5. How does XDR/MDR emergence relate to mobile elements?
+
+### Files Created
+
+**Project directory:** `pseudomonas_phage_hunter_monthly/`
+
+**Structure:**
+```
+pseudomonas_phage_hunter_monthly/
+├── README.md                           # Comprehensive documentation
+├── scripts/
+│   ├── fetch_pseudomonas_monthly.py   # HTTP API download (based on E. coli monthly)
+│   └── create_samplesheet.py          # COMPASS samplesheet generator
+└── run_pseudomonas_phage_hunter.sh    # SLURM submission script
+```
+
+**Key Features:**
+
+1. **Download Script** (`fetch_pseudomonas_monthly.py`)
+   - Based on proven `fetch_ecoli_monthly_v2.py` code
+   - Uses Python requests library (HTTP API, no EDirect)
+   - Query: Pseudomonas aeruginosa + ILLUMINA + WGS + GENOMIC
+   - Random sampling: 50 per month
+   - Time period: Jan 2020 - Mar 2026 (75 months)
+   - Rate limiting: 1 second between queries
+   - Runtime: ~90 minutes for all months
+
+2. **SLURM Script** (`run_pseudomonas_phage_hunter.sh`)
+   - Job name: pseudomonas_phage_hunter
+   - Time limit: 336 hours (14 days with buffer)
+   - Resources: 8 CPUs, 32GB RAM
+   - All modules enabled: MLST, AMRFinder, MOB-suite, VIBRANT, BUSCO
+   - Output: `/fastscratch/tylerdoe/pseudomonas_phage_hunter_results/`
+   - Work dir: `work_pseudomonas_phage_hunter` (dedicated, no conflicts)
+   - Resume enabled: Can restart if interrupted
+
+3. **Documentation** (README.md)
+   - Comprehensive project overview
+   - Research objectives and rationale
+   - Usage instructions
+   - 6-phase analysis roadmap
+   - Comparison to Diverse Bacteria 1000
+   - Expected results and key outputs
+
+### Analysis Plan
+
+**Phase 1: Data Quality**
+- BUSCO completeness trends
+- Assembly statistics
+- High-quality sample identification
+
+**Phase 2: Prophage Analysis**
+- Prevalence trends (2020-2026)
+- Diversity and clustering
+- Lifestyle predictions
+
+**Phase 3: Plasmid Analysis**
+- MOB-suite incompatibility groups
+- Plasmid typing over time
+- Size distribution
+
+**Phase 4: AMR Gene Mobility**
+- Categorize by location (chromosome/plasmid/prophage)
+- Temporal resistance dynamics
+- Mobile element-mediated spread
+
+**Phase 5: Comparative Analysis**
+- Compare to E. coli monthly 100
+- Geographic/temporal clustering (MLST)
+
+**Phase 6: Publication Figures**
+- Prophage prevalence timeline
+- Plasmid-prophage co-occurrence heatmap
+- AMR mobility breakdown
+- HGT network visualization
+- XDR emergence linked to mobile elements
+
+### Comparison to Other Projects
+
+| Feature | Diverse Bacteria 1000 | Pseudomonas Phage Hunter | E. coli Monthly 100 |
+|---------|----------------------|--------------------------|---------------------|
+| Organisms | 20 species | 1 species | 1 species |
+| Samples | 1,000 | ~3,750 | ~7,000 |
+| Focus | Cross-species | Temporal phage-AMR | Temporal AMR |
+| Time resolution | Random | Monthly (75 points) | Monthly (73 points) |
+| Phage content | Variable | Very high | Moderate |
+| Strength | Diversity | Phage dynamics | Population trends |
+
+### Expected Outcomes
+
+**Runtime:** 18-25 days for ~3,750 samples
+**Storage:** ~1.8-2TB
+
+**Key Outputs:**
+- VIBRANT prophage predictions (~3,750 samples)
+- MOB-suite plasmid typing (~3,750 samples)
+- AMRFinder resistance genes (~3,750 samples)
+- MLST temporal clustering
+- BUSCO genome quality metrics
+
+**Publication Potential:**
+- "Temporal dynamics of prophage-plasmid-AMR interactions in Pseudomonas aeruginosa (2020-2026)"
+- "Mobile element-mediated resistance spread in a phage-rich organism"
+- "Six-year surveillance of prophage burden in clinical Pseudomonas"
+
+### Git Status
+
+**Branch:** scratch
+**Files added:**
+- `pseudomonas_phage_hunter_monthly/README.md`
+- `pseudomonas_phage_hunter_monthly/scripts/fetch_pseudomonas_monthly.py`
+- `pseudomonas_phage_hunter_monthly/scripts/create_samplesheet.py`
+- `pseudomonas_phage_hunter_monthly/run_pseudomonas_phage_hunter.sh`
+
+**Commit:** Pending (will include full project)
+
+### Next Steps (To Run on Beocat)
+
+**Option 1: Run on scratch branch** (development approach)
+```bash
+cd /fastscratch/tylerdoe/COMPASS-pipeline
+git pull origin scratch
+cd pseudomonas_phage_hunter_monthly
+
+# Download accessions
+python3 scripts/fetch_pseudomonas_monthly.py
+
+# Generate samplesheet
+python3 scripts/create_samplesheet.py
+
+# Submit job
+sbatch run_pseudomonas_phage_hunter.sh
+```
+
+**Option 2: Run on clean 1.0.0** (production approach - recommended)
+```bash
+# Copy project to clean 1.0.0 directory
+cd /fastscratch/tylerdoe/
+cp -r COMPASS-pipeline/pseudomonas_phage_hunter_monthly COMPASS-pipeline-1.0.0/
+
+# Run from 1.0.0
+cd COMPASS-pipeline-1.0.0/pseudomonas_phage_hunter_monthly
+python3 scripts/fetch_pseudomonas_monthly.py
+python3 scripts/create_samplesheet.py
+sbatch run_pseudomonas_phage_hunter.sh
+```
+
+---
+
 *Session date: 2026-03-09*
-*Job submitted: 6818330 (diverse_bacteria_1000 on COMPASS 1.0.0)*
-*Next session: Monitor job progress, review validation results*
+*Jobs submitted:*
+- *6818330 (diverse_bacteria_1000 on COMPASS 1.0.0) - RUNNING*
+- *Pseudomonas phage hunter - READY TO SUBMIT*
+*Next session: Monitor diverse bacteria progress, launch Pseudomonas phage hunter*
