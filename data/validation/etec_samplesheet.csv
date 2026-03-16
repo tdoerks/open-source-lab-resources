@@ -1,9 +1,0 @@
-sample,organism,fasta
-E925,Escherichia coli,data/validation/etec_genomes/E925.fasta
-E1649,Escherichia coli,data/validation/etec_genomes/E1649.fasta
-E36,Escherichia coli,data/validation/etec_genomes/E36.fasta
-E2980,Escherichia coli,data/validation/etec_genomes/E2980.fasta
-E1441,Escherichia coli,data/validation/etec_genomes/E1441.fasta
-E1779,Escherichia coli,data/validation/etec_genomes/E1779.fasta
-E562,Escherichia coli,data/validation/etec_genomes/E562.fasta
-E1373,Escherichia coli,data/validation/etec_genomes/E1373.fasta

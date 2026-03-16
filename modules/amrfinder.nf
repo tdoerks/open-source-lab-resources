@@ -45,8 +45,39 @@ process AMRFINDER {
     path "versions.yml", emit: versions
     
     script:
-    def organism_flag = meta.organism ? "-O ${meta.organism}" : ""
+    // Map organism names to AMRFinder-supported codes
+    // See: https://github.com/ncbi/amr/wiki/Running-AMRFinderPlus#--organism-option
+    def organism_map = [
+        'Acinetobacter baumannii': 'Acinetobacter_baumannii',
+        'Campylobacter': 'Campylobacter',
+        'Campylobacter coli': 'Campylobacter',
+        'Campylobacter jejuni': 'Campylobacter',
+        'Clostridioides difficile': 'Clostridioides_difficile',
+        'Enterococcus faecalis': 'Enterococcus_faecalis',
+        'Enterococcus faecium': 'Enterococcus_faecium',
+        'Escherichia': 'Escherichia',
+        'Escherichia coli': 'Escherichia',
+        'Klebsiella': 'Klebsiella',
+        'Klebsiella pneumoniae': 'Klebsiella',
+        'Klebsiella oxytoca': 'Klebsiella',
+        'Salmonella': 'Salmonella',
+        'Salmonella enterica': 'Salmonella',
+        'Staphylococcus aureus': 'Staphylococcus_aureus',
+        'Staphylococcus pseudintermedius': 'Staphylococcus_pseudintermedius',
+        'Streptococcus agalactiae': 'Streptococcus_agalactiae',
+        'Streptococcus pneumoniae': 'Streptococcus_pneumoniae',
+        'Streptococcus pyogenes': 'Streptococcus_pyogenes',
+        'Vibrio cholerae': 'Vibrio_cholerae'
+    ]
+
+    // Get AMRFinder organism code if supported, otherwise run in generic mode
+    def amrfinder_organism = meta.organism ? organism_map.get(meta.organism, null) : null
+    def organism_flag = amrfinder_organism ? "-O ${amrfinder_organism}" : ""
+    def organism_note = amrfinder_organism ? "Using organism-specific mode: ${amrfinder_organism}" : "Using generic mode (organism not in AMRFinder database)"
+
     """
+    echo "${organism_note}" >&2
+
     # Find the actual database directory (handles versioned subdirectories)
     # Look for latest symlink first, then search for AMRProt
     if [ -d "${amrfinder_db}/latest" ]; then
@@ -63,6 +94,7 @@ process AMRFINDER {
         fi
     fi
 
+    # Run AMRFinder
     amrfinder \\
         -n ${fasta} \\
         ${organism_flag} \\
@@ -70,10 +102,20 @@ process AMRFINDER {
         --threads ${task.cpus} \\
         -d \$DB_PATH \\
         -o ${meta.id}_amr.tsv \\
-        --mutation_all ${meta.id}_mutations.tsv || true
+        --mutation_all ${meta.id}_mutations.tsv
 
-    # Ensure output files exist even if no results
-    touch ${meta.id}_amr.tsv ${meta.id}_mutations.tsv
+    EXIT_CODE=\$?
+
+    # If AMRFinder failed, create empty output files for pipeline continuity
+    # but log the error
+    if [ \$EXIT_CODE -ne 0 ]; then
+        echo "WARNING: AMRFinder failed with exit code \$EXIT_CODE" >&2
+        echo "Creating empty output files for pipeline continuity" >&2
+        touch ${meta.id}_amr.tsv ${meta.id}_mutations.tsv
+    fi
+
+    # Ensure mutation file exists even if no mutations found (successful run)
+    touch ${meta.id}_mutations.tsv
 
     echo '"AMRFINDER": {"version": "3.12.8"}' > versions.yml
     """
