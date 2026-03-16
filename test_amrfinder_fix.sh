@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16G
-#SBATCH --partition=ksu-gen-highmem.q,ksu-plantpath-lee.q,batch.q
+#SBATCH --partition=batch.q
 
 # Test the AMRFinder organism mapping fix
 # This script tests with 5 Pseudomonas samples to verify the fix
