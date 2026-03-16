@@ -5,7 +5,7 @@
 **Date:** March 16, 2026
 **Focus:** Fix AMRFinder producing 0-byte output files for unsupported organisms
 **Branch:** `hotfix/v1.0.1-amrfinder`
-**Status:** Testing in progress (Job 6976776)
+**Status:** Testing in progress (Job 6976844 - Simple 3-organism validation)
 
 ---
 
@@ -85,21 +85,28 @@ The fix includes mappings for:
 ### Test 1: Quick Pseudomonas Test (Cancelled)
 - **Job:** 6976707 (cancelled)
 - **Purpose:** Test 5 Pseudomonas samples to verify fix
-- **Status:** Cancelled in favor of comprehensive test
+- **Status:** Cancelled in favor of simpler test
 
-### Test 2: Comprehensive Validation (RUNNING)
-- **Job:** 6976776
+### Test 2: Comprehensive 12-Organism Test (Failed - Input Mode Issue)
+- **Jobs:** 6976776, 6976830 (both failed)
 - **Script:** `test_amrfinder_comprehensive.sh`
-- **Samples:** 12 organisms across 3 categories
-  - **Supported (4):** E. coli, Salmonella, Vibrio cholerae, Klebsiella
-  - **Unsupported (4):** Pseudomonas, Citrobacter, Proteus, Serratia
-  - **Edge cases (4):** Campylobacter, Enterococcus, Staph, Acinetobacter
-- **Expected runtime:** 2-4 hours
+- **Issue:** Tried to use `samplesheet` input mode with CSV containing organism info
+- **Problem:** COMPASS doesn't support multi-organism CSV in sra_list mode
+- **Status:** Abandoned - created simpler test instead
+
+### Test 3: Simple 3-Organism Validation (RUNNING) ✓
+- **Job:** 6976844
+- **Script:** `test_amrfinder_simple.sh`
+- **Samples:** 3 organisms (1 sample each)
+  - **SUPPORTED:** Vibrio cholerae (SRR19726915) - Should use `-O Vibrio_cholerae`
+  - **UNSUPPORTED:** Pseudomonas aeruginosa (SRR15214188) - Should use generic mode
+  - **EDGE CASE:** Enterococcus faecium (SRR15214193) - Should use `-O Enterococcus_faecium`
+- **Method:** Uses `sra_list` mode with `--organism` parameter (3 separate pipeline runs)
+- **Expected runtime:** 1-2 hours
 - **Validation criteria:**
-  - All 12 AMR files must be non-empty
-  - Supported organisms use `-O` flag
-  - Unsupported organisms use generic mode
-  - No silent failures
+  - All 3 AMR files must be non-empty
+  - Validates supported, unsupported, and edge case organisms
+  - Proves fix works across critical categories
 
 ---
 
@@ -150,12 +157,13 @@ git tag -d v1.0.1
 - **Status:** Let it finish
 - **Note:** Can re-run with v1.0.1 later for organism-specific mode
 
-### AMRFinder Comprehensive Test (Running)
-- **Job:** 6976776
+### AMRFinder Simple Test (Running)
+- **Job:** 6976844
 - **Directory:** `/fastscratch/tylerdoe/COMPASS-pipeline` (hotfix branch)
 - **Version:** hotfix/v1.0.1-amrfinder
-- **Expected completion:** ~2-4 hours
+- **Expected completion:** ~1-2 hours
 - **Email notification:** Enabled (tdoerks@vet.k-state.edu)
+- **Tests:** 3 organisms (Vibrio, Pseudomonas, Enterococcus)
 
 ---
 
@@ -164,14 +172,18 @@ git tag -d v1.0.1
 ### Test Scripts
 1. **`test_amrfinder_fix.sh`**
    - Simple 5-sample Pseudomonas test
-   - Status: Not used (cancelled)
+   - Status: Cancelled before completion
 
 2. **`test_amrfinder_comprehensive.sh`**
    - Comprehensive 12-organism validation
-   - Downloads fresh samples from NCBI
-   - Tests all organism categories
-   - Automated pass/fail reporting
-   - **Currently running**
+   - Status: Failed due to input mode incompatibility
+   - Lesson: COMPASS sra_list mode doesn't support multi-organism CSV
+
+3. **`test_amrfinder_simple.sh`** ✓
+   - Simple 3-organism validation (1 sample each)
+   - Tests: Vibrio (supported), Pseudomonas (unsupported), Enterococcus (edge case)
+   - Uses sra_list mode with --organism parameter
+   - **Currently running (Job 6976844)**
 
 ### Documentation
 3. **`v1.0.1_DEPLOYMENT.md`**
@@ -187,9 +199,14 @@ git tag -d v1.0.1
 ## Next Steps
 
 ### If Test Passes ✓
-1. Review comprehensive test results
-2. Re-create v1.0.1 tag on hotfix branch
-3. Push tag to GitHub
+1. Review simple test results (3 organisms)
+2. Verify all 3 AMR files are non-empty
+3. Re-create v1.0.1 tag on hotfix branch:
+   ```bash
+   git checkout hotfix/v1.0.1-amrfinder
+   git tag -a v1.0.1 -m "COMPASS Pipeline v1.0.1 - AMRFinder organism mapping fix"
+   git push origin v1.0.1
+   ```
 4. Update production directory on Beocat:
    ```bash
    cd /fastscratch/tylerdoe/COMPASS-pipeline-1.0.0
@@ -197,7 +214,7 @@ git tag -d v1.0.1
    git checkout v1.0.1
    ```
 5. Update documentation
-6. Consider merging to main branch
+6. Consider merging hotfix to main branch
 
 ### If Test Fails ✗
 1. Review failed organism(s)
@@ -249,19 +266,25 @@ Reference: https://github.com/ncbi/amr/wiki/Running-AMRFinderPlus#--organism-opt
 - **2026-03-16 19:00**: Created hotfix branch, implemented organism mapping fix
 - **2026-03-16 20:00**: Created and pushed hotfix to GitHub
 - **2026-03-16 20:30**: Tagged v1.0.1, then deleted for testing
-- **2026-03-16 21:00**: Created comprehensive test script
-- **2026-03-16 21:15**: Submitted comprehensive test (Job 6976776)
-- **2026-03-16 21:30**: Waiting for test results...
+- **2026-03-16 21:00**: Created comprehensive 12-organism test script
+- **2026-03-16 21:15**: Submitted comprehensive test (Job 6976776) - failed (Nextflow path issue)
+- **2026-03-16 21:20**: Fixed Nextflow path, resubmitted (Job 6976830) - failed (input_mode issue)
+- **2026-03-16 21:30**: Discovered COMPASS sra_list mode doesn't support multi-organism CSV
+- **2026-03-16 21:45**: Created simple 3-organism test using sra_list mode properly
+- **2026-03-16 22:00**: Submitted simple test (Job 6976844) - RUNNING ✓
+- **2026-03-16 22:15**: Test progressing normally, waiting for results...
 
 ---
 
-## Files Modified
+## Files Modified/Created
 
 ```
-modules/amrfinder.nf                           # Core fix
-test_amrfinder_comprehensive.sh                # Validation script
-v1.0.1_DEPLOYMENT.md                           # Deployment guide
-SESSION_NOTES_2026-03-16_amrfinder_fix.md     # This file
+modules/amrfinder.nf                           # Core fix (hotfix branch)
+test_amrfinder_fix.sh                          # First test attempt (scratch branch)
+test_amrfinder_comprehensive.sh                # Comprehensive test (failed - scratch branch)
+test_amrfinder_simple.sh                       # Simple test (RUNNING - scratch branch)
+v1.0.1_DEPLOYMENT.md                           # Deployment guide (scratch branch)
+SESSION_NOTES_2026-03-16_amrfinder_fix.md     # This file (scratch branch)
 ```
 
 ## Git Status
