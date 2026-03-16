@@ -65,25 +65,48 @@ def search_sra(query, retmax=10000):
     return id_list
 
 
-def fetch_sra_metadata(sra_ids):
-    """Fetch full metadata for list of SRA IDs"""
+def fetch_sra_metadata(sra_ids, batch_size=100):
+    """Fetch full metadata for list of SRA IDs (batched to avoid URL length limits)"""
     if not sra_ids:
         return []
 
-    # Join IDs into comma-separated string
-    id_string = ','.join(sra_ids)
+    # Batch requests to avoid "414 URI Too Long" error
+    all_xml = []
 
-    params = {
-        'db': 'sra',
-        'id': id_string,
-        'rettype': 'full',
-        'retmode': 'xml'
-    }
+    for i in range(0, len(sra_ids), batch_size):
+        batch = sra_ids[i:i+batch_size]
+        id_string = ','.join(batch)
 
-    response = requests.get(EFETCH_URL, params=params)
-    response.raise_for_status()
+        params = {
+            'db': 'sra',
+            'id': id_string,
+            'rettype': 'full',
+            'retmode': 'xml'
+        }
 
-    return response.text
+        response = requests.get(EFETCH_URL, params=params)
+        response.raise_for_status()
+
+        all_xml.append(response.text)
+
+        # Small delay between batches
+        if i + batch_size < len(sra_ids):
+            time.sleep(0.5)
+
+    # Combine XML (wrap in root element)
+    if len(all_xml) == 1:
+        return all_xml[0]
+    else:
+        # Combine multiple XML responses
+        combined = '<EXPERIMENT_PACKAGE_SET>'
+        for xml in all_xml:
+            # Extract EXPERIMENT_PACKAGE elements
+            if '<EXPERIMENT_PACKAGE>' in xml:
+                start = xml.find('<EXPERIMENT_PACKAGE>')
+                end = xml.rfind('</EXPERIMENT_PACKAGE>') + len('</EXPERIMENT_PACKAGE>')
+                combined += xml[start:end]
+        combined += '</EXPERIMENT_PACKAGE_SET>'
+        return combined
 
 
 def parse_sra_xml(xml_text):
