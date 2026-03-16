@@ -100,7 +100,7 @@ module load Nextflow || {
 }
 
 # Run pipeline
-nextflow run workflows/main.nf \
+nextflow run ${PIPELINE_DIR}/workflows/main.nf \
     -profile hpc \
     --input ${SAMPLESHEET} \
     --input_mode samplesheet \
