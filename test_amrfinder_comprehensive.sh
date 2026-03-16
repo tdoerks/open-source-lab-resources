@@ -100,8 +100,8 @@ module load Nextflow || {
 }
 
 # Run pipeline
-nextflow run ${PIPELINE_DIR}/workflows/main.nf \
-    -profile hpc \
+nextflow run main.nf \
+    -profile beocat \
     --input ${SAMPLESHEET} \
     --input_mode samplesheet \
     --outdir ${TEST_DIR}/results \
