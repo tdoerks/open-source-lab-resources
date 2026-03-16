@@ -346,12 +346,179 @@ rsync -av --progress \
 
 ---
 
+---
+
+## Part 3: NARMS Data Transfer (Windows to Beocat)
+
+### Objective
+Transfer local NARMS backup data from Windows machine to Beocat bulk storage for archival.
+
+### Setup Steps
+
+**Challenge**: WSL Ubuntu 24.04 didn't have D: drive mounted by default.
+
+**Solution**:
+```bash
+# Mount D: drive in WSL
+sudo mkdir -p /mnt/d
+sudo mount -t drvfs D: /mnt/d
+```
+
+### Transfer Execution
+
+**Data transferred**:
+- Source: `D:\NARMS Data Backup\` (Windows local drive)
+- Destination: `/bulk/tylerdoe/narms/` (Beocat bulk storage)
+- Years: 2020, 2021, 2022, 2023, 2024, 2025, 2026
+- Method: `rsync` in screen session for reliability
+
+**Command used**:
+```bash
+screen -S narms_transfer
+cd "/mnt/d/NARMS Data Backup"
+rsync -avP ./ tylerdoe@beocat.ksu.edu:/bulk/tylerdoe/narms/
+```
+
+**Status**: Transfer running in screen session (large FASTQ files, will take several hours)
+
+**Notes**:
+- Used `screen` to allow transfer to continue if connection drops
+- `rsync` will skip files already present on Beocat
+- Can resume transfer if interrupted
+
+---
+
+## Part 4: Vibrio Download Script Fix
+
+### Issue Encountered
+Vibrio download script failed on Month 2 (Feb 2020) with:
+```
+requests.exceptions.HTTPError: 414 Client Error: Request-URI Too Long
+```
+
+**Cause**: 510 samples found for Feb 2020 - too many IDs to pass in single NCBI API request (URL length limit).
+
+### Solution Implemented
+
+Modified `fetch_vibrio_geographic.py` to batch large requests:
+
+**Changes to `fetch_sra_metadata()` function:**
+- Added `batch_size=100` parameter
+- Split large ID lists into batches of 100
+- Make multiple API requests for large months
+- Combine batched XML responses properly
+- Added 0.5s delay between batches
+
+**Git commit**: `763770d` - "Fix Vibrio download script: batch NCBI requests to avoid 414 URI Too Long error"
+
+### Vibrio Download Status
+
+**Running successfully!** Currently on Month 34 (Oct 2022) of 75 total months.
+
+**Sample geographic distribution observed:**
+- Month 32 (Aug 2022): 26 South Asia, 18 Americas, 6 Southeast Asia → stratified to 50
+- Month 33 (Sep 2022): 45 Africa, 11 Other → selected 10 Africa + 40 Other
+- Successfully adapting to regional data availability
+
+**Expected completion**: ~75-90 minutes total (started ~30 mins ago)
+
+**Next steps after download completes:**
+```bash
+cd /fastscratch/tylerdoe/COMPASS-pipeline-1.0.0/vibrio_cholerae_temporal_geographic
+python3 scripts/create_samplesheet.py
+sbatch run_vibrio_cholerae.sh
+```
+
+---
+
+## Part 5: Archive Status Check
+
+### Diverse Bacteria 1000 Results
+- **Status**: ✅ Already transferred to `/bulk/tylerdoe/archives/diverse_bacteria_1000_results/`
+- Contains: assemblies, AMR, prophage, plasmid, MLST, BUSCO, etc.
+- FASTQs excluded (space savings)
+- No additional transfer needed
+
+---
+
+## Current Status Summary
+
+### Jobs Running on Beocat
+
+**1. Pseudomonas Phage Hunter** (Job 6865835)
+- Status: ~99% complete, final samples finishing
+- Progress visible: QUAST 2630/2636, AMRFinder 2629/2636, VIBRANT 2579/2636
+- Started: March 12, 10:20 AM
+- Runtime so far: ~4 days
+- Expected completion: Within 30-60 minutes
+
+**2. Vibrio Download** (in progress)
+- Currently on Month 34 of 75 (Oct 2022)
+- Geographic stratification working correctly
+- Expected completion: 45-60 minutes remaining
+- Ready to submit pipeline job after download completes
+
+**3. NARMS Data Transfer** (in screen session)
+- Transferring 2020-2026 FASTQ data from Windows to Beocat
+- Running in `screen -S narms_transfer`
+- Large transfer, will take several hours
+
+**4. ETEC Validation v1.0.0** (Job 6852091)
+- Status: Unknown (need to check)
+- 8 ETEC reference strains
+
+---
+
+## Git Repository Status
+
+**Branch:** scratch
+
+**Recent commits:**
+- `763770d` - Fix Vibrio download script (batch NCBI requests)
+- `ba75a14` - Add Vibrio cholerae geographic + temporal study
+- `0a89b5e` - Session notes for 2026-03-16
+
+**Pushed to GitHub:** ✅
+
+---
+
+## Updated Action Items
+
+### Immediate (Next 1-2 hours)
+- [ ] Monitor Pseudomonas job completion
+- [ ] Monitor Vibrio download completion
+- [ ] Generate Vibrio samplesheet after download completes
+- [ ] Submit Vibrio job to run after Pseudomonas finishes
+
+### Short-term
+- [ ] Check ETEC validation status (job 6852091)
+- [ ] Archive Pseudomonas results to bulk (when complete)
+- [ ] Monitor NARMS transfer completion (screen session)
+- [ ] Compare ETEC prophage predictions: paper vs COMPASS
+- [ ] Provide collaborator with ETEC mapping information
+
+### Future Studies to Design
+- [ ] Staphylococcus aureus temporal (4-8 prophages/genome, MRSA)
+- [ ] Salmonella enterica temporal (4-7 prophages/genome, serotypes)
+- [ ] Klebsiella pneumoniae temporal (3-5 prophages/genome, CRE)
+
+---
+
 *Session date: 2026-03-16*
+
 *Jobs running:*
-- *6865835 (Pseudomonas Phage Hunter) - ~99% complete*
-- *6852091 (ETEC validation) - status unknown*
+- *6865835 (Pseudomonas Phage Hunter) - ~99% complete, finishing soon*
+- *Vibrio download - Month 34/75, ~45-60 min remaining*
+- *NARMS transfer - running in screen session*
 
 *Projects created:*
-- *Vibrio cholerae geographic + temporal study - READY TO RUN*
+- *Vibrio cholerae geographic + temporal study - download in progress*
 
-*Next session: Launch Vibrio after Pseudomonas completes, design Staph/Salmonella/Klebsiella studies*
+*Accomplishments:*
+- *✅ Fixed Pseudomonas Nextflow lock issue*
+- *✅ Created Vibrio geographic+temporal study*
+- *✅ Fixed Vibrio download batching bug*
+- *✅ Started NARMS data transfer to bulk*
+- *✅ Confirmed diverse bacteria already archived*
+
+*Next session: Submit Vibrio job when download completes, design additional phage-rich studies*
