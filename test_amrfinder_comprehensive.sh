@@ -7,6 +7,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --partition=killable.q
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=tdoerks@vet.k-state.edu
 
 # Comprehensive AMRFinder v1.0.1 Validation Test
 # Tests organism mapping across supported, unsupported, and edge-case organisms
