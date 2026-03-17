@@ -8,7 +8,7 @@ DATA_DIR="/fastscratch/tylerdoe/COMPASS-pipeline/diverse_bacteria_1000/data/srr_
 echo "Creating AMRFinder FASTA test samplesheet with 2 samples per organism..."
 echo ""
 
-echo "sample,assembly,organism" > $OUTPUT
+echo "sample,fasta,organism" > $OUTPUT
 
 for org_file in $DATA_DIR/*_srr_list.txt; do
     org_name=$(basename $org_file _srr_list.txt | sed 's/_/ /g')
