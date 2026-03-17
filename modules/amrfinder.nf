@@ -57,9 +57,9 @@ process AMRFINDER {
         'Enterococcus faecium': 'Enterococcus_faecium',
         'Escherichia': 'Escherichia',
         'Escherichia coli': 'Escherichia',
-        'Klebsiella': 'Klebsiella',
-        'Klebsiella pneumoniae': 'Klebsiella',
-        'Klebsiella oxytoca': 'Klebsiella',
+        'Klebsiella': 'Klebsiella_pneumoniae',
+        'Klebsiella pneumoniae': 'Klebsiella_pneumoniae',
+        'Klebsiella oxytoca': 'Klebsiella_oxytoca',
         'Salmonella': 'Salmonella',
         'Salmonella enterica': 'Salmonella',
         'Staphylococcus aureus': 'Staphylococcus_aureus',
@@ -67,7 +67,19 @@ process AMRFINDER {
         'Streptococcus agalactiae': 'Streptococcus_agalactiae',
         'Streptococcus pneumoniae': 'Streptococcus_pneumoniae',
         'Streptococcus pyogenes': 'Streptococcus_pyogenes',
-        'Vibrio cholerae': 'Vibrio_cholerae'
+        'Vibrio cholerae': 'Vibrio_cholerae',
+        'Vibrio parahaemolyticus': 'Vibrio_parahaemolyticus',
+        'Vibrio vulnificus': 'Vibrio_vulnificus',
+        'Citrobacter freundii': 'Citrobacter_freundii',
+        'Enterobacter asburiae': 'Enterobacter_asburiae',
+        'Enterobacter cloacae': 'Enterobacter_cloacae',
+        'Serratia marcescens': 'Serratia_marcescens',
+        'Burkholderia cepacia': 'Burkholderia_cepacia',
+        'Burkholderia pseudomallei': 'Burkholderia_pseudomallei',
+        'Burkholderia mallei': 'Burkholderia_mallei',
+        'Neisseria gonorrhoeae': 'Neisseria_gonorrhoeae',
+        'Neisseria meningitidis': 'Neisseria_meningitidis',
+        'Corynebacterium diphtheriae': 'Corynebacterium_diphtheriae'
     ]
 
     // Get AMRFinder organism code if supported, otherwise run in generic mode
