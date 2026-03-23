@@ -42,6 +42,10 @@ module load Nextflow || {
 # Set unique Nextflow home to avoid cache conflicts
 export NXF_HOME=/fastscratch/tylerdoe/.nextflow_vibrio_cholerae
 
+# Increase Nextflow JVM heap size for large runs (3,750+ samples)
+# Prevents "java.lang.OutOfMemoryError: Java heap space" during pipeline orchestration
+export NXF_OPTS='-Xms2g -Xmx8g'
+
 # Set output directory
 OUTPUT_DIR="/fastscratch/tylerdoe/vibrio_cholerae_results"
 
