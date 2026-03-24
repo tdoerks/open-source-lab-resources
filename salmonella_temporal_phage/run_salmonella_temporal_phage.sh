@@ -22,9 +22,10 @@ echo ""
 
 # Change to pipeline directory
 # NOTE: Update this path based on which COMPASS version you're using
+# For 1.0.1: /fastscratch/tylerdoe/COMPASS-pipeline-1.0.1-candidate
 # For 1.0.0: /fastscratch/tylerdoe/COMPASS-pipeline-1.0.0
 # For scratch: /fastscratch/tylerdoe/COMPASS-pipeline
-PIPELINE_DIR="/fastscratch/tylerdoe/COMPASS-pipeline-1.0.0"
+PIPELINE_DIR="/fastscratch/tylerdoe/COMPASS-pipeline-1.0.1-candidate"
 PROJECT_DIR="$PIPELINE_DIR/salmonella_temporal_phage"
 
 cd "$PIPELINE_DIR" || {
