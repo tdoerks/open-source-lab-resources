@@ -5,6 +5,7 @@
 
 include { PROKKA } from '../modules/prokka'
 include { PANAROO; PANAROO_SUMMARY } from '../modules/panaroo'
+include { IQTREE; IQTREE_MIDPOINT_ROOT; VISUALIZE_TREE } from '../modules/iqtree'
 
 workflow COMPARATIVE_GENOMICS {
     take:
@@ -43,11 +44,33 @@ workflow COMPARATIVE_GENOMICS {
         ch_panaroo_stats = PANAROO_SUMMARY.out.stats
     }
 
+    // Phylogenetic tree construction with IQ-TREE (only if Panaroo produced alignment)
+    ch_iqtree_tree = Channel.empty()
+    ch_iqtree_rooted = Channel.empty()
+    ch_iqtree_plot = Channel.empty()
+
+    if (!params.skip_panaroo && !params.skip_iqtree) {
+        // Build phylogenetic tree from Panaroo core genome alignment
+        IQTREE(ch_panaroo_alignment)
+        ch_iqtree_tree = IQTREE.out.tree
+
+        // Root tree at midpoint for better visualization
+        IQTREE_MIDPOINT_ROOT(IQTREE.out.tree)
+        ch_iqtree_rooted = IQTREE_MIDPOINT_ROOT.out.rooted_tree
+
+        // Visualize tree
+        VISUALIZE_TREE(IQTREE_MIDPOINT_ROOT.out.rooted_tree, Channel.empty())
+        ch_iqtree_plot = VISUALIZE_TREE.out.png
+    }
+
     // Collect versions
     ch_versions = Channel.empty()
     ch_versions = ch_versions.mix(PROKKA.out.versions)
     if (!params.skip_panaroo) {
         ch_versions = ch_versions.mix(PANAROO.out.versions.first())
+    }
+    if (!params.skip_panaroo && !params.skip_iqtree) {
+        ch_versions = ch_versions.mix(IQTREE.out.versions.first())
     }
 
     emit:
@@ -60,5 +83,8 @@ workflow COMPARATIVE_GENOMICS {
     panaroo_matrix = ch_panaroo_matrix             // channel: path(gene_presence_absence.csv)
     panaroo_alignment = ch_panaroo_alignment       // channel: path(core_gene_alignment.aln)
     panaroo_stats = ch_panaroo_stats               // channel: path(pangenome_statistics.tsv)
+    iqtree_tree = ch_iqtree_tree                   // channel: path(alignment.treefile)
+    iqtree_rooted = ch_iqtree_rooted               // channel: path(alignment.rooted.treefile)
+    iqtree_plot = ch_iqtree_plot                   // channel: path(phylogenetic_tree.png)
     versions = ch_versions                          // channel: path(versions.yml)
 }
