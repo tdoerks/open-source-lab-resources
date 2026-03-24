@@ -47,8 +47,11 @@ def parse_abricate_vfdb(abricate_dir):
         sample_id = vfdb_file.stem.replace('_vfdb', '')
 
         try:
-            # Read ABRicate output
-            df = pd.read_csv(vfdb_file, sep='\\t', comment='#')
+            # Read ABRicate output - header starts with #FILE
+            df = pd.read_csv(vfdb_file, sep='\t')
+
+            # Remove the # from column names if present
+            df.columns = df.columns.str.replace('^#', '', regex=True)
 
             if df.empty:
                 continue
