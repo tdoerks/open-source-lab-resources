@@ -9,6 +9,7 @@ include { AMR_ANALYSIS } from '../subworkflows/amr_analysis'
 include { PHAGE_ANALYSIS } from '../subworkflows/phage_analysis'
 include { TYPING } from '../subworkflows/typing'
 include { MOBILE_ELEMENTS } from '../subworkflows/mobile_elements'
+include { COMPARATIVE_GENOMICS } from '../subworkflows/comparative_genomics'
 include { COMBINE_RESULTS } from '../modules/combine_results'
 include { COMPASS_SUMMARY } from '../modules/compass_summary'
 include { MULTIQC } from '../modules/multiqc'
@@ -140,8 +141,15 @@ workflow COMPLETE_PIPELINE {
             phage: [meta, fasta]
             typing: [meta, fasta]
             mobile: [meta, fasta]
+            annotation: [meta, fasta]
         }
         .set { ch_assemblies_split }
+
+    // Run genome annotation (Prokka) if enabled - optional for comparative genomics
+    if (!params.skip_prokka) {
+        COMPARATIVE_GENOMICS(ch_assemblies_split.annotation)
+        ch_versions = ch_versions.mix(COMPARATIVE_GENOMICS.out.versions)
+    }
 
     // Run AMR analysis - samples processed as they arrive
     AMR_ANALYSIS(ch_assemblies_split.amr)
