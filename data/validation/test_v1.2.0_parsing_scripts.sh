@@ -126,9 +126,10 @@ echo ""
 echo "=========================================="
 echo "Test 5: Analyze prophage integration sites"
 echo "=========================================="
+# Use mobsuite directory since assemblies aren't published separately
 python3 "$BIN_DIR/analyze_prophage_integration_sites.py" \
     --vibrant ../vibrant/ \
-    --assemblies ../assembly/ \
+    --assemblies ../mobsuite/ \
     --output prophage_integration_sites.tsv \
     --flanking-length 1000
 

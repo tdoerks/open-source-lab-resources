@@ -201,10 +201,24 @@ def analyze_integration_sites(prophage_data, assembly_dir, flank_len=1000):
     integration_sites = []
 
     for sample_id, prophages in prophage_data.items():
-        # Find assembly file
+        # Find assembly file - try multiple locations
+        # 1. Try assembly directory
         assembly_files = list(assembly_path.glob(f"{sample_id}*.fasta")) + \
                         list(assembly_path.glob(f"{sample_id}*.fa")) + \
                         list(assembly_path.glob(f"{sample_id}*.fna"))
+
+        # 2. Try mobsuite directory (chromosome.fasta)
+        if not assembly_files:
+            mobsuite_dir = assembly_path.parent / "mobsuite" / f"{sample_id}_mobsuite"
+            if mobsuite_dir.exists():
+                assembly_files = list(mobsuite_dir.glob("chromosome.fasta"))
+
+        # 3. Try quast directory
+        if not assembly_files:
+            quast_dir = assembly_path.parent / "quast" / f"{sample_id}_quast"
+            if quast_dir.exists():
+                assembly_files = list(quast_dir.glob("contigs.fasta")) + \
+                               list(quast_dir.glob("*.fasta"))
 
         if not assembly_files:
             print(f"WARNING: No assembly found for {sample_id}", file=sys.stderr)

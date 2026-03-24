@@ -50,60 +50,54 @@ def find_vibrant_results(vibrant_dir):
         # Extract sample ID (remove _vibrant suffix if present)
         sample_id = sample_dir.name.replace('_vibrant', '')
 
-        # Look for VIBRANT results file
-        # Pattern: VIBRANT_phages_*/VIBRANT_results_*.txt
-        phages_dir = list(sample_dir.glob('VIBRANT_phages_*'))
+        # Look for VIBRANT integrated prophage coordinates file
+        # Pattern: VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv
+        prophage_files = list(sample_dir.glob('VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv'))
 
-        if phages_dir:
-            results_file = list(phages_dir[0].glob('VIBRANT_results_*.txt'))
-            if results_file:
-                results_files[sample_id] = results_file[0]
+        if prophage_files:
+            results_files[sample_id] = prophage_files[0]
 
     return results_files
 
 def parse_vibrant_file(results_file):
     """
-    Parse a single VIBRANT results file
+    Parse a single VIBRANT integrated prophage coordinates file
 
     Returns: list of prophage predictions with metadata
     """
     prophages = []
 
     try:
-        with open(results_file, 'r') as f:
-            # Skip header comments
-            for line in f:
-                if line.startswith('#'):
-                    continue
-                if not line.strip():
-                    continue
+        # Read TSV file with pandas
+        df = pd.read_csv(results_file, sep='\t')
 
-                # Parse tab-delimited results
-                fields = line.strip().split('\t')
+        for _, row in df.iterrows():
+            scaffold = row.get('scaffold', 'unknown')
+            fragment = row.get('fragment', 'unknown')
+            nucleotide_start = row.get('nucleotide start', 0)
+            nucleotide_stop = row.get('nucleotide stop', 0)
+            nucleotide_length = row.get('nucleotide length', 0)
+            protein_count = row.get('protein length', 0)
 
-                if len(fields) < 2:
-                    continue
+            # For integrated prophages, quality is based on length and protein count
+            # Heuristic: longer prophages with more proteins are higher quality
+            if nucleotide_length > 40000 and protein_count > 50:
+                quality = "high"
+            elif nucleotide_length > 20000 and protein_count > 30:
+                quality = "medium"
+            else:
+                quality = "low"
 
-                scaffold = fields[0]
-                prediction = fields[1] if len(fields) > 1 else "unknown"
-
-                # Extract quality/classification if available
-                # VIBRANT classifications: complete, high quality, medium quality, low quality
-                quality = "unknown"
-                if "complete" in prediction.lower():
-                    quality = "complete"
-                elif "high" in prediction.lower():
-                    quality = "high"
-                elif "medium" in prediction.lower():
-                    quality = "medium"
-                elif "low" in prediction.lower():
-                    quality = "low"
-
-                prophages.append({
-                    'scaffold': scaffold,
-                    'prediction': prediction,
-                    'quality': quality
-                })
+            prophages.append({
+                'scaffold': scaffold,
+                'fragment': fragment,
+                'start': nucleotide_start,
+                'end': nucleotide_stop,
+                'length': nucleotide_length,
+                'proteins': protein_count,
+                'prediction': 'integrated_prophage',
+                'quality': quality
+            })
 
     except Exception as e:
         print(f"Warning: Could not parse {results_file}: {e}", file=sys.stderr)
