@@ -222,47 +222,47 @@ def main():
     args = parser.parse_args()
 
     # Parse VFDB results
-    print("\\nParsing ABRicate VFDB results...")
+    print("\nParsing ABRicate VFDB results...")
     vf_df = parse_abricate_vfdb(args.abricate)
 
     if vf_df.empty:
-        print("\\nERROR: No virulence factors detected. Check:")
+        print("\nERROR: No virulence factors detected. Check:")
         print("  1. ABRicate was run with VFDB database")
         print("  2. VFDB result files exist (*_vfdb.tsv)")
         print("  3. Samples contain detectable virulence factors")
         sys.exit(1)
 
     # Create per-sample summary
-    print("\\nCreating per-sample virulence summary...")
+    print("\nCreating per-sample virulence summary...")
     summary_df = create_virulence_summary(vf_df)
-    summary_df.to_csv(args.output, sep='\\t', index=False)
+    summary_df.to_csv(args.output, sep='\t', index=False)
     print(f"✅ Per-sample summary written to {args.output}")
     print(f"   Samples analyzed: {len(summary_df)}")
     print(f"   Total unique VF genes: {vf_df['GENE'].nunique()}")
 
     # Create gene matrix if requested
     if args.matrix:
-        print("\\nCreating virulence gene presence/absence matrix...")
+        print("\nCreating virulence gene presence/absence matrix...")
         matrix_df = create_virulence_matrix(vf_df)
-        matrix_df.to_csv(args.matrix, sep='\\t')
+        matrix_df.to_csv(args.matrix, sep='\t')
         print(f"✅ Gene matrix written to {args.matrix}")
         print(f"   Genes tracked: {len(matrix_df)}")
 
     # Create top genes report if requested
     if args.top_genes:
-        print(f"\\nIdentifying top {args.top_n} virulence genes...")
+        print(f"\nIdentifying top {args.top_n} virulence genes...")
         top_genes_df = get_top_virulence_genes(vf_df, args.top_n)
-        top_genes_df.to_csv(args.top_genes, sep='\\t', index=False)
+        top_genes_df.to_csv(args.top_genes, sep='\t', index=False)
         print(f"✅ Top genes written to {args.top_genes}")
 
         # Display top 10 for quick review
-        print("\\n📊 Top 10 Most Frequent Virulence Genes:")
+        print("\n📊 Top 10 Most Frequent Virulence Genes:")
         print(top_genes_df[['gene', 'product', 'sample_count', 'percentage']].head(10).to_string(index=False))
 
-    print("\\n✅ Virulence factor analysis complete!")
+    print("\n✅ Virulence factor analysis complete!")
 
     # Summary statistics
-    print("\\n" + "="*60)
+    print("\n" + "="*60)
     print("SUMMARY STATISTICS")
     print("="*60)
     print(f"Total samples: {vf_df['sample'].nunique()}")
