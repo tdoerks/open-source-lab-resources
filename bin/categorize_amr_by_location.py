@@ -39,17 +39,9 @@ def parse_amrfinder(amrfinder_dir):
 
     amrfinder_path = Path(amrfinder_dir)
 
-    # Find all AMRFinder TSV files
-    for sample_dir in amrfinder_path.iterdir():
-        if not sample_dir.is_dir():
-            continue
-
-        sample_id = sample_dir.name
-        amr_file = sample_dir / f"{sample_id}_amr.tsv"
-
-        if not amr_file.exists():
-            print(f"Warning: No AMR file for {sample_id}", file=sys.stderr)
-            continue
+    # Find all AMRFinder TSV files (files are directly in directory, not subdirs)
+    for amr_file in amrfinder_path.glob('*_amr.tsv'):
+        sample_id = amr_file.stem.replace('_amr', '')
 
         # Parse AMRFinder output
         try:
@@ -124,22 +116,23 @@ def parse_vibrant(vibrant_dir):
     vibrant_path = Path(vibrant_dir)
 
     for sample_dir in vibrant_path.iterdir():
-        if not sample_dir.is_dir() or not sample_dir.name.endswith('_vibrant'):
+        if not sample_dir.is_dir():
             continue
 
         sample_id = sample_dir.name.replace('_vibrant', '')
 
         # Look for VIBRANT integrated_prophage_coordinates file
-        prophage_file = sample_dir / 'VIBRANT_integrated_prophage_coordinates' / f'{sample_id}_integrated_prophage_coordinates.tsv'
+        # Actual path: vibrant/E1373_vibrant/VIBRANT_E1373/VIBRANT_results_E1373/VIBRANT_integrated_prophage_coordinates_E1373.tsv
+        prophage_files = list(sample_dir.glob('VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv'))
 
-        if prophage_file.exists():
+        if prophage_files:
             try:
-                df = pd.read_csv(prophage_file, sep='\t')
+                df = pd.read_csv(prophage_files[0], sep='\t')
 
                 for _, row in df.iterrows():
                     contig = row['scaffold']
-                    start = int(row['fragment'])  # This may need adjustment based on VIBRANT output
-                    end = int(row['fragment'])  # VIBRANT uses fragment numbers, may need parsing
+                    start = int(row['nucleotide start'])
+                    end = int(row['nucleotide stop'])
 
                     # Store prophage region
                     prophage_regions[sample_id].append({
@@ -148,14 +141,7 @@ def parse_vibrant(vibrant_dir):
                         'end': end
                     })
             except Exception as e:
-                print(f"Warning: Could not parse {prophage_file}: {e}", file=sys.stderr)
-
-        # Alternative: parse from phages_combined output
-        phages_combined = sample_dir / 'VIBRANT_phages' / f'{sample_id}.phages_combined.txt'
-        if phages_combined.exists() and not prophage_file.exists():
-            # Parse alternative format
-            # This is a fallback - actual parsing depends on VIBRANT version
-            pass
+                print(f"Warning: Could not parse {prophage_files[0]}: {e}", file=sys.stderr)
 
     return prophage_regions
 
