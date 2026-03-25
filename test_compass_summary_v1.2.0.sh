@@ -73,11 +73,14 @@ echo "Running COMPASS Summary Generator..."
 echo "========================================================================"
 echo ""
 
-SCRIPT_PATH="/workspace/bin/generate_compass_summary.py"
+# Find script in current directory or bin/
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_PATH="$SCRIPT_DIR/bin/generate_compass_summary.py"
 
 # Check if script exists
 if [ ! -f "$SCRIPT_PATH" ]; then
     echo "❌ Script not found: $SCRIPT_PATH"
+    echo "   Expected in: $(dirname $SCRIPT_PATH)"
     exit 1
 fi
 
