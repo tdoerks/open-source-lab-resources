@@ -12,11 +12,11 @@ echo "========================================================================"
 
 # Check if we're on Beocat (has /fastscratch)
 if [ -d "/fastscratch/tylerdoe" ]; then
-    RESULTS_DIR="/fastscratch/tylerdoe/COMPASS-pipeline-1.2.0-candidate/results"
+    RESULTS_DIR="/fastscratch/tylerdoe/COMPASS-pipeline-1.2.0-candidate/data/validation/etec_results_v1.2.0"
     echo "✅ Running on Beocat"
 else
     echo "❌ This script should be run on Beocat where ETEC validation results exist"
-    echo "   Expected location: /fastscratch/tylerdoe/COMPASS-pipeline-1.2.0-candidate/results"
+    echo "   Expected location: /fastscratch/tylerdoe/COMPASS-pipeline-1.2.0-candidate/data/validation/etec_results_v1.2.0"
     exit 1
 fi
 
@@ -41,15 +41,23 @@ for dir in quast busco mlst sistr amrfinder mobsuite vibrant; do
 done
 echo ""
 
-# Check for metadata file
-METADATA_FILE="$RESULTS_DIR/../filtered_samples/filtered_samples.csv"
-if [ -f "$METADATA_FILE" ]; then
-    echo "✅ Metadata file found: $METADATA_FILE"
-    sample_count=$(tail -n +2 "$METADATA_FILE" | wc -l)
-    echo "   Samples in metadata: $sample_count"
-else
-    echo "⚠️  Metadata file not found (optional): $METADATA_FILE"
-    METADATA_FILE=""
+# Check for metadata file (try multiple locations)
+METADATA_FILE=""
+for location in "$RESULTS_DIR/../etec_samplesheet.csv" "$RESULTS_DIR/filtered_samples/filtered_samples.csv" "$RESULTS_DIR/../filtered_samples/filtered_samples.csv"; do
+    if [ -f "$location" ]; then
+        METADATA_FILE="$location"
+        echo "✅ Metadata file found: $METADATA_FILE"
+        sample_count=$(tail -n +2 "$METADATA_FILE" | wc -l)
+        echo "   Samples in metadata: $sample_count"
+        break
+    fi
+done
+
+if [ -z "$METADATA_FILE" ]; then
+    echo "⚠️  Metadata file not found (optional) - tried:"
+    echo "   - $RESULTS_DIR/../etec_samplesheet.csv"
+    echo "   - $RESULTS_DIR/filtered_samples/filtered_samples.csv"
+    echo "   - $RESULTS_DIR/../filtered_samples/filtered_samples.csv"
 fi
 echo ""
 
