@@ -169,10 +169,24 @@ Successfully added 5 major new features to COMPASS v1.2.0 and began validation t
 5. VFDB virulence parser - **100% working**
 
 ### What's In Progress 🔄
-1. **AMR categorization parser** - Code fixed, needs testing
-2. **Prophage integration site analysis** - Code updated to use mobsuite assemblies
-3. **Prokka annotation parser** - Not yet tested
-4. **Master results table** - Not yet tested
+1. **AMR categorization parser** - ✅ Code fixed (commit 8f1851e), ready for testing
+2. **Prophage integration site analysis** - ✅ Code fixed (commit 8f1851e), ready for testing
+3. **Prokka annotation parser** - ✅ Created (commit 8f1851e), ready for testing
+4. **Master results table** - ✅ Code fixed (commit 8f1851e), ready for testing
+
+### Latest Fixes (Commit 8f1851e - March 25, 2026)
+1. **analyze_prophage_integration_sites.py:**
+   - Fixed escaped tab delimiter bug (`sep='\\t'` → `sep='\t'`)
+   - Already had correct assembly lookup in mobsuite/
+
+2. **create_master_results_table.py:**
+   - Fixed AMRFinder file lookup (files in amrfinder/ directly, not subdirs)
+   - Changed to use glob pattern `amrfinder/*.tsv`
+
+3. **summarize_prokka_annotations.py:**
+   - NEW script created from scratch
+   - Parses Prokka .txt and .gff files
+   - Outputs gene counts, annotation quality, hypothetical protein %
 
 ### Next Steps (Resume Here)
 
@@ -240,6 +254,7 @@ Successfully added 5 major new features to COMPASS v1.2.0 and began validation t
 9. `6628006` - Fix ABRicate VFDB parser column headers
 10. `daba181` - Fix escaped tab characters in VFDB parser
 11. `f1b04d6` - Fix AMR categorization file structure
+12. `8f1851e` - Fix remaining parsing scripts for validation testing (NEW - March 25)
 
 ---
 
