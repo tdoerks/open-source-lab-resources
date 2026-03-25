@@ -45,13 +45,17 @@ def parse_vibrant_results(vibrant_dir):
     prophage_data = defaultdict(list)
 
     for sample_dir in sample_dirs:
-        sample_id = sample_dir.name
+        # Extract sample ID (remove _vibrant suffix if present)
+        sample_id = sample_dir.name.replace('_vibrant', '')
 
-        # Look for integrated prophage file
-        integrated_file = sample_dir / f"{sample_id}_integrated_prophage_coordinates.tsv"
+        # Look for VIBRANT integrated prophage coordinates file
+        # Pattern: VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv
+        prophage_files = list(sample_dir.glob('VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv'))
 
-        if not integrated_file.exists():
+        if not prophage_files:
             continue
+
+        integrated_file = prophage_files[0]
 
         try:
             # Read prophage coordinates
