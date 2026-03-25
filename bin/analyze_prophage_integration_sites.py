@@ -371,7 +371,7 @@ def main():
 
     # Create DataFrame and write output
     df = pd.DataFrame(integration_sites)
-    df.to_csv(args.output, sep='\\t', index=False)
+    df.to_csv(args.output, sep='\t', index=False)
 
     print(f"\\n✅ Integration site analysis written to {args.output}")
     print(f"   Samples analyzed: {df['sample'].nunique()}")
