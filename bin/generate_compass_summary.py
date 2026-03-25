@@ -502,6 +502,93 @@ def parse_diamond_prophage(diamond_dir):
                 print(f"Warning: Could not parse DIAMOND results for {diamond_file}: {e}", file=sys.stderr)
     return diamond_data
 
+def parse_prokka(prokka_dir):
+    """Parse Prokka genome annotation results
+
+    Reads Prokka output directly from the prokka/ directory structure.
+    Each sample should have a subdirectory with .txt and .gff files.
+
+    Args:
+        prokka_dir: Path to Prokka results directory
+
+    Returns:
+        dict[sample_id] = {total_genes, trna_genes, rrna_genes, hypothetical_pct, ...}
+    """
+    prokka_data = {}
+    prokka_path = Path(prokka_dir)
+
+    if not prokka_path.exists():
+        return prokka_data
+
+    for sample_dir in prokka_path.iterdir():
+        if not sample_dir.is_dir():
+            continue
+
+        sample_id = sample_dir.name.replace('_prokka', '')
+
+        # Find .txt and .gff files
+        txt_files = list(sample_dir.glob('*.txt'))
+        gff_files = list(sample_dir.glob('*.gff'))
+
+        if not txt_files or not gff_files:
+            continue
+
+        try:
+            # Parse .txt file for gene counts
+            txt_file = txt_files[0]
+            stats = {'cds': 0, 'trna': 0, 'rrna': 0, 'misc_rna': 0}
+
+            with open(txt_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if 'CDS' in line and ':' in line:
+                        match = re.search(r'(\d+)', line)
+                        if match:
+                            stats['cds'] = int(match.group(1))
+                    elif 'tRNA' in line:
+                        match = re.search(r'(\d+)', line)
+                        if match:
+                            stats['trna'] = int(match.group(1))
+                    elif 'rRNA' in line:
+                        match = re.search(r'(\d+)', line)
+                        if match:
+                            stats['rrna'] = int(match.group(1))
+                    elif 'misc_RNA' in line:
+                        match = re.search(r'(\d+)', line)
+                        if match:
+                            stats['misc_rna'] = int(match.group(1))
+
+            # Parse .gff file for hypothetical protein percentage
+            gff_file = gff_files[0]
+            total_cds = 0
+            hypothetical_count = 0
+
+            with open(gff_file, 'r') as f:
+                for line in f:
+                    if line.startswith('#'):
+                        continue
+                    parts = line.strip().split('\t')
+                    if len(parts) >= 9 and parts[2] == 'CDS':
+                        total_cds += 1
+                        if 'hypothetical protein' in parts[8].lower():
+                            hypothetical_count += 1
+
+            hypothetical_pct = (hypothetical_count / total_cds * 100) if total_cds > 0 else 0
+
+            prokka_data[sample_id] = {
+                'total_genes': stats['cds'],
+                'trna_genes': stats['trna'],
+                'rrna_genes': stats['rrna'],
+                'misc_rna': stats['misc_rna'],
+                'hypothetical_proteins': hypothetical_count,
+                'hypothetical_pct': round(hypothetical_pct, 2)
+            }
+
+        except Exception as e:
+            print(f"Warning: Could not parse Prokka results for {sample_id}: {e}", file=sys.stderr)
+
+    return prokka_data
+
 def parse_multiqc_data(multiqc_dir):
     """Parse MultiQC JSON data to extract key QC metrics for visualization
 
@@ -3717,6 +3804,11 @@ def main():
     print("Parsing DIAMOND prophage matches...")
     diamond_data = parse_diamond_prophage(outdir / 'diamond_prophage')
 
+    print("Parsing Prokka genome annotations...")
+    prokka_data = parse_prokka(outdir / 'prokka')
+    if prokka_data:
+        print(f"  → Found Prokka annotations for {len(prokka_data)} samples")
+
     # Combine all data
     # Only count samples that were actually processed (have core analysis results)
     # Don't count samples that only exist in metadata but weren't processed
@@ -3812,6 +3904,19 @@ def main():
                 'top_prophage_matches': '-'
             })
 
+        # Prokka annotations
+        if sample in prokka_data:
+            row.update(prokka_data[sample])
+        else:
+            row.update({
+                'total_genes': 0,
+                'trna_genes': 0,
+                'rrna_genes': 0,
+                'misc_rna': 0,
+                'hypothetical_proteins': 0,
+                'hypothetical_pct': 0
+            })
+
         summary_data.append(row)
 
     # Create DataFrame
@@ -3827,6 +3932,8 @@ def main():
         'num_contigs', 'assembly_length', 'n50', 'assembly_quality',
         # BUSCO
         'busco_complete_pct', 'busco_duplicated_pct', 'busco_summary',
+        # Prokka annotations
+        'total_genes', 'trna_genes', 'rrna_genes', 'misc_rna', 'hypothetical_proteins', 'hypothetical_pct',
         # Typing
         'mlst_st', 'mlst_scheme', 'serovar',
         # AMR
