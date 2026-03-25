@@ -62,11 +62,29 @@ def parse_quast_reports(results_dir):
             df = pd.read_csv(report_file, sep='\t', header=None, names=['metric', 'value'])
             metrics = dict(zip(df['metric'], df['value']))
 
+            # Helper function to convert values (handles strings with commas)
+            def safe_int(val, default=0):
+                if pd.isna(val):
+                    return default
+                try:
+                    # Remove commas and convert to int
+                    return int(str(val).replace(',', ''))
+                except (ValueError, AttributeError):
+                    return default
+
+            def safe_float(val, default=0.0):
+                if pd.isna(val):
+                    return default
+                try:
+                    return float(str(val).replace(',', ''))
+                except (ValueError, AttributeError):
+                    return default
+
             quast_data[sample_id] = {
-                'n50': metrics.get('N50', 0),
-                'total_length': metrics.get('Total length', 0),
-                'contigs': metrics.get('# contigs', 0),
-                'gc_pct': metrics.get('GC (%)', 0.0)
+                'n50': safe_int(metrics.get('N50', 0)),
+                'total_length': safe_int(metrics.get('Total length', 0)),
+                'contigs': safe_int(metrics.get('# contigs', 0)),
+                'gc_pct': safe_float(metrics.get('GC (%)', 0.0))
             }
         except Exception as e:
             print(f"Warning: Could not parse QUAST for {sample_id}: {e}", file=sys.stderr)
