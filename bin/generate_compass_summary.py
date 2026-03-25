@@ -2486,7 +2486,9 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             </table>
         </div>
     </div>
+"""
 
+    html += f"""
     <!-- Prophage Functional Diversity Tab -->
     <div id="prophage-functional" class="tab-content">
         <div class="chart-container">
@@ -2546,7 +2548,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             </div>
             <div class="summary-card">
                 <h3>Average rRNA Genes</h3>
-                <div class="value">{df['rrna_count'].mean():.1f} if 'rrna_count' in df.columns else 0}</div>
+                <div class="value">{df['rrna_count'].mean():.1f if 'rrna_count' in df.columns else 0}</div>
                 <div class="subtext">Ribosomal RNA genes</div>
             </div>
             <div class="summary-card">
@@ -2556,7 +2558,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             </div>
             <div class="summary-card card-warning">
                 <h3>Hypothetical Proteins</h3>
-                <div class="value">{df['hypothetical_proteins'].mean():.1f}% if 'hypothetical_proteins' in df.columns else 0}</div>
+                <div class="value">{df['hypothetical_proteins'].mean():.1f if 'hypothetical_proteins' in df.columns else 0}%</div>
                 <div class="subtext">Unknown function</div>
             </div>
         </div>
@@ -2646,7 +2648,8 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
                 </div>
             </div>
         </div>
-    </div>"""
+    </div>
+"""
 
     # Add optional Pangenome Analysis tab if data available
     if panaroo_results:
@@ -2904,7 +2907,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             const summary = {
                 report_metadata: {
                     generated_at: '__GENERATION_TIMESTAMP__',
-                    pipeline_version: 'COMPASS v1.2-mod',
+                    pipeline_version: 'COMPASS v1.2.0',
                     total_samples: __TOTAL_SAMPLES__
                 },
                 overview: {
@@ -4643,7 +4646,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             <div class="footer-section">
                 <h4>Generation Details</h4>
                 <p><strong>Generated:</strong> {generation_time_str}</p>
-                <p><strong>Pipeline:</strong> COMPASS v1.2-mod</p>
+                <p><strong>Pipeline:</strong> COMPASS v1.2.0</p>
                 <p><strong>Report Version:</strong> Enhanced Interactive v2.0</p>
             </div>
             <div class="footer-section">
