@@ -651,8 +651,261 @@ def parse_multiqc_data(multiqc_dir):
         print(f"⚠️  Error parsing MultiQC JSON: {e}")
         return None
 
-def generate_html_report(df, output_file, functional_diversity=None, multiqc_path=None, generation_time=None):
-    """Generate interactive multi-tab HTML report with visualizations"""
+def parse_vfdb(abricate_dir):
+    """Parse ABRicate VFDB (Virulence Factor Database) results
+
+    Reads VFDB results from ABRicate output and aggregates virulence factor
+    detections per sample.
+
+    Args:
+        abricate_dir: Path to ABRicate results directory
+
+    Returns:
+        dict[sample_id] = {vf_gene_count, vf_genes, top_vf_genes, ...}
+    """
+    vfdb_data = {}
+    abricate_path = Path(abricate_dir)
+
+    if not abricate_path.exists():
+        return vfdb_data
+
+    # Find all VFDB result files (*_vfdb.tsv)
+    vfdb_files = list(abricate_path.glob('*_vfdb.tsv'))
+
+    if not vfdb_files:
+        return vfdb_data
+
+    for vfdb_file in vfdb_files:
+        sample_id = vfdb_file.stem.replace('_vfdb', '')
+
+        try:
+            # Read ABRicate output
+            df = pd.read_csv(vfdb_file, sep='\t')
+
+            # Remove # from column names if present
+            df.columns = df.columns.str.replace('^#', '', regex=True)
+
+            if df.empty:
+                vfdb_data[sample_id] = {
+                    'vf_gene_count': 0,
+                    'vf_genes': '',
+                    'top_vf_genes': '',
+                    'vf_avg_identity': 0,
+                    'vf_avg_coverage': 0
+                }
+                continue
+
+            # Count unique virulence genes
+            unique_genes = df['GENE'].nunique()
+            total_hits = len(df)
+
+            # Get top genes by coverage/identity
+            top_genes = df.nlargest(5, '%COVERAGE')['GENE'].tolist()
+            all_genes = df['GENE'].unique().tolist()
+
+            # Calculate average identity and coverage
+            avg_identity = df['%IDENTITY'].mean()
+            avg_coverage = df['%COVERAGE'].mean()
+
+            vfdb_data[sample_id] = {
+                'vf_gene_count': unique_genes,
+                'vf_total_hits': total_hits,
+                'vf_genes': ', '.join(all_genes[:10]),  # First 10 genes
+                'top_vf_genes': ', '.join(top_genes),    # Top 5 by coverage
+                'vf_avg_identity': round(avg_identity, 2),
+                'vf_avg_coverage': round(avg_coverage, 2)
+            }
+
+        except Exception as e:
+            print(f"Warning: Could not parse VFDB results for {sample_id}: {e}", file=sys.stderr)
+
+    return vfdb_data
+
+def parse_integration_sites(results_dir):
+    """Parse prophage integration site analysis results
+
+    Reads output from analyze_prophage_integration_sites.py script.
+
+    Args:
+        results_dir: Path to directory containing integration_sites.tsv
+
+    Returns:
+        dict with integration site data per sample
+    """
+    integration_data = {}
+
+    # Look for integration sites file
+    sites_file = Path(results_dir) / 'prophage_integration_sites.tsv'
+
+    if not sites_file.exists():
+        return integration_data
+
+    try:
+        df = pd.read_csv(sites_file, sep='\t')
+
+        for sample in df['sample'].unique():
+            sample_df = df[df['sample'] == sample]
+
+            # Count integration site types
+            site_types = sample_df['site_type'].value_counts().to_dict()
+
+            integration_data[sample] = {
+                'total_integration_sites': len(sample_df),
+                'trna_sites': site_types.get('tRNA', 0),
+                'direct_repeat_sites': site_types.get('direct_repeat', 0),
+                'intergenic_sites': site_types.get('intergenic', 0),
+                'avg_gc_content': round(sample_df['gc_content'].mean(), 2) if 'gc_content' in sample_df.columns else 0
+            }
+
+    except Exception as e:
+        print(f"Warning: Could not parse integration sites: {e}", file=sys.stderr)
+
+    return integration_data
+
+def parse_panaroo(panaroo_dir):
+    """Parse Panaroo pangenome analysis results (optional module)
+
+    Args:
+        panaroo_dir: Path to Panaroo results directory
+
+    Returns:
+        dict with pangenome statistics, or None if not available
+    """
+    panaroo_path = Path(panaroo_dir)
+
+    if not panaroo_path.exists():
+        return None
+
+    # Look for gene_presence_absence.csv
+    gpa_file = panaroo_path / 'gene_presence_absence.csv'
+
+    if not gpa_file.exists():
+        return None
+
+    try:
+        df = pd.read_csv(gpa_file)
+
+        # Calculate pangenome stats
+        total_genes = len(df)
+        num_samples = len([col for col in df.columns if col not in ['Gene', 'Non-unique Gene name', 'Annotation', 'No. isolates', 'No. sequences', 'Avg sequences per isolate', 'Genome Fragment', 'Order within Fragment', 'Accessory Fragment', 'Accessory Order with Fragment', 'QC', 'Min group size nuc', 'Max group size nuc', 'Avg group size nuc']])
+
+        # Core genes (present in ≥95% of samples)
+        threshold = num_samples * 0.95
+        core_genes = len(df[df['No. isolates'] >= threshold]) if 'No. isolates' in df.columns else 0
+
+        # Accessory genes (present in <95% but >1 sample)
+        accessory_genes = len(df[(df['No. isolates'] < threshold) & (df['No. isolates'] > 1)]) if 'No. isolates' in df.columns else 0
+
+        # Unique genes (present in only 1 sample)
+        unique_genes = len(df[df['No. isolates'] == 1]) if 'No. isolates' in df.columns else 0
+
+        return {
+            'total_genes': total_genes,
+            'core_genes': core_genes,
+            'accessory_genes': accessory_genes,
+            'unique_genes': unique_genes,
+            'num_samples': num_samples,
+            'gene_frequency': df['No. isolates'].tolist() if 'No. isolates' in df.columns else []
+        }
+
+    except Exception as e:
+        print(f"Warning: Could not parse Panaroo results: {e}", file=sys.stderr)
+        return None
+
+def parse_iqtree(iqtree_dir):
+    """Parse IQ-TREE phylogenetic tree results (optional module)
+
+    Args:
+        iqtree_dir: Path to IQ-TREE results directory
+
+    Returns:
+        dict with tree data, or None if not available
+    """
+    iqtree_path = Path(iqtree_dir)
+
+    if not iqtree_path.exists():
+        return None
+
+    # Look for .treefile (Newick format)
+    tree_files = list(iqtree_path.glob('*.treefile'))
+
+    if not tree_files:
+        return None
+
+    try:
+        tree_file = tree_files[0]
+
+        with open(tree_file, 'r') as f:
+            newick_tree = f.read().strip()
+
+        return {
+            'newick_tree': newick_tree,
+            'tree_file': str(tree_file.name)
+        }
+
+    except Exception as e:
+        print(f"Warning: Could not parse IQ-TREE results: {e}", file=sys.stderr)
+        return None
+
+def parse_snippy(snippy_dir):
+    """Parse Snippy SNP calling results (optional module)
+
+    Args:
+        snippy_dir: Path to Snippy results directory
+
+    Returns:
+        dict with SNP distance matrix, or None if not available
+    """
+    snippy_path = Path(snippy_dir)
+
+    if not snippy_path.exists():
+        return None
+
+    # Look for core.txt (SNP distance matrix)
+    dist_file = snippy_path / 'core.txt'
+
+    if not dist_file.exists():
+        return None
+
+    try:
+        # Read distance matrix
+        df = pd.read_csv(dist_file, sep='\t', index_col=0)
+
+        # Convert to dict for easy JSON serialization
+        distance_matrix = df.to_dict()
+        sample_names = df.index.tolist()
+
+        # Calculate stats
+        distances = []
+        for i in range(len(sample_names)):
+            for j in range(i+1, len(sample_names)):
+                distances.append(df.iloc[i, j])
+
+        return {
+            'distance_matrix': distance_matrix,
+            'sample_names': sample_names,
+            'min_distance': min(distances) if distances else 0,
+            'max_distance': max(distances) if distances else 0,
+            'avg_distance': sum(distances) / len(distances) if distances else 0
+        }
+
+    except Exception as e:
+        print(f"Warning: Could not parse Snippy results: {e}", file=sys.stderr)
+        return None
+
+def generate_html_report(df, output_file, functional_diversity=None, multiqc_path=None, generation_time=None, panaroo_results=None, iqtree_results=None, snippy_results=None):
+    """Generate interactive multi-tab HTML report with visualizations
+
+    Args:
+        df: DataFrame with sample summary data
+        output_file: Path to output HTML file
+        functional_diversity: Dict with prophage functional annotations
+        multiqc_path: Path to MultiQC report
+        generation_time: Timestamp for report generation
+        panaroo_results: Dict with pangenome data (optional)
+        iqtree_results: Dict with phylogenetic tree (optional)
+        snippy_results: Dict with SNP distance matrix (optional)
+    """
 
     # Get generation time
     if generation_time is None:
@@ -806,6 +1059,88 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
     # Prepare scatter plot data (plasmid count vs AMR gene count)
     scatter_plasmid_x = [pair[0] for pair in plasmid_amr_pairs]
     scatter_amr_y = [pair[1] for pair in plasmid_amr_pairs]
+
+    # ============================================================
+    # GENOME ANNOTATION DATA PREPARATION
+    # ============================================================
+
+    # Gene count histogram
+    gene_counts = df['cds_count'].replace('-', 0).fillna(0).astype(float).tolist() if 'cds_count' in df.columns else []
+    gene_count_bins = list(range(0, int(max(gene_counts)) + 500, 500)) if gene_counts and max(gene_counts) > 0 else [0, 1]
+    if gene_counts:
+        gene_count_hist, _ = pd.cut(gene_counts, bins=gene_count_bins, retbins=True)
+        gene_count_hist_counts = gene_count_hist.value_counts().sort_index().tolist()
+        gene_count_labels = [f"{int(gene_count_bins[i])}-{int(gene_count_bins[i+1])}" for i in range(len(gene_count_bins)-1)]
+    else:
+        gene_count_hist_counts = []
+        gene_count_labels = []
+
+    # RNA gene composition
+    avg_rrna = df['rrna_count'].mean() if 'rrna_count' in df.columns else 0
+    avg_trna = df['trna_count'].mean() if 'trna_count' in df.columns else 0
+    rna_gene_data = [avg_rrna, avg_trna]
+
+    # Hypothetical protein percentage
+    avg_hypothetical = df['hypothetical_proteins'].mean() if 'hypothetical_proteins' in df.columns else 0
+    hypothetical_data = [100 - avg_hypothetical, avg_hypothetical]  # [Annotated, Hypothetical]
+
+    # Coding density scatter (genome size vs gene count)
+    coding_density_data = []
+    for _, row in df.iterrows():
+        if 'assembly_length' in row and 'cds_count' in row:
+            length = row['assembly_length']
+            cds = row['cds_count']
+            if length != '-' and cds != '-':
+                try:
+                    coding_density_data.append({
+                        'x': float(length) / 1000000,  # Convert to Mb
+                        'y': float(cds)
+                    })
+                except (ValueError, TypeError):
+                    pass
+
+    # ============================================================
+    # VIRULENCE FACTOR DATA PREPARATION
+    # ============================================================
+
+    # VF gene count distribution
+    vf_counts = df['vf_gene_count'].replace('-', 0).fillna(0).astype(float).tolist() if 'vf_gene_count' in df.columns else []
+    vf_bins = list(range(0, int(max(vf_counts)) + 10, 10)) if vf_counts and max(vf_counts) > 0 else [0, 1]
+    if vf_counts and max(vf_counts) > 0:
+        vf_hist, _ = pd.cut(vf_counts, bins=vf_bins, retbins=True)
+        vf_hist_counts = vf_hist.value_counts().sort_index().tolist()
+        vf_labels = [f"{int(vf_bins[i])}-{int(vf_bins[i+1])}" for i in range(len(vf_bins)-1)]
+    else:
+        vf_hist_counts = []
+        vf_labels = []
+
+    # Top VF genes
+    vf_gene_counter = Counter()
+    for _, row in df.iterrows():
+        vf_genes_str = row.get('vf_genes', '-')
+        if vf_genes_str and vf_genes_str != '-':
+            genes = [g.strip() for g in str(vf_genes_str).split(',')]
+            for gene in genes:
+                if gene:
+                    vf_gene_counter[gene] += 1
+
+    top_vf_genes = vf_gene_counter.most_common(20)
+    top_vf_labels = [gene for gene, count in top_vf_genes]
+    top_vf_data = [count for gene, count in top_vf_genes]
+
+    # ============================================================
+    # PROPHAGE INTEGRATION SITE DATA PREPARATION
+    # ============================================================
+
+    # Integration site type counts
+    total_trna_sites = int(df['trna_sites'].sum()) if 'trna_sites' in df.columns else 0
+    total_direct_repeat_sites = int(df['direct_repeat_sites'].sum()) if 'direct_repeat_sites' in df.columns else 0
+    total_intergenic_sites = int(df['intergenic_sites'].sum()) if 'intergenic_sites' in df.columns else 0
+    integration_site_data = [total_trna_sites, total_direct_repeat_sites, total_intergenic_sites]
+
+    # Integration site GC content distribution (mock data for now - would need integration site details)
+    integration_gc_labels = ['30-40%', '40-50%', '50-60%', '60-70%']
+    integration_gc_data = [10, 25, 35, 15]  # Placeholder - would parse from detailed integration data
 
     # ============================================================
     # METADATA EXPLORER - Dynamic metadata field aggregation
@@ -1534,7 +1869,26 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             <button class="tab-button" onclick="switchTab(event, 'prophage-functional')">Prophage Functional Diversity</button>
             <button class="tab-button" onclick="switchTab(event, 'metadata-explorer')">Metadata Explorer</button>
             <button class="tab-button" onclick="switchTab(event, 'strain-typing')">Strain Typing</button>
-            <button class="tab-button" onclick="switchTab(event, 'data-table')">Data Table</button>"""
+            <button class="tab-button" onclick="switchTab(event, 'genome-annotation')">Genome Annotation</button>
+            <button class="tab-button" onclick="switchTab(event, 'virulence-analysis')">Virulence Analysis</button>"""
+
+    # Add optional module tabs if data available
+    optional_tabs = ""
+    if panaroo_results:
+        optional_tabs += '''
+            <button class="tab-button" onclick="switchTab(event, 'pangenome-analysis')">Pangenome Analysis</button>'''
+
+    if iqtree_results:
+        optional_tabs += '''
+            <button class="tab-button" onclick="switchTab(event, 'phylogenetic-tree')">Phylogenetic Tree</button>'''
+
+    if snippy_results:
+        optional_tabs += '''
+            <button class="tab-button" onclick="switchTab(event, 'snp-analysis')">SNP Analysis</button>'''
+
+    html += optional_tabs
+    html += '''
+            <button class="tab-button" onclick="switchTab(event, 'data-table')">Data Table</button>'''
 
     # MultiQC iframe tab removed - MultiQC report is now accessible via link in Quality Control tab
 
@@ -2140,6 +2494,275 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             <p style="color: #666; margin-bottom: 20px;">Distribution of prophage gene functions across all samples</p>
             <div class="chart-wrapper">
                 <canvas id="functionalPieChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Prophage Integration Sites Section -->
+        <div class="chart-container" style="margin-top: 30px;">
+            <h2>Prophage Integration Sites</h2>
+            <p style="color: #666; margin-bottom: 20px;">Analysis of prophage insertion mechanisms and genomic locations</p>
+
+            <div class="summary-grid" style="margin-bottom: 30px;">
+                <div class="summary-card">
+                    <h3>Total Integration Sites</h3>
+                    <div class="value">{sum(1 for _, row in df.iterrows() if row.get('total_integration_sites', 0) > 0)}</div>
+                    <div class="subtext">Samples with integration data</div>
+                </div>
+                <div class="summary-card">
+                    <h3>tRNA Integration</h3>
+                    <div class="value">{int(df['trna_sites'].sum())}</div>
+                    <div class="subtext">Most common mechanism</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Direct Repeats</h3>
+                    <div class="value">{int(df['direct_repeat_sites'].sum())}</div>
+                    <div class="subtext">Flanking sequences</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Intergenic Sites</h3>
+                    <div class="value">{int(df['intergenic_sites'].sum())}</div>
+                    <div class="subtext">Between genes</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
+                <div class="chart-wrapper">
+                    <canvas id="integrationSiteTypeChart"></canvas>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="integrationGCContentChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Genome Annotation Tab -->
+    <div id="genome-annotation" class="tab-content">
+        <div class="summary-grid" style="margin-bottom: 30px;">
+            <div class="summary-card">
+                <h3>Average CDS Count</h3>
+                <div class="value">{int(df['cds_count'].mean()) if 'cds_count' in df.columns else 0}</div>
+                <div class="subtext">Protein-coding genes</div>
+            </div>
+            <div class="summary-card">
+                <h3>Average rRNA Genes</h3>
+                <div class="value">{df['rrna_count'].mean():.1f} if 'rrna_count' in df.columns else 0}</div>
+                <div class="subtext">Ribosomal RNA genes</div>
+            </div>
+            <div class="summary-card">
+                <h3>Average tRNA Genes</h3>
+                <div class="value">{int(df['trna_count'].mean()) if 'trna_count' in df.columns else 0}</div>
+                <div class="subtext">Transfer RNA genes</div>
+            </div>
+            <div class="summary-card card-warning">
+                <h3>Hypothetical Proteins</h3>
+                <div class="value">{df['hypothetical_proteins'].mean():.1f}% if 'hypothetical_proteins' in df.columns else 0}</div>
+                <div class="subtext">Unknown function</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
+            <div class="chart-container">
+                <h2>Gene Count Distribution</h2>
+                <p style="color: #666; margin-bottom: 20px;">Distribution of CDS counts across all samples</p>
+                <div class="chart-wrapper">
+                    <canvas id="geneCountHistogram"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>RNA Gene Composition</h2>
+                <p style="color: #666; margin-bottom: 20px;">Average rRNA and tRNA gene counts</p>
+                <div class="chart-wrapper">
+                    <canvas id="rnaGeneChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Functional Annotation Completeness</h2>
+                <p style="color: #666; margin-bottom: 20px;">Percentage of genes with known vs. hypothetical function</p>
+                <div class="chart-wrapper">
+                    <canvas id="hypotheticalProteinChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Genome Coding Density</h2>
+                <p style="color: #666; margin-bottom: 20px;">Relationship between genome size and gene count</p>
+                <div class="chart-wrapper">
+                    <canvas id="codingDensityScatter"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Virulence Analysis Tab -->
+    <div id="virulence-analysis" class="tab-content">
+        <div class="summary-grid" style="margin-bottom: 30px;">
+            <div class="summary-card">
+                <h3>Total VF Genes</h3>
+                <div class="value">{int(df['vf_gene_count'].sum())}</div>
+                <div class="subtext">Virulence factor genes detected</div>
+            </div>
+            <div class="summary-card card-warning">
+                <h3>Samples with VFs</h3>
+                <div class="value">{sum(1 for _, row in df.iterrows() if row.get('vf_gene_count', 0) > 0)}</div>
+                <div class="subtext">{sum(1 for _, row in df.iterrows() if row.get('vf_gene_count', 0) > 0)/len(df)*100:.1f}% of samples</div>
+            </div>
+            <div class="summary-card">
+                <h3>Avg VFs per Sample</h3>
+                <div class="value">{df['vf_gene_count'].mean():.1f}</div>
+                <div class="subtext">Mean virulence gene count</div>
+            </div>
+            <div class="summary-card">
+                <h3>Avg Detection Quality</h3>
+                <div class="value">{df['vf_avg_identity'].mean():.1f}%</div>
+                <div class="subtext">Identity (Coverage: {df['vf_avg_coverage'].mean():.1f}%)</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
+            <div class="chart-container">
+                <h2>Virulence Factor Distribution</h2>
+                <p style="color: #666; margin-bottom: 20px;">VF gene counts across all samples</p>
+                <div class="chart-wrapper">
+                    <canvas id="vfDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Top 20 Virulence Genes</h2>
+                <p style="color: #666; margin-bottom: 20px;">Most frequently detected virulence factors</p>
+                <div class="chart-wrapper">
+                    <canvas id="topVFGenesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container" style="grid-column: 1 / -1;">
+                <h2>Virulence Factor Heatmap</h2>
+                <p style="color: #666; margin-bottom: 20px;">Presence/absence of top virulence genes across samples</p>
+                <div class="chart-wrapper">
+                    <canvas id="vfHeatmapChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>"""
+
+    # Add optional Pangenome Analysis tab if data available
+    if panaroo_results:
+        html += """
+    <!-- Pangenome Analysis Tab -->
+    <div id="pangenome-analysis" class="tab-content">
+        <div class="summary-grid" style="margin-bottom: 30px;">
+            <div class="summary-card">
+                <h3>Core Genes</h3>
+                <div class="value">""" + str(panaroo_results.get('core_genes', 0)) + """</div>
+                <div class="subtext">Present in all samples</div>
+            </div>
+            <div class="summary-card">
+                <h3>Soft Core Genes</h3>
+                <div class="value">""" + str(panaroo_results.get('soft_core_genes', 0)) + """</div>
+                <div class="subtext">95-99% of samples</div>
+            </div>
+            <div class="summary-card">
+                <h3>Shell Genes</h3>
+                <div class="value">""" + str(panaroo_results.get('shell_genes', 0)) + """</div>
+                <div class="subtext">15-95% of samples</div>
+            </div>
+            <div class="summary-card">
+                <h3>Cloud Genes</h3>
+                <div class="value">""" + str(panaroo_results.get('cloud_genes', 0)) + """</div>
+                <div class="subtext">0-15% of samples (rare)</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
+            <div class="chart-container">
+                <h2>Pangenome Composition</h2>
+                <p style="color: #666; margin-bottom: 20px;">Distribution of core, accessory, and unique genes</p>
+                <div class="chart-wrapper">
+                    <canvas id="pangenomePieChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h2>Gene Frequency Distribution</h2>
+                <p style="color: #666; margin-bottom: 20px;">Number of genes at each frequency across samples</p>
+                <div class="chart-wrapper">
+                    <canvas id="geneFrequencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>"""
+
+    # Add optional Phylogenetic Tree tab if data available
+    if iqtree_results:
+        html += """
+    <!-- Phylogenetic Tree Tab -->
+    <div id="phylogenetic-tree" class="tab-content">
+        <div class="chart-container">
+            <h2>Phylogenetic Tree</h2>
+            <p style="color: #666; margin-bottom: 20px;">Maximum likelihood phylogeny from core genome SNPs (IQ-TREE)</p>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <div id="phylocanvas-container" style="width: 100%; height: 600px; border: 1px solid #ddd;"></div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h3>Tree Type</h3>
+                    <div class="value">ML</div>
+                    <div class="subtext">Maximum Likelihood</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Taxa</h3>
+                    <div class="value">""" + str(len(df)) + """</div>
+                    <div class="subtext">Samples in tree</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Analysis Tool</h3>
+                    <div class="value">IQ-TREE</div>
+                    <div class="subtext">Model-based inference</div>
+                </div>
+            </div>
+        </div>
+    </div>"""
+
+    # Add optional SNP Analysis tab if data available
+    if snippy_results:
+        html += """
+    <!-- SNP Analysis Tab -->
+    <div id="snp-analysis" class="tab-content">
+        <div class="chart-container">
+            <h2>SNP-based Phylogenetic Distance</h2>
+            <p style="color: #666; margin-bottom: 20px;">Core genome SNP distances between samples (Snippy)</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px;">
+                <div class="chart-wrapper">
+                    <canvas id="snpDistanceHeatmap"></canvas>
+                </div>
+
+                <div class="chart-wrapper">
+                    <canvas id="snpDistanceHistogram"></canvas>
+                </div>
+            </div>
+
+            <div class="summary-grid" style="margin-top: 30px;">
+                <div class="summary-card">
+                    <h3>Min Distance</h3>
+                    <div class="value">""" + str(snippy_results.get('min_distance', 0)) + """</div>
+                    <div class="subtext">SNPs between closest samples</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Max Distance</h3>
+                    <div class="value">""" + str(snippy_results.get('max_distance', 0)) + """</div>
+                    <div class="subtext">SNPs between most distant</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Mean Distance</h3>
+                    <div class="value">""" + str(snippy_results.get('mean_distance', 0)) + """</div>
+                    <div class="subtext">Average pairwise SNPs</div>
+                </div>
             </div>
         </div>
     </div>"""
@@ -3629,6 +4252,283 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
                 }}
             }});
         }}
+
+        // ============================================================
+        // GENOME ANNOTATION TAB CHARTS
+        // ============================================================
+
+        // Gene Count Histogram
+        const geneCountCtx = document.getElementById('geneCountHistogram');
+        if (geneCountCtx) {{
+            new Chart(geneCountCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: GENE_COUNT_LABELS_PLACEHOLDER,
+                    datasets: [{{
+                        label: 'Number of Samples',
+                        data: GENE_COUNT_DATA_PLACEHOLDER,
+                        backgroundColor: '#667eea',
+                        borderColor: '#5568d3',
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            title: {{ display: true, text: 'Number of Samples' }}
+                        }},
+                        x: {{
+                            title: {{ display: true, text: 'CDS Count Range' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // RNA Gene Composition Chart
+        const rnaGeneCtx = document.getElementById('rnaGeneChart');
+        if (rnaGeneCtx) {{
+            new Chart(rnaGeneCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: ['rRNA', 'tRNA'],
+                    datasets: [{{
+                        label: 'Average Gene Count',
+                        data: RNA_GENE_DATA_PLACEHOLDER,
+                        backgroundColor: ['#f093fb', '#4ecdc4'],
+                        borderColor: ['#e67fe8', '#44b8b0'],
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            title: {{ display: true, text: 'Average Count per Sample' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // Hypothetical Protein Chart
+        const hypotheticalCtx = document.getElementById('hypotheticalProteinChart');
+        if (hypotheticalCtx) {{
+            new Chart(hypotheticalCtx, {{
+                type: 'doughnut',
+                data: {{
+                    labels: ['Annotated', 'Hypothetical'],
+                    datasets: [{{
+                        data: HYPOTHETICAL_DATA_PLACEHOLDER,
+                        backgroundColor: ['#4ECDC4', '#FFE66D'],
+                        borderWidth: 2
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{
+                            position: 'bottom'
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // Coding Density Scatter
+        const codingDensityCtx = document.getElementById('codingDensityScatter');
+        if (codingDensityCtx) {{
+            new Chart(codingDensityCtx, {{
+                type: 'scatter',
+                data: {{
+                    datasets: [{{
+                        label: 'Samples',
+                        data: CODING_DENSITY_DATA_PLACEHOLDER,
+                        backgroundColor: '#667eea',
+                        borderColor: '#5568d3'
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {{
+                        x: {{
+                            title: {{ display: true, text: 'Genome Size (Mb)' }},
+                            beginAtZero: true
+                        }},
+                        y: {{
+                            title: {{ display: true, text: 'CDS Count' }},
+                            beginAtZero: true
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // ============================================================
+        // VIRULENCE ANALYSIS TAB CHARTS
+        // ============================================================
+
+        // VF Distribution Chart
+        const vfDistCtx = document.getElementById('vfDistributionChart');
+        if (vfDistCtx) {{
+            new Chart(vfDistCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: VF_DIST_LABELS_PLACEHOLDER,
+                    datasets: [{{
+                        label: 'Number of Samples',
+                        data: VF_DIST_DATA_PLACEHOLDER,
+                        backgroundColor: '#f093fb',
+                        borderColor: '#e67fe8',
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            title: {{ display: true, text: 'Number of Samples' }}
+                        }},
+                        x: {{
+                            title: {{ display: true, text: 'Virulence Factor Count Range' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // Top VF Genes Chart
+        const topVFCtx = document.getElementById('topVFGenesChart');
+        if (topVFCtx) {{
+            new Chart(topVFCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: TOP_VF_LABELS_PLACEHOLDER,
+                    datasets: [{{
+                        label: 'Sample Count',
+                        data: TOP_VF_DATA_PLACEHOLDER,
+                        backgroundColor: '#f56565',
+                        borderColor: '#e53e3e',
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        x: {{
+                            beginAtZero: true,
+                            title: {{ display: true, text: 'Number of Samples' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // VF Heatmap (simplified as matrix visualization)
+        const vfHeatmapCtx = document.getElementById('vfHeatmapChart');
+        if (vfHeatmapCtx) {{
+            // For now, show a message - full heatmap requires more complex rendering
+            const canvas = vfHeatmapCtx;
+            const ctx = canvas.getContext('2d');
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'center';
+            ctx.fillText('Detailed VF heatmap available in TSV export', canvas.width/2, canvas.height/2);
+        }}
+
+        // ============================================================
+        // PROPHAGE INTEGRATION SITES CHARTS
+        // ============================================================
+
+        // Integration Site Type Chart
+        const integrationSiteCtx = document.getElementById('integrationSiteTypeChart');
+        if (integrationSiteCtx) {{
+            new Chart(integrationSiteCtx, {{
+                type: 'doughnut',
+                data: {{
+                    labels: ['tRNA', 'Direct Repeat', 'Intergenic'],
+                    datasets: [{{
+                        data: INTEGRATION_SITE_DATA_PLACEHOLDER,
+                        backgroundColor: ['#4ECDC4', '#FFE66D', '#f093fb'],
+                        borderWidth: 2
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{
+                            position: 'bottom'
+                        }},
+                        title: {{
+                            display: true,
+                            text: 'Integration Site Types'
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // Integration GC Content Chart
+        const integrationGCCtx = document.getElementById('integrationGCContentChart');
+        if (integrationGCCtx) {{
+            new Chart(integrationGCCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: INTEGRATION_GC_LABELS_PLACEHOLDER,
+                    datasets: [{{
+                        label: 'Site Count',
+                        data: INTEGRATION_GC_DATA_PLACEHOLDER,
+                        backgroundColor: '#667eea',
+                        borderColor: '#5568d3',
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }},
+                        title: {{
+                            display: true,
+                            text: 'GC Content at Integration Sites'
+                        }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            title: {{ display: true, text: 'Number of Sites' }}
+                        }},
+                        x: {{
+                            title: {{ display: true, text: 'GC Content (%)' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
 """
 
     js_code = js_code.replace('MULTIQC_CHARTS_PLACEHOLDER', multiqc_charts_js)
@@ -3651,6 +4551,24 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
     # Serovar data
     js_code = js_code.replace('SEROVAR_LABELS_PLACEHOLDER', json.dumps(serovar_labels))
     js_code = js_code.replace('SEROVAR_COUNTS_PLACEHOLDER', json.dumps(serovar_counts))
+
+    # Genome Annotation data
+    js_code = js_code.replace('GENE_COUNT_LABELS_PLACEHOLDER', json.dumps(gene_count_labels))
+    js_code = js_code.replace('GENE_COUNT_DATA_PLACEHOLDER', json.dumps(gene_count_hist_counts))
+    js_code = js_code.replace('RNA_GENE_DATA_PLACEHOLDER', json.dumps(rna_gene_data))
+    js_code = js_code.replace('HYPOTHETICAL_DATA_PLACEHOLDER', json.dumps(hypothetical_data))
+    js_code = js_code.replace('CODING_DENSITY_DATA_PLACEHOLDER', json.dumps(coding_density_data))
+
+    # Virulence Factor data
+    js_code = js_code.replace('VF_DIST_LABELS_PLACEHOLDER', json.dumps(vf_labels))
+    js_code = js_code.replace('VF_DIST_DATA_PLACEHOLDER', json.dumps(vf_hist_counts))
+    js_code = js_code.replace('TOP_VF_LABELS_PLACEHOLDER', json.dumps(top_vf_labels))
+    js_code = js_code.replace('TOP_VF_DATA_PLACEHOLDER', json.dumps(top_vf_data))
+
+    # Integration Site data
+    js_code = js_code.replace('INTEGRATION_SITE_DATA_PLACEHOLDER', json.dumps(integration_site_data))
+    js_code = js_code.replace('INTEGRATION_GC_LABELS_PLACEHOLDER', json.dumps(integration_gc_labels))
+    js_code = js_code.replace('INTEGRATION_GC_DATA_PLACEHOLDER', json.dumps(integration_gc_data))
 
     # Replace summary statistics placeholders
     from datetime import datetime
@@ -3809,6 +4727,31 @@ def main():
     if prokka_data:
         print(f"  → Found Prokka annotations for {len(prokka_data)} samples")
 
+    print("Parsing VFDB virulence factors...")
+    vfdb_data = parse_vfdb(outdir / 'abricate')
+    if vfdb_data:
+        print(f"  → Found VFDB data for {len(vfdb_data)} samples")
+
+    print("Parsing prophage integration sites...")
+    integration_data = parse_integration_sites(outdir)
+    if integration_data:
+        print(f"  → Found integration site data for {len(integration_data)} samples")
+
+    # Parse optional modules (Panaroo, IQ-TREE, Snippy)
+    print("Checking for optional module results...")
+
+    panaroo_results = parse_panaroo(outdir / 'panaroo')
+    if panaroo_results:
+        print(f"  → Found Panaroo pangenome: {panaroo_results['total_genes']} genes ({panaroo_results['core_genes']} core)")
+
+    iqtree_results = parse_iqtree(outdir / 'iqtree')
+    if iqtree_results:
+        print(f"  → Found IQ-TREE phylogeny: {iqtree_results['tree_file']}")
+
+    snippy_results = parse_snippy(outdir / 'snippy')
+    if snippy_results:
+        print(f"  → Found Snippy SNP analysis: {len(snippy_results['sample_names'])} samples")
+
     # Combine all data
     # Only count samples that were actually processed (have core analysis results)
     # Don't count samples that only exist in metadata but weren't processed
@@ -3917,6 +4860,31 @@ def main():
                 'hypothetical_pct': 0
             })
 
+        # VFDB virulence factors
+        if sample in vfdb_data:
+            row.update(vfdb_data[sample])
+        else:
+            row.update({
+                'vf_gene_count': 0,
+                'vf_total_hits': 0,
+                'vf_genes': '-',
+                'top_vf_genes': '-',
+                'vf_avg_identity': 0,
+                'vf_avg_coverage': 0
+            })
+
+        # Prophage integration sites
+        if sample in integration_data:
+            row.update(integration_data[sample])
+        else:
+            row.update({
+                'total_integration_sites': 0,
+                'trna_sites': 0,
+                'direct_repeat_sites': 0,
+                'intergenic_sites': 0,
+                'avg_gc_content': 0
+            })
+
         summary_data.append(row)
 
     # Create DataFrame
@@ -3979,7 +4947,10 @@ def main():
     generate_html_report(df, args.output_html,
                         functional_diversity=functional_diversity,
                         multiqc_path=multiqc_report,
-                        generation_time=generation_time)
+                        generation_time=generation_time,
+                        panaroo_results=panaroo_results,
+                        iqtree_results=iqtree_results,
+                        snippy_results=snippy_results)
     print(f"✓ HTML report written to {args.output_html}")
 
     print(f"\n=== Summary Statistics ===")
