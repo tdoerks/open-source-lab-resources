@@ -55,7 +55,7 @@ def parse_vibrant_results(vibrant_dir):
 
         try:
             # Read prophage coordinates
-            df = pd.read_csv(integrated_file, sep='\\t')
+            df = pd.read_csv(integrated_file, sep='\t')
 
             for _, row in df.iterrows():
                 prophage_data[sample_id].append({

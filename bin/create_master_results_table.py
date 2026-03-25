@@ -252,15 +252,9 @@ def count_amr_genes(results_dir):
         print("Warning: AMRFinder results not found", file=sys.stderr)
         return amr_data
 
-    for sample_dir in amrfinder_path.iterdir():
-        if not sample_dir.is_dir():
-            continue
-
-        sample_id = sample_dir.name
-        amr_file = sample_dir / f'{sample_id}_amr.tsv'
-
-        if not amr_file.exists():
-            continue
+    # AMRFinder files are directly in amrfinder/ directory, not in subdirs
+    for amr_file in amrfinder_path.glob('*_amr.tsv'):
+        sample_id = amr_file.stem.replace('_amr', '')
 
         try:
             df = pd.read_csv(amr_file, sep='\t')
