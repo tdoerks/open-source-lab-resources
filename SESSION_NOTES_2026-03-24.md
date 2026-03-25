@@ -210,39 +210,119 @@ Successfully added 5 major new features to COMPASS v1.2.0 and began validation t
      ```
    - Now finds all 56 prophages correctly
 
+### COMPASS Summary HTML Report Integration (March 25, 2026) ✅
+
+**Goal:** Integrate new v1.2.0 module results into interactive HTML summary report
+
+**Approach:**
+- Port stable v1.0.0 `generate_compass_summary.py` as foundation
+- Add new parsing functions for v1.2.0 modules one-by-one
+- Use Plotly.js for interactive visualizations
+- Phylocanvas.js for phylogenetic tree viewer
+
+**Phase 1: Port v1.0.0 Script (COMPLETE)**
+
+**Commit cd80d29:**
+- ✅ Ported `bin/generate_compass_summary.py` from v1.0.0 (commit 8d7bb38)
+- ✅ 3,886 lines, production-tested with 9 existing tabs
+- ✅ Created `test_compass_summary_v1.2.0.sh` for ETEC validation
+- ✅ Existing features: QUAST, BUSCO, MLST, SISTR, AMRFinder, MOB-suite, VIBRANT, DIAMOND prophage, MultiQC
+
+**Existing Tabs in v1.0.0 Base:**
+1. Overview - Summary statistics
+2. Quality Control - BUSCO, assembly metrics
+3. AMR Analysis - AMR gene distribution, MDR status
+4. Prophage AMR - AMR genes on prophages
+5. Plasmid Analysis - Plasmid burden, inc groups
+6. Prophage Functional Diversity - Prophage annotations
+7. Metadata Explorer - Dynamic field exploration
+8. Strain Typing - MLST, SISTR
+9. Data Table - Searchable sample table
+
+**Phase 2: Add New v1.2.0 Modules (PENDING)**
+
+Modules to integrate (in priority order):
+1. **Prokka Annotations** → "Genome Annotation" tab
+   - Gene counts (CDS, tRNA, rRNA)
+   - Hypothetical protein percentages
+   - Annotation quality metrics
+
+2. **VFDB Virulence Factors** → "Virulence Analysis" tab (separate from AMR)
+   - Top 20 VF genes heatmap
+   - VF counts per sample
+   - VF category distribution
+
+3. **Prophage Integration Sites** → Enhance existing Prophage tab
+   - Integration site types (tRNA/direct repeat/intergenic)
+   - Site distribution pie chart
+   - Integration coordinates table
+
+4. **Panaroo Pangenome** → "Pangenome Analysis" tab (if enabled)
+   - Core vs accessory vs unique genes
+   - Gene frequency distribution
+   - Gene presence/absence heatmap
+
+5. **IQ-TREE Phylogeny** → "Phylogenetic Tree" tab (separate tab, Phylocanvas.js)
+   - Interactive Newick tree viewer
+   - Metadata overlay (color by MLST/serovar)
+   - Bootstrap support display
+
+6. **Snippy SNPs** → "SNP Analysis" tab (if enabled)
+   - SNP distance matrix heatmap
+   - SNP distribution histogram
+   - SNPs per sample bar chart
+
+**Testing Plan:**
+```bash
+# On Beocat
+cd /fastscratch/tylerdoe/COMPASS-pipeline-1.2.0-candidate
+git pull  # Get commit cd80d29
+
+# Test v1.0.0 base script with ETEC validation data
+bash test_compass_summary_v1.2.0.sh
+
+# Results in: results/../summary_test/
+# - compass_summary.tsv
+# - compass_summary.html (9 tabs, existing modules only)
+```
+
+After base test passes, add new modules incrementally and test each one.
+
 ### Next Steps (Resume Here)
 
-1. **On Beocat, pull latest fix and re-test:**
+1. **Test v1.0.0 base summary on Beocat ETEC data**
    ```bash
    cd /fastscratch/tylerdoe/COMPASS-pipeline-1.2.0-candidate
-   git pull  # Get commit 50fcd4b
-   bash data/validation/test_v1.2.0_parsing_scripts.sh
+   git pull  # Get commit cd80d29
+   bash test_compass_summary_v1.2.0.sh
    ```
 
-2. **Expected results after fix:**
-   - ✅ Test 4: AMR categorization (confirmed working)
-   - ✅ Test 5: Prophage integration sites (NOW WORKING - 56 prophages)
-   - ⚠️ Test 6: Prokka annotations (will skip if Prokka not enabled)
-   - ⏳ Test 7: Master results table (should work now)
+2. **Once base test passes:**
+   - Add Prokka Genome Annotation tab (Module 1)
+   - Test on ETEC data
+   - Add VFDB Virulence Analysis tab (Module 2)
+   - Continue adding modules one-by-one
 
-3. **Key validation points from test run:**
+3. **Key validation points:**
    - ✅ All pipeline modules completed successfully
    - ✅ ETEC-specific virulence genes detected (cfaD', enterotoxins)
    - ✅ Plasmid burden matches ETEC biology (100% have plasmids)
    - ✅ AMR genes correctly categorized by location
    - ✅ No AMR on prophages (biologically plausible for ETEC)
+   - ⏳ Interactive HTML summary renders all existing tabs
+   - ⏳ New module tabs integrate seamlessly
 
-4. **If final test passes:**
-   - Review master results table for completeness
-   - Archive results to bulk storage
+4. **After all modules integrated:**
+   - Review complete HTML report
+   - Test export functionality (JSON, PNG, PDF)
    - Tag v1.2.0 release
    - Update main README with new features
 
 5. **Future enhancements:**
-   - Interactive dashboard for results visualization
    - Test Panaroo/IQ-TREE on larger datasets
    - Test Snippy SNP calling (needs reference genome)
    - Full production validation on Salmonella dataset
+   - Consider adding interactive filtering/download features
 
 ---
 
@@ -272,6 +352,7 @@ Successfully added 5 major new features to COMPASS v1.2.0 and began validation t
 
 ## Git Commits (This Session)
 
+### Initial v1.2.0 Module Development (March 24, 2026)
 1. `a466551` - Add Panaroo pangenome analysis module
 2. `a466551` - Add IQ-TREE phylogenetic tree construction
 3. `a466551` - Enhance comparative genomics with Panaroo and IQ-TREE
@@ -279,6 +360,8 @@ Successfully added 5 major new features to COMPASS v1.2.0 and began validation t
 5. `a466551` - Add VFDB virulence factor screening
 6. `a466551` - Add prophage integration site analysis script
 7. `f5ac6f1` - Add comprehensive parsing scripts test
+
+### Parsing Script Fixes (March 25, 2026)
 8. `63121f9` - Fix VIBRANT parsing to handle actual output structure
 9. `6628006` - Fix ABRicate VFDB parser column headers
 10. `daba181` - Fix escaped tab characters in VFDB parser
@@ -286,6 +369,13 @@ Successfully added 5 major new features to COMPASS v1.2.0 and began validation t
 12. `8f1851e` - Fix remaining parsing scripts for validation testing
 13. `a27cd10` - Update session notes with latest parsing script fixes
 14. `50fcd4b` - **Fix prophage integration site analyzer - VIBRANT file path** (CRITICAL)
+
+### COMPASS Summary Integration (March 25, 2026)
+15. `cd80d29` - **Add v1.0.0 COMPASS summary generator (base for v1.2.0)**
+    - Port stable generate_compass_summary.py from v1.0.0 (3,886 lines)
+    - 9 existing tabs with interactive Plotly visualizations
+    - Add test_compass_summary_v1.2.0.sh for ETEC validation
+    - Foundation for adding new v1.2.0 module visualizations
 
 ---
 
