@@ -4682,40 +4682,54 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
         // SNP Distance Histogram
         const snpHistCtx = document.getElementById('snpDistanceHistogram');
         if (snpHistCtx) {{
-            console.log('Creating SNP histogram with data:', SNIPPY_HIST_LABELS_PLACEHOLDER, SNIPPY_HIST_DATA_PLACEHOLDER);
-            new Chart(snpHistCtx, {{
-                type: 'bar',
-                data: {{
-                    labels: SNIPPY_HIST_LABELS_PLACEHOLDER,
-                    datasets: [{{
-                        label: 'Pairwise Comparisons',
-                        data: SNIPPY_HIST_DATA_PLACEHOLDER,
-                        backgroundColor: '#667eea',
-                        borderColor: '#5568d3',
-                        borderWidth: 1
-                    }}]
-                }},
-                options: {{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {{
-                        legend: {{ display: false }},
-                        title: {{
-                            display: true,
-                            text: 'Distribution of Pairwise SNP Distances'
-                        }}
+            const labels = SNIPPY_HIST_LABELS_PLACEHOLDER;
+            const data = SNIPPY_HIST_DATA_PLACEHOLDER;
+            console.log('Creating SNP histogram');
+            console.log('  Labels:', labels);
+            console.log('  Data:', data);
+            console.log('  Canvas element:', snpHistCtx);
+            console.log('  Canvas dimensions:', snpHistCtx.width, 'x', snpHistCtx.height);
+
+            try {{
+                const chart = new Chart(snpHistCtx, {{
+                    type: 'bar',
+                    data: {{
+                        labels: labels,
+                        datasets: [{{
+                            label: 'Pairwise Comparisons',
+                            data: data,
+                            backgroundColor: '#667eea',
+                            borderColor: '#5568d3',
+                            borderWidth: 1
+                        }}]
                     }},
-                    scales: {{
-                        y: {{
-                            beginAtZero: true,
-                            title: {{ display: true, text: 'Number of Pairs' }}
+                    options: {{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {{
+                            legend: {{ display: false }},
+                            title: {{
+                                display: true,
+                                text: 'Distribution of Pairwise SNP Distances'
+                            }}
                         }},
-                        x: {{
-                            title: {{ display: true, text: 'SNP Distance Range' }}
+                        scales: {{
+                            y: {{
+                                beginAtZero: true,
+                                title: {{ display: true, text: 'Number of Pairs' }}
+                            }},
+                            x: {{
+                                title: {{ display: true, text: 'SNP Distance Range' }}
+                            }}
                         }}
                     }}
-                }}
-            }});
+                }});
+                console.log('SNP histogram created successfully:', chart);
+            }} catch (error) {{
+                console.error('Failed to create SNP histogram:', error);
+            }}
+        }} else {{
+            console.error('SNP histogram canvas element not found!');
         }}
 
         // SNP Distance Summary (heatmap placeholder)
