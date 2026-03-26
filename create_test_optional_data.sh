@@ -1,7 +1,16 @@
 #!/bin/bash
 # Create dummy optional module data to make tabs 13-15 appear
 
+set -e  # Exit on error
+set -x  # Print commands as they execute
+
 OUTDIR="data/validation/etec_results_v1.2.0"
+
+echo "========================================"
+echo "Creating dummy optional module data"
+echo "========================================"
+echo "Target directory: $OUTDIR"
+echo ""
 
 # Create dummy Panaroo data
 mkdir -p ${OUTDIR}/panaroo
@@ -37,6 +46,16 @@ E1779	134	122	86	63	45	28	0	26
 E2980	156	148	112	89	71	54	26	0
 EOF
 
-echo "✅ Created dummy optional module data in ${OUTDIR}"
+echo ""
+echo "========================================"
+echo "✅ DONE - Created dummy optional module data"
+echo "========================================"
+echo "Created in: ${OUTDIR}"
+echo ""
+echo "Verifying files..."
+ls -lh ${OUTDIR}/panaroo/gene_presence_absence.csv
+ls -lh ${OUTDIR}/iqtree/alignment.treefile
+ls -lh ${OUTDIR}/snippy/core.txt
+echo ""
 echo "Now run: bash test_compass_summary_v1.2.0.sh"
 echo "Tabs 13-15 should appear!"
