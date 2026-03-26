@@ -130,6 +130,54 @@ grep "GENOME ANNOTATION TAB CHARTS" data/validation/summary_test/compass_summary
 
 ## Follow-up Actions
 
-- [ ] View HTML report locally to visually confirm charts render correctly
-- [ ] Test with larger datasets to ensure chart scaling works
+- [x] View HTML report locally to visually confirm charts render correctly
+- [x] Test with larger datasets to ensure chart scaling works
 - [ ] Consider refactoring js_code generation into separate functions to avoid similar issues
+
+## Update: JavaScript Syntax Error Fix (3/26/2026 6:58 PM)
+
+After successfully adding the genomic charts, encountered a new issue where all tabs were non-functional with browser console error: "Uncaught SyntaxError: Unexpected token '{'" at line 3084.
+
+### Root Cause
+The `genomic_charts_js` string (line 4264) was defined as a plain triple-quoted string `"""` instead of an f-string `f"""`. This caused all JavaScript object literal braces `{{` to remain as double braces in the final HTML output instead of being converted to single braces `{`.
+
+**Browser saw:**
+```javascript
+datasets: [{{  // Invalid JavaScript!
+    data: [...],
+    backgroundColor: [...]
+}}]
+```
+
+**Should have been:**
+```javascript
+datasets: [{  // Valid JavaScript
+    data: [...],
+    backgroundColor: [...]
+}]
+```
+
+### Solution
+**Commit:** b5fe258 (3/26/2026 18:58)
+Changed line 4264 from:
+```python
+genomic_charts_js = """
+```
+to:
+```python
+genomic_charts_js = f"""
+```
+
+This ensures Python processes `{{` as escaped braces in the f-string, outputting single `{` in the final HTML.
+
+### Verification on Beocat
+```bash
+cd /fastscratch/tylerdoe/COMPASS-pipeline-1.2.0-candidate
+git pull origin 1.2.0-candidate
+bash test_compass_summary_v1.2.0.sh
+
+# Verify double braces are gone (should return nothing or very few results)
+grep "{{" data/validation/summary_test/compass_summary.html | head -5
+```
+
+**Status:** ✅ Fix committed and pushed to 1.2.0-candidate
