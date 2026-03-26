@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=compass_val_v1.2.0
-#SBATCH --account=beodefault
+#SBATCH --partition=batch.q
 #SBATCH --output=/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_%j/logs/compass_validation_%j.out
 #SBATCH --error=/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_%j/logs/compass_validation_%j.err
 #SBATCH --time=48:00:00
