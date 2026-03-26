@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=compass_val_v1.2.0
 #SBATCH --partition=batch.q
-#SBATCH --output=/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_%j/logs/compass_validation_%j.out
-#SBATCH --error=/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_%j/logs/compass_validation_%j.err
+#SBATCH --output=/homes/tylerdoe/slurm-compass-v1.2.0-%j.out
+#SBATCH --error=/homes/tylerdoe/slurm-compass-v1.2.0-%j.err
 #SBATCH --time=48:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=20
