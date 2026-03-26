@@ -109,7 +109,7 @@ if [ $SAMPLE_COUNT -lt 100 ]; then
 fi
 
 # Set output directory with job ID
-OUTDIR="/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_${SLURM_JOB_ID}"
+OUTDIR="/fastscratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_${SLURM_JOB_ID}"
 mkdir -p "$OUTDIR/logs"
 echo "Output directory: $OUTDIR"
 echo ""
