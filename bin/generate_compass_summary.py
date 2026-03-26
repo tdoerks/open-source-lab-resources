@@ -4255,7 +4255,10 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
                 }}
             }});
         }}
+"""
 
+    # Genomic annotation charts - always add regardless of MultiQC data
+    js_code += """
         // ============================================================
         // GENOME ANNOTATION TAB CHARTS
         // ============================================================
