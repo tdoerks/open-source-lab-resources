@@ -1081,7 +1081,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
     rna_gene_data = [avg_rrna, avg_trna]
 
     # Hypothetical protein percentage
-    avg_hypothetical = df['hypothetical_proteins'].mean() if 'hypothetical_proteins' in df.columns else 0
+    avg_hypothetical = df['hypothetical_pct'].mean() if 'hypothetical_pct' in df.columns else 0
     hypothetical_data = [100 - avg_hypothetical, avg_hypothetical]  # [Annotated, Hypothetical]
 
     # Coding density scatter (genome size vs gene count)
@@ -2558,7 +2558,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             </div>
             <div class="summary-card card-warning">
                 <h3>Hypothetical Proteins</h3>
-                <div class="value">{(df['hypothetical_proteins'].mean() if 'hypothetical_proteins' in df.columns else 0):.1f}%</div>
+                <div class="value">{(df['hypothetical_pct'].mean() if 'hypothetical_pct' in df.columns else 0):.1f}%</div>
                 <div class="subtext">Unknown function</div>
             </div>
         </div>
