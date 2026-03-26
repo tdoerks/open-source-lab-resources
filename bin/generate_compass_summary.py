@@ -789,19 +789,30 @@ def parse_panaroo(panaroo_dir):
         total_genes = len(df)
         num_samples = len([col for col in df.columns if col not in ['Gene', 'Non-unique Gene name', 'Annotation', 'No. isolates', 'No. sequences', 'Avg sequences per isolate', 'Genome Fragment', 'Order within Fragment', 'Accessory Fragment', 'Accessory Order with Fragment', 'QC', 'Min group size nuc', 'Max group size nuc', 'Avg group size nuc']])
 
-        # Core genes (present in ≥95% of samples)
-        threshold = num_samples * 0.95
-        core_genes = len(df[df['No. isolates'] >= threshold]) if 'No. isolates' in df.columns else 0
+        # Core genes (present in 100% of samples)
+        core_genes = len(df[df['No. isolates'] == num_samples]) if 'No. isolates' in df.columns else 0
 
-        # Accessory genes (present in <95% but >1 sample)
-        accessory_genes = len(df[(df['No. isolates'] < threshold) & (df['No. isolates'] > 1)]) if 'No. isolates' in df.columns else 0
+        # Soft core genes (present in 95-99% of samples)
+        threshold_95 = num_samples * 0.95
+        soft_core_genes = len(df[(df['No. isolates'] >= threshold_95) & (df['No. isolates'] < num_samples)]) if 'No. isolates' in df.columns else 0
 
-        # Unique genes (present in only 1 sample)
+        # Shell genes (present in 15-95% of samples)
+        threshold_15 = num_samples * 0.15
+        shell_genes = len(df[(df['No. isolates'] >= threshold_15) & (df['No. isolates'] < threshold_95)]) if 'No. isolates' in df.columns else 0
+
+        # Cloud genes (present in <15% of samples, rare)
+        cloud_genes = len(df[df['No. isolates'] < threshold_15]) if 'No. isolates' in df.columns else 0
+
+        # Legacy accessory and unique for backward compatibility
+        accessory_genes = len(df[(df['No. isolates'] < num_samples) & (df['No. isolates'] > 1)]) if 'No. isolates' in df.columns else 0
         unique_genes = len(df[df['No. isolates'] == 1]) if 'No. isolates' in df.columns else 0
 
         return {
             'total_genes': total_genes,
             'core_genes': core_genes,
+            'soft_core_genes': soft_core_genes,
+            'shell_genes': shell_genes,
+            'cloud_genes': cloud_genes,
             'accessory_genes': accessory_genes,
             'unique_genes': unique_genes,
             'num_samples': num_samples,
@@ -4540,8 +4551,163 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
         }}
 """
 
+    # Optional module charts - add conditionally based on data availability
+    optional_charts_js = ""
+
+    # Panaroo pangenome charts
+    if panaroo_results:
+        optional_charts_js += f"""
+        // ============================================================
+        // PANGENOME ANALYSIS TAB CHARTS
+        // ============================================================
+
+        // Pangenome Composition Pie Chart
+        const pangenomePieCtx = document.getElementById('pangenomePieChart');
+        if (pangenomePieCtx) {{
+            new Chart(pangenomePieCtx, {{
+                type: 'pie',
+                data: {{
+                    labels: ['Core Genes', 'Soft Core', 'Shell Genes', 'Cloud Genes'],
+                    datasets: [{{
+                        data: PANAROO_COMPOSITION_DATA_PLACEHOLDER,
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{
+                            position: 'right'
+                        }},
+                        tooltip: {{
+                            callbacks: {{
+                                label: function(context) {{
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return label + ': ' + value + ' genes (' + percentage + '%)';
+                                }}
+                            }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // Gene Frequency Histogram
+        const geneFreqCtx = document.getElementById('geneFrequencyChart');
+        if (geneFreqCtx) {{
+            new Chart(geneFreqCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: PANAROO_FREQ_LABELS_PLACEHOLDER,
+                    datasets: [{{
+                        label: 'Number of Genes',
+                        data: PANAROO_FREQ_DATA_PLACEHOLDER,
+                        backgroundColor: '#667eea',
+                        borderColor: '#5568d3',
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            title: {{ display: true, text: 'Number of Genes' }}
+                        }},
+                        x: {{
+                            title: {{ display: true, text: 'Number of Genomes' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+"""
+
+    # IQ-TREE phylogenetic tree
+    if iqtree_results:
+        optional_charts_js += f"""
+        // ============================================================
+        // PHYLOGENETIC TREE TAB
+        // ============================================================
+
+        // Initialize Phylocanvas tree viewer
+        const phyloContainer = document.getElementById('phylocanvas-container');
+        if (phyloContainer && typeof Phylocanvas !== 'undefined') {{
+            const newickTree = IQTREE_NEWICK_PLACEHOLDER;
+
+            // Simple text display of tree (can be enhanced with Phylocanvas.js library)
+            phyloContainer.innerHTML = '<pre style="overflow: auto; max-height: 500px; padding: 20px; background: #f8f9fa; border-radius: 4px;">' + newickTree + '</pre>';
+            phyloContainer.innerHTML += '<p style="margin-top: 15px; color: #666; font-size: 14px;"><strong>Note:</strong> For interactive tree visualization, install Phylocanvas.js library. Currently showing Newick format.</p>';
+        }}
+"""
+
+    # Snippy SNP analysis charts
+    if snippy_results:
+        optional_charts_js += f"""
+        // ============================================================
+        // SNP ANALYSIS TAB CHARTS
+        // ============================================================
+
+        // SNP Distance Histogram
+        const snpHistCtx = document.getElementById('snpDistanceHistogram');
+        if (snpHistCtx) {{
+            new Chart(snpHistCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: SNIPPY_HIST_LABELS_PLACEHOLDER,
+                    datasets: [{{
+                        label: 'Pairwise Comparisons',
+                        data: SNIPPY_HIST_DATA_PLACEHOLDER,
+                        backgroundColor: '#667eea',
+                        borderColor: '#5568d3',
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }},
+                        title: {{
+                            display: true,
+                            text: 'Distribution of Pairwise SNP Distances'
+                        }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            title: {{ display: true, text: 'Number of Pairs' }}
+                        }},
+                        x: {{
+                            title: {{ display: true, text: 'SNP Distance Range' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // SNP Distance Heatmap (simplified - can be enhanced)
+        const snpHeatmapCtx = document.getElementById('snpDistanceHeatmap');
+        if (snpHeatmapCtx) {{
+            // Placeholder for heatmap visualization
+            // Can be implemented with Chart.js Matrix plugin or dedicated heatmap library
+            const container = snpHeatmapCtx.parentElement;
+            container.innerHTML = '<div style="padding: 40px; text-align: center; background: #f8f9fa; border-radius: 8px;"><p style="color: #666; margin-bottom: 10px;"><strong>SNP Distance Matrix</strong></p><p style="font-size: 14px;">Min: SNIPPY_MIN_DIST_PLACEHOLDER SNPs<br>Max: SNIPPY_MAX_DIST_PLACEHOLDER SNPs<br>Mean: SNIPPY_MEAN_DIST_PLACEHOLDER SNPs</p><p style="margin-top: 15px; font-size: 12px; color: #999;">Interactive heatmap visualization coming soon</p></div>';
+        }}
+"""
+
     js_code = js_code.replace('MULTIQC_CHARTS_PLACEHOLDER', multiqc_charts_js)
-    js_code = js_code.replace('GENOMIC_CHARTS_PLACEHOLDER', genomic_charts_js)
+    js_code = js_code.replace('GENOMIC_CHARTS_PLACEHOLDER', genomic_charts_js + optional_charts_js)
 
     # Prophage functional diversity data
     js_code = js_code.replace('FUNCTIONAL_LABELS_PLACEHOLDER', json.dumps(functional_labels))
@@ -4579,6 +4745,61 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
     js_code = js_code.replace('INTEGRATION_SITE_DATA_PLACEHOLDER', json.dumps(integration_site_data))
     js_code = js_code.replace('INTEGRATION_GC_LABELS_PLACEHOLDER', json.dumps(integration_gc_labels))
     js_code = js_code.replace('INTEGRATION_GC_DATA_PLACEHOLDER', json.dumps(integration_gc_data))
+
+    # Optional module data - Panaroo pangenome
+    if panaroo_results:
+        # Prepare pangenome composition data
+        panaroo_composition = [
+            panaroo_results.get('core_genes', 0),
+            panaroo_results.get('soft_core_genes', 0),
+            panaroo_results.get('shell_genes', 0),
+            panaroo_results.get('cloud_genes', 0)
+        ]
+
+        # Gene frequency histogram data
+        gene_frequencies = panaroo_results.get('gene_frequency', [])
+        freq_counter = Counter(gene_frequencies)
+        panaroo_freq_labels = sorted(freq_counter.keys())
+        panaroo_freq_data = [freq_counter[x] for x in panaroo_freq_labels]
+
+        js_code = js_code.replace('PANAROO_COMPOSITION_DATA_PLACEHOLDER', json.dumps(panaroo_composition))
+        js_code = js_code.replace('PANAROO_FREQ_LABELS_PLACEHOLDER', json.dumps(panaroo_freq_labels))
+        js_code = js_code.replace('PANAROO_FREQ_DATA_PLACEHOLDER', json.dumps(panaroo_freq_data))
+
+    # Optional module data - IQ-TREE phylogenetic tree
+    if iqtree_results:
+        newick_tree = iqtree_results.get('newick_tree', '')
+        js_code = js_code.replace('IQTREE_NEWICK_PLACEHOLDER', json.dumps(newick_tree))
+
+    # Optional module data - Snippy SNP analysis
+    if snippy_results:
+        distances = snippy_results.get('distances', [])
+
+        # Create histogram bins
+        if distances:
+            min_dist = min(distances)
+            max_dist = max(distances)
+            mean_dist = sum(distances) / len(distances)
+
+            # Create 10 bins
+            bin_size = max(1, (max_dist - min_dist) // 10)
+            bins = {}
+            for dist in distances:
+                bin_key = (dist // bin_size) * bin_size
+                bins[bin_key] = bins.get(bin_key, 0) + 1
+
+            snippy_hist_labels = [f"{k}-{k+bin_size}" for k in sorted(bins.keys())]
+            snippy_hist_data = [bins[k] for k in sorted(bins.keys())]
+        else:
+            min_dist = max_dist = mean_dist = 0
+            snippy_hist_labels = []
+            snippy_hist_data = []
+
+        js_code = js_code.replace('SNIPPY_HIST_LABELS_PLACEHOLDER', json.dumps(snippy_hist_labels))
+        js_code = js_code.replace('SNIPPY_HIST_DATA_PLACEHOLDER', json.dumps(snippy_hist_data))
+        js_code = js_code.replace('SNIPPY_MIN_DIST_PLACEHOLDER', str(int(min_dist)))
+        js_code = js_code.replace('SNIPPY_MAX_DIST_PLACEHOLDER', str(int(max_dist)))
+        js_code = js_code.replace('SNIPPY_MEAN_DIST_PLACEHOLDER', f'{mean_dist:.1f}')
 
     # Replace summary statistics placeholders
     from datetime import datetime
