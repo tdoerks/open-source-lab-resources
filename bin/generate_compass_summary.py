@@ -1065,7 +1065,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
     # ============================================================
 
     # Gene count histogram
-    gene_counts = df['cds_count'].replace('-', 0).fillna(0).astype(float).tolist() if 'cds_count' in df.columns else []
+    gene_counts = df['total_genes'].replace('-', 0).fillna(0).astype(float).tolist() if 'total_genes' in df.columns else []
     gene_count_bins = list(range(0, int(max(gene_counts)) + 500, 500)) if gene_counts and max(gene_counts) > 0 else [0, 1]
     if gene_counts:
         gene_count_hist, _ = pd.cut(gene_counts, bins=gene_count_bins, retbins=True)
@@ -1087,9 +1087,9 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
     # Coding density scatter (genome size vs gene count)
     coding_density_data = []
     for _, row in df.iterrows():
-        if 'assembly_length' in row and 'cds_count' in row:
+        if 'assembly_length' in row and 'total_genes' in row:
             length = row['assembly_length']
-            cds = row['cds_count']
+            cds = row['total_genes']
             if length != '-' and cds != '-':
                 try:
                     coding_density_data.append({
@@ -2543,7 +2543,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
         <div class="summary-grid" style="margin-bottom: 30px;">
             <div class="summary-card">
                 <h3>Average CDS Count</h3>
-                <div class="value">{int(df['cds_count'].mean()) if 'cds_count' in df.columns else 0}</div>
+                <div class="value">{int(df['total_genes'].mean()) if 'total_genes' in df.columns else 0}</div>
                 <div class="subtext">Protein-coding genes</div>
             </div>
             <div class="summary-card">
