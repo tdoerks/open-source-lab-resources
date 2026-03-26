@@ -1076,8 +1076,8 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
         gene_count_labels = []
 
     # RNA gene composition
-    avg_rrna = df['rrna_count'].mean() if 'rrna_count' in df.columns else 0
-    avg_trna = df['trna_count'].mean() if 'trna_count' in df.columns else 0
+    avg_rrna = df['rrna_genes'].mean() if 'rrna_genes' in df.columns else 0
+    avg_trna = df['trna_genes'].mean() if 'trna_genes' in df.columns else 0
     rna_gene_data = [avg_rrna, avg_trna]
 
     # Hypothetical protein percentage
@@ -2548,12 +2548,12 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             </div>
             <div class="summary-card">
                 <h3>Average rRNA Genes</h3>
-                <div class="value">{df['rrna_count'].mean():.1f if 'rrna_count' in df.columns else 0}</div>
+                <div class="value">{df['rrna_genes'].mean():.1f if 'rrna_genes' in df.columns else 0}</div>
                 <div class="subtext">Ribosomal RNA genes</div>
             </div>
             <div class="summary-card">
                 <h3>Average tRNA Genes</h3>
-                <div class="value">{int(df['trna_count'].mean()) if 'trna_count' in df.columns else 0}</div>
+                <div class="value">{int(df['trna_genes'].mean()) if 'trna_genes' in df.columns else 0}</div>
                 <div class="subtext">Transfer RNA genes</div>
             </div>
             <div class="summary-card card-warning">
