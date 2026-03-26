@@ -895,6 +895,7 @@ def parse_snippy(snippy_dir):
         return {
             'distance_matrix': distance_matrix,
             'sample_names': sample_names,
+            'distances': distances,  # Add the distances list for histogram
             'min_distance': min(distances) if distances else 0,
             'max_distance': max(distances) if distances else 0,
             'avg_distance': sum(distances) / len(distances) if distances else 0
