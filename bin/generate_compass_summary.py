@@ -4642,11 +4642,11 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
 
         // Initialize Phylocanvas tree viewer
         const phyloContainer = document.getElementById('phylocanvas-container');
-        if (phyloContainer && typeof Phylocanvas !== 'undefined') {{
+        if (phyloContainer) {{
             const newickTree = IQTREE_NEWICK_PLACEHOLDER;
 
             // Simple text display of tree (can be enhanced with Phylocanvas.js library)
-            phyloContainer.innerHTML = '<pre style="overflow: auto; max-height: 500px; padding: 20px; background: #f8f9fa; border-radius: 4px;">' + newickTree + '</pre>';
+            phyloContainer.innerHTML = '<pre style="overflow: auto; max-height: 500px; padding: 20px; background: #f8f9fa; border-radius: 4px; font-family: monospace; font-size: 12px;">' + newickTree + '</pre>';
             phyloContainer.innerHTML += '<p style="margin-top: 15px; color: #666; font-size: 14px;"><strong>Note:</strong> For interactive tree visualization, install Phylocanvas.js library. Currently showing Newick format.</p>';
         }}
 """
@@ -4696,13 +4696,14 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             }});
         }}
 
-        // SNP Distance Heatmap (simplified - can be enhanced)
-        const snpHeatmapCtx = document.getElementById('snpDistanceHeatmap');
-        if (snpHeatmapCtx) {{
-            // Placeholder for heatmap visualization
-            // Can be implemented with Chart.js Matrix plugin or dedicated heatmap library
-            const container = snpHeatmapCtx.parentElement;
-            container.innerHTML = '<div style="padding: 40px; text-align: center; background: #f8f9fa; border-radius: 8px;"><p style="color: #666; margin-bottom: 10px;"><strong>SNP Distance Matrix</strong></p><p style="font-size: 14px;">Min: SNIPPY_MIN_DIST_PLACEHOLDER SNPs<br>Max: SNIPPY_MAX_DIST_PLACEHOLDER SNPs<br>Mean: SNIPPY_MEAN_DIST_PLACEHOLDER SNPs</p><p style="margin-top: 15px; font-size: 12px; color: #999;">Interactive heatmap visualization coming soon</p></div>';
+        // SNP Distance Summary (heatmap placeholder)
+        const snpHeatmapContainer = document.getElementById('snpDistanceHeatmap');
+        if (snpHeatmapContainer && snpHeatmapContainer.parentElement) {{
+            // Create summary div instead of using canvas
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.cssText = 'padding: 40px; text-align: center; background: #f8f9fa; border-radius: 8px;';
+            summaryDiv.innerHTML = '<p style="color: #666; margin-bottom: 10px;"><strong>SNP Distance Matrix Statistics</strong></p><p style="font-size: 14px;">Min: SNIPPY_MIN_DIST_PLACEHOLDER SNPs<br>Max: SNIPPY_MAX_DIST_PLACEHOLDER SNPs<br>Mean: SNIPPY_MEAN_DIST_PLACEHOLDER SNPs</p><p style="margin-top: 15px; font-size: 12px; color: #999;">Interactive heatmap visualization coming soon</p>';
+            snpHeatmapContainer.parentElement.replaceChild(summaryDiv, snpHeatmapContainer);
         }}
 """
 
