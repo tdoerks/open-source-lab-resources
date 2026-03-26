@@ -2548,7 +2548,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             </div>
             <div class="summary-card">
                 <h3>Average rRNA Genes</h3>
-                <div class="value">{df['rrna_genes'].mean():.1f if 'rrna_genes' in df.columns else 0}</div>
+                <div class="value">{(df['rrna_genes'].mean() if 'rrna_genes' in df.columns else 0):.1f}</div>
                 <div class="subtext">Ribosomal RNA genes</div>
             </div>
             <div class="summary-card">
@@ -2558,7 +2558,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
             </div>
             <div class="summary-card card-warning">
                 <h3>Hypothetical Proteins</h3>
-                <div class="value">{df['hypothetical_proteins'].mean():.1f if 'hypothetical_proteins' in df.columns else 0}%</div>
+                <div class="value">{(df['hypothetical_proteins'].mean() if 'hypothetical_proteins' in df.columns else 0):.1f}%</div>
                 <div class="subtext">Unknown function</div>
             </div>
         </div>
