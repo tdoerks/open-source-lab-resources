@@ -4085,6 +4085,9 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
                 }
             }
         });
+
+        GENOMIC_CHARTS_PLACEHOLDER
+
     </script>
 """
 
@@ -4258,7 +4261,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
 """
 
     # Genomic annotation charts - always add regardless of MultiQC data
-    js_code += """
+    genomic_charts_js = """
         // ============================================================
         // GENOME ANNOTATION TAB CHARTS
         // ============================================================
@@ -4538,6 +4541,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
 """
 
     js_code = js_code.replace('MULTIQC_CHARTS_PLACEHOLDER', multiqc_charts_js)
+    js_code = js_code.replace('GENOMIC_CHARTS_PLACEHOLDER', genomic_charts_js)
 
     # Prophage functional diversity data
     js_code = js_code.replace('FUNCTIONAL_LABELS_PLACEHOLDER', json.dumps(functional_labels))
