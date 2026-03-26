@@ -1523,8 +1523,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
     <title>COMPASS Pipeline Summary Report</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/phylotree@1.0.7/dist/phylotree.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/phylotree@1.0.7/dist/phylotree.css">
+    <script src="https://unpkg.com/@phylocanvas/phylocanvas.gl@latest/dist/bundle.js"></script>
     <style>
         * {{
             box-sizing: border-box;
@@ -2777,7 +2776,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
                 </div>
                 <div class="summary-card">
                     <h3>Mean Distance</h3>
-                    <div class="value">""" + str(snippy_results.get('mean_distance', 0)) + """</div>
+                    <div class="value">""" + str(int(snippy_results.get('avg_distance', 0))) + """</div>
                     <div class="subtext">Average pairwise SNPs</div>
                 </div>
             </div>
@@ -4645,41 +4644,46 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
 
         // Initialize phylogenetic tree viewer
         const phyloContainer = document.getElementById('phylocanvas-container');
-        if (phyloContainer && typeof phylotree !== 'undefined') {{
+        if (phyloContainer) {{
             const newickTree = IQTREE_NEWICK_PLACEHOLDER;
 
-            try {{
-                // Create phylotree instance
-                const tree = new phylotree.phylotree(newickTree);
+            if (typeof Phylocanvas !== 'undefined') {{
+                try {{
+                    // Create Phylocanvas instance
+                    phyloContainer.innerHTML = '';  // Clear container
+                    const tree = new Phylocanvas.PhylocanvasGL(phyloContainer, {{
+                        source: newickTree,
+                        type: 'rc',  // rectangular cladogram
+                        showLabels: true,
+                        showLeafLabels: true,
+                        alignLabels: false,
+                        interactive: true
+                    }});
 
-                // Render the tree
-                phyloContainer.innerHTML = '';  // Clear container
-                tree.render({{
-                    container: phyloContainer,
-                    'draw-size-bubbles': false,
-                    'left-right-spacing': 'fit-to-size',
-                    'top-bottom-spacing': 'fit-to-size',
-                    'zoom': true,
-                    'show-scale': true,
-                    'align-tips': false
-                }});
-
-                // Add note
+                    // Add note
+                    setTimeout(() => {{
+                        const note = document.createElement('p');
+                        note.style.cssText = 'margin-top: 15px; color: #666; font-size: 14px; text-align: center;';
+                        note.innerHTML = '<strong>Interactive tree:</strong> Scroll to zoom, drag to pan, click branches to collapse/expand';
+                        phyloContainer.parentElement.insertBefore(note, phyloContainer.nextSibling);
+                    }}, 100);
+                }} catch (e) {{
+                    // Fallback to text display
+                    console.error('Phylocanvas rendering failed:', e);
+                    phyloContainer.innerHTML = '<pre style="overflow: auto; max-height: 500px; padding: 20px; background: #f8f9fa; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap;">' + newickTree + '</pre>';
+                    const note = document.createElement('p');
+                    note.style.cssText = 'margin-top: 15px; color: #666; font-size: 14px;';
+                    note.textContent = 'Tree visualization failed. Showing Newick format.';
+                    phyloContainer.parentElement.appendChild(note);
+                }}
+            }} else {{
+                // Fallback if library not loaded
+                phyloContainer.innerHTML = '<pre style="overflow: auto; max-height: 500px; padding: 20px; background: #f8f9fa; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap;">' + newickTree + '</pre>';
                 const note = document.createElement('p');
-                note.style.cssText = 'margin-top: 15px; color: #666; font-size: 14px; text-align: center;';
-                note.innerHTML = '<strong>Interactive phylogenetic tree:</strong> Use mouse wheel to zoom, drag to pan';
+                note.style.cssText = 'margin-top: 15px; color: #666; font-size: 14px;';
+                note.textContent = 'Phylocanvas library loading... Showing Newick format as fallback.';
                 phyloContainer.parentElement.appendChild(note);
-            }} catch (e) {{
-                // Fallback to text display if phylotree fails
-                console.error('Phylotree rendering failed:', e);
-                phyloContainer.innerHTML = '<pre style="overflow: auto; max-height: 500px; padding: 20px; background: #f8f9fa; border-radius: 4px; font-family: monospace; font-size: 12px;">' + newickTree + '</pre>';
-                phyloContainer.innerHTML += '<p style="margin-top: 15px; color: #666; font-size: 14px;">Tree visualization failed. Showing Newick format.</p>';
             }}
-        }} else if (phyloContainer) {{
-            // Fallback if library not loaded
-            const newickTree = IQTREE_NEWICK_PLACEHOLDER;
-            phyloContainer.innerHTML = '<pre style="overflow: auto; max-height: 500px; padding: 20px; background: #f8f9fa; border-radius: 4px; font-family: monospace; font-size: 12px;">' + newickTree + '</pre>';
-            phyloContainer.innerHTML += '<p style="margin-top: 15px; color: #666; font-size: 14px;">Phylotree library not available. Showing Newick format.</p>';
         }}
 """
 
@@ -4693,6 +4697,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
         // SNP Distance Histogram
         const snpHistCtx = document.getElementById('snpDistanceHistogram');
         if (snpHistCtx) {{
+            console.log('Creating SNP histogram with data:', SNIPPY_HIST_LABELS_PLACEHOLDER, SNIPPY_HIST_DATA_PLACEHOLDER);
             new Chart(snpHistCtx, {{
                 type: 'bar',
                 data: {{
