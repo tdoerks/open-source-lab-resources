@@ -31,8 +31,8 @@ process PROPHAGE_AMR_COMPARISON {
     fi
     set -u
 
-    # Run comparison script
-    compare_prophage_amr_methods.py \\
+    # Run comparison script (explicit python call to bypass shebang)
+    python compare_prophage_amr_methods.py \\
         --sample_id ${sample_id} \\
         --vibrant_dir ${vibrant_dir} \\
         --amr_results ${amr_results} \\
