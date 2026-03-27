@@ -553,6 +553,80 @@ results/
 - HGT detection (custom scripts)
 - Resistome profiling
 
+### Phase 5: Large-Scale Surveillance (v1.4+) 🔬
+
+#### 5.1 Prophage-AMR Correlation Analysis
+**Rationale:** For metagenomic-scale surveillance studies (1,000-100,000+ samples)
+- Statistical association between prophage abundance and AMR prevalence
+- Population-level trends across time/geography/host
+- Inspired by metagenomic studies using RGI + Spearman correlation
+
+**Prerequisites:**
+- Large multi-sample datasets (>500 samples recommended)
+- Sample metadata (time, location, source, etc.)
+- Completed COMPASS runs on all samples
+
+**Tool:** `bin/analyze_prophage_amr_correlation.py`
+
+**Features:**
+```python
+# Spearman correlation analyses:
+- Prophage count vs Total AMR gene count
+- Prophage count vs Prophage-encoded AMR genes
+- Prophage quality score vs AMR prevalence
+- Temporal trends (prophage/AMR over time)
+- Geographic patterns (if location metadata)
+- Host/source associations (clinical vs environmental)
+```
+
+**Outputs:**
+- Correlation matrices with p-values
+- Scatter plots with regression lines
+- Heatmaps (samples × prophage/AMR metrics)
+- Statistical significance tests
+- Publication-ready figures
+
+**Use Cases:**
+1. **Surveillance**: "Are prophages increasing alongside AMR in clinical isolates?"
+2. **Epidemiology**: "Do certain geographic regions show prophage-AMR co-occurrence?"
+3. **Temporal**: "Is prophage-mediated AMR spreading over time?"
+4. **Ecological**: "Do environmental samples differ from clinical in prophage-AMR?"
+
+**Example Usage:**
+```bash
+# After running COMPASS on 10,000 E. coli isolates
+python3 bin/analyze_prophage_amr_correlation.py \
+    --compass_results results/ \
+    --metadata sample_metadata.csv \
+    --output correlation_analysis/ \
+    --group_by collection_year,source_type \
+    --min_samples 100
+```
+
+**Comparison to Current Approach:**
+- **Current (v1.2.0)**: Direct detection - "Which AMR genes are IN prophages?" (mechanistic)
+- **Future (v1.4+)**: Correlation analysis - "Do prophages ASSOCIATE with AMR?" (epidemiological)
+- **Complementary**: Direct detection proves mechanism, correlation shows population trends
+
+**Implementation Priority:** LOW (Phase 5)
+- Requires large datasets (currently testing on 163-2,493 samples)
+- Most valuable for national surveillance programs with 10,000+ isolates
+- Research groups typically have <1,000 samples (use direct detection instead)
+
+**Scientific Precedent:**
+- Metagenomic studies with 100,000+ samples show prophage-ARG enrichment in human-impacted environments
+- Our approach adapts this for isolate genomics surveillance
+
+**When to Implement:**
+- v1.4 or later
+- After COMPASS deployed in national surveillance context
+- When user datasets regularly exceed 1,000 samples
+- Community requests correlation analysis features
+
+**Related Papers:**
+- Liao et al. 2024, Nature Communications - Prophage-encoded ARGs in human-impacted environments
+- Various gut microbiome studies using RGI + correlation on metagenomic data
+
 ---
 
 ## Implementation Plan
