@@ -17,6 +17,7 @@ include { BUSCO } from '../modules/busco'
 include { QUAST } from '../modules/quast'
 include { CHECK_DATABASES } from '../modules/check_databases'
 include { DOWNLOAD_ASSEMBLY } from '../modules/download_assembly'
+include { PROPHAGE_AMR_INTERSECTION } from '../modules/prophage_amr'
 
 workflow COMPLETE_PIPELINE {
     take:
@@ -167,6 +168,40 @@ workflow COMPLETE_PIPELINE {
     MOBILE_ELEMENTS(ch_assemblies_split.mobile)
     ch_versions = ch_versions.mix(MOBILE_ELEMENTS.out.versions)
 
+    // Run Prophage-AMR intersection analysis (if enabled)
+    // Joins VIBRANT prophage coordinates with AMRFinder results to identify
+    // AMR genes encoded within prophage regions
+    if (!params.skip_prophage_amr) {
+        // Extract prophage coordinates from VIBRANT results
+        // VIBRANT.out.results format: [sample_id, vibrant_results_dir]
+        ch_prophage_coords = PHAGE_ANALYSIS.out.vibrant_results
+            .map { sample_id, vibrant_dir ->
+                // Find prophage coordinates file in VIBRANT output directory
+                def coords_file = file("${vibrant_dir}/VIBRANT_*_contigs/VIBRANT_results_*_contigs/VIBRANT_integrated_prophage_coordinates_*.tsv")
+                if (!coords_file.exists()) {
+                    // Try alternative directory structures
+                    coords_file = file("${vibrant_dir}/VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv")
+                }
+                return [sample_id, coords_file]
+            }
+
+        // Extract sample_id from AMR results for joining
+        // AMR_ANALYSIS.out.results format: [meta, amr_results_file]
+        ch_amr_for_join = AMR_ANALYSIS.out.results
+            .map { meta, amr_file -> [meta.id, amr_file] }
+
+        // Join prophage coordinates with AMR results by sample_id
+        ch_prophage_amr_input = ch_prophage_coords
+            .join(ch_amr_for_join, by: 0)  // Join on sample_id (first element)
+
+        // Run prophage-AMR intersection
+        PROPHAGE_AMR_INTERSECTION(ch_prophage_amr_input)
+        ch_versions = ch_versions.mix(PROPHAGE_AMR_INTERSECTION.out.versions)
+        ch_prophage_amr_results = PROPHAGE_AMR_INTERSECTION.out.results
+    } else {
+        ch_prophage_amr_results = Channel.empty()
+    }
+
     // Combine all results - runs after all analyses complete
     // Filter out failed samples that emit sample IDs instead of files
     COMBINE_RESULTS(
@@ -231,6 +266,7 @@ workflow COMPLETE_PIPELINE {
     sistr_results = TYPING.out.sistr_results
     mobsuite_results = MOBILE_ELEMENTS.out.mobsuite_results
     plasmids = MOBILE_ELEMENTS.out.plasmids
+    prophage_amr_results = ch_prophage_amr_results
     multiqc_report = ch_multiqc_report
     versions = ch_versions.unique()
 }
