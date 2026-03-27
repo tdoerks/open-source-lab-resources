@@ -25,15 +25,16 @@ This script runs a **complete v1.2.0 validation** with 163 E. coli reference gen
 1. **Prokka** - Genome annotation for Tab 10
 2. **VFDB** - Virulence factor detection for Tab 11
 3. **Enhanced VIBRANT** - Quality-based prophage analysis for Tab 12
+4. **Prophage-AMR** - Identifies AMR genes within prophage regions for Tab 16
 
-### 🔬 Optional Modules (ENABLED for complete 15-tab testing)
+### 🔬 Optional Modules (ENABLED for complete 16-tab testing)
 4. **Panaroo** - Pangenome analysis (Tab 13)
 5. **IQ-TREE** - Phylogenetic tree (Tab 14)
 6. **Snippy** - SNP analysis (Tab 15)
 
 ### 📊 Enhanced HTML Summary
 - Automatically generated with all new visualizations
-- All 15 tabs fully functional
+- All 16 tabs fully functional (including new prophage-AMR analysis)
 - Tested with 163 samples for scalability
 
 ---
@@ -137,9 +138,9 @@ Validation checks:
 ✅ HTML Summary Report Generated!
 
   HTML Report Statistics:
-    - Total tabs: 15
-    - Total charts: 35
-    - File size: 3.2M
+    - Total tabs: 16
+    - Total charts: 38
+    - File size: 3.5M
 
   v1.2.0 Features:
     ✓ Tab 10: Genome Annotation
@@ -148,6 +149,7 @@ Validation checks:
     ✓ Tab 13: Pangenome Analysis
     ✓ Tab 14: Phylogenetic Tree
     ✓ Tab 15: SNP Analysis
+    ✓ Tab 16: Prophage-Encoded AMR
 ```
 
 ### Output Directory Structure
@@ -165,13 +167,14 @@ Validation checks:
     ├── vibrant/            # Enhanced prophage
     ├── prokka/             # NEW: Genome annotations
     ├── vfdb/               # NEW: Virulence factors
+    ├── prophage_amr/       # NEW: Prophage-encoded AMR genes
     ├── panaroo/            # OPTIONAL: Pangenome
     ├── iqtree/             # OPTIONAL: Phylogeny
     ├── snippy/             # OPTIONAL: SNPs
     ├── multiqc/
     │   └── multiqc_report.html
     ├── summary/
-    │   └── compass_summary.html    # ← Enhanced 15-tab report!
+    │   └── compass_summary.html    # ← Enhanced 16-tab report!
     ├── nextflow_report.html
     ├── nextflow_timeline.html
     └── nextflow_dag.html
@@ -189,7 +192,7 @@ scp beocat:/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_<JOBID>/results/s
 
 ### 2. Open in Browser
 - Double-click `compass_summary.html`
-- Should see all 15 tabs
+- Should see all 16 tabs
 
 ### 3. Test Each Tab
 Navigate through all tabs and verify:
@@ -208,6 +211,7 @@ Navigate through all tabs and verify:
 - [x] **Tab 10: Genome Annotation** - Gene counts, RNA composition, hypothetical proteins
 - [x] **Tab 11: Virulence Analysis** - VF distribution, top genes, heatmap (163 samples)
 - [x] **Tab 12: Enhanced Prophage** - Quality-based charts, complete/partial analysis
+- [x] **Tab 16: Prophage-Encoded AMR** - Prevalence, gene frequency, resistance classes, positive sample details
 
 **Optional Tabs (v1.2.0):**
 - [x] **Tab 13: Pangenome Analysis** - Core/soft-core/shell/cloud genes, frequency histogram

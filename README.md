@@ -570,6 +570,7 @@ If you use COMPASS, please cite the individual tools:
 
 **Resistance & Virulence:**
 - **AMRFinder+**: [Feldgarden et al., 2021](https://www.nature.com/articles/s41598-021-91456-0)
+- **Prophage-AMR Intersection**: [Pinto et al., 2024](https://doi.org/10.3390/genes16050656) - Identifies AMR genes within prophage regions
 
 **Phage Analysis:**
 - **VIBRANT**: [Kieft et al., 2020](https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-020-00990-y)
