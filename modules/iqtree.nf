@@ -113,7 +113,7 @@ process VISUALIZE_TREE {
 
     input:
     path tree
-    path metadata, optional: true
+    path metadata
 
     output:
     path("phylogenetic_tree.pdf"), emit: pdf, optional: true
