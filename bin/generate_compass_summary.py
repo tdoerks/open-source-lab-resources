@@ -1991,6 +1991,7 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
 
     html += optional_tabs
     html += '''
+            <button class="tab-button" onclick="switchTab(event, 'prophage-amr-analysis')">Prophage-Encoded AMR</button>
             <button class="tab-button" onclick="switchTab(event, 'data-table')">Data Table</button>'''
 
     # MultiQC iframe tab removed - MultiQC report is now accessible via link in Quality Control tab
@@ -2515,6 +2516,272 @@ def generate_html_report(df, output_file, functional_diversity=None, multiqc_pat
                 checkMultiQCExists();
             </script>
         </div>"""
+
+    html += """
+    </div>
+
+    <!-- Prophage-Encoded AMR Tab -->
+    <div id="prophage-amr-analysis" class="tab-content">
+        <h2>Prophage-Encoded Antimicrobial Resistance Genes</h2>
+
+        <!-- Methodology Box -->
+        <div style="background: linear-gradient(135deg, #FFF5E6 0%, #FFE5D9 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #ff6b6b; margin-bottom: 30px;">
+            <h3 style="margin-top: 0; color: #ff6b6b;">
+                ⚠️ Methodology & Significance
+            </h3>
+            <p style="margin-bottom: 10px; line-height: 1.6;">
+                This analysis identifies <strong>antimicrobial resistance (AMR) genes encoded within prophage regions</strong>
+                using coordinate intersection methodology based on
+                <a href="https://doi.org/10.3390/genes16050656" target="_blank" style="color: #ff6b6b; font-weight: bold;">
+                    Pinto et al. (2024), Genes 16(5), 656
+                </a>.
+            </p>
+            <p style="margin-bottom: 10px; line-height: 1.6;">
+                <strong>Filtering:</strong> AMR genes are only retained if located in <strong>internal prophage regions</strong>
+                (&gt;5kb from prophage termini) to exclude potential host contamination at prophage boundaries.
+            </p>
+            <p style="margin-bottom: 0; line-height: 1.6;">
+                <strong>Clinical Significance:</strong> AMR genes within prophages can be <strong>horizontally transferred
+                to other bacteria via phage transduction</strong>, representing a critical mechanism for rapid AMR dissemination
+                in bacterial populations and presenting significant public health concerns.
+            </p>
+        </div>"""
+
+    # Add prophage-AMR statistics and charts
+    # Get samples with prophage-AMR
+    samples_with_prophage_amr = df[df['has_prophage_amr'] == True] if 'has_prophage_amr' in df.columns else pd.DataFrame()
+    num_positive = len(samples_with_prophage_amr)
+    total_samples = len(df)
+    prevalence_pct = (num_positive / total_samples * 100) if total_samples > 0 else 0
+
+    # Get all prophage-AMR genes across all samples
+    all_prophage_amr_genes = []
+    all_prophage_amr_classes = []
+    if 'prophage_amr_genes' in df.columns:
+        for genes_str in df['prophage_amr_genes']:
+            if genes_str and genes_str != '-' and pd.notna(genes_str):
+                all_prophage_amr_genes.extend([g.strip() for g in genes_str.split(',')])
+    if 'prophage_amr_classes' in df.columns:
+        for classes_str in df['prophage_amr_classes']:
+            if classes_str and classes_str != '-' and pd.notna(classes_str):
+                all_prophage_amr_classes.extend([c.strip() for c in classes_str.split(',')])
+
+    unique_prophage_amr_genes = list(set(all_prophage_amr_genes))
+    unique_prophage_amr_classes = list(set(all_prophage_amr_classes))
+
+    # Count gene frequencies
+    from collections import Counter
+    gene_counts = Counter(all_prophage_amr_genes)
+    class_counts = Counter(all_prophage_amr_classes)
+
+    html += f"""
+        <!-- Summary Statistics -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <div class="metric-card">
+                <div class="metric-value">{total_samples}</div>
+                <div class="metric-label">Total Samples Analyzed</div>
+            </div>
+            <div class="metric-card" style="{'background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%); border-left: 4px solid #ff6b6b;' if num_positive > 0 else ''}">
+                <div class="metric-value" style="{'color: #ff6b6b;' if num_positive > 0 else ''}">{num_positive}</div>
+                <div class="metric-label">Samples with Prophage-AMR {'🚨' if num_positive > 0 else ''}</div>
+                <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                    {prevalence_pct:.1f}% prevalence
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{len(unique_prophage_amr_genes)}</div>
+                <div class="metric-label">Unique Prophage-AMR Genes</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value">{len(unique_prophage_amr_classes)}</div>
+                <div class="metric-label">Resistance Classes</div>
+            </div>
+        </div>"""
+
+    if num_positive == 0:
+        html += """
+        <div style="background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%); padding: 30px; border-radius: 10px; text-align: center; border-left: 4px solid #66bb6a;">
+            <h3 style="color: #2e7d32; margin-top: 0;">✓ No Prophage-Encoded AMR Genes Detected</h3>
+            <p style="color: #555; font-size: 1.1em; margin: 0;">
+                All AMR genes detected in this dataset are located on chromosomes or plasmids, not within prophage regions.
+                This indicates no immediate risk of phage-mediated AMR horizontal transfer in these samples.
+            </p>
+        </div>
+        """
+    else:
+        # Add visualizations for positive samples
+        html += """
+        <!-- Charts Container -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; margin-bottom: 30px;">
+            <!-- Chart 1: Prevalence -->
+            <div class="chart-container">
+                <h3 style="text-align: center; color: #333;">Prophage-AMR Prevalence</h3>
+                <canvas id="prophageAmrPrevalenceChart"></canvas>
+            </div>
+
+            <!-- Chart 2: Gene Frequency -->
+            <div class="chart-container">
+                <h3 style="text-align: center; color: #333;">Prophage-AMR Gene Frequency</h3>
+                <canvas id="prophageAmrGeneChart"></canvas>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; margin-bottom: 30px;">
+            <!-- Chart 3: Resistance Class Distribution -->
+            <div class="chart-container">
+                <h3 style="text-align: center; color: #333;">Resistance Class Distribution</h3>
+                <canvas id="prophageAmrClassChart"></canvas>
+            </div>
+
+            <!-- Chart 4: Sample-Gene Heatmap -->
+            <div class="chart-container" style="grid-column: span 2;">
+                <h3 style="text-align: center; color: #333;">Sample × Prophage-AMR Gene Matrix</h3>
+                <div style="max-height: 500px; overflow-y: auto;">
+                    <canvas id="prophageAmrHeatmapChart"></canvas>
+                </div>
+            </div>
+        </div>"""
+
+        # Add data table for positive samples
+        html += """
+        <h3 style="margin-top: 40px;">Samples with Prophage-Encoded AMR Genes</h3>
+        <div style="overflow-x: auto;">
+            <table class="data-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Sample ID</th>
+                        <th>Organism</th>
+                        <th>Prophage-AMR Gene Count</th>
+                        <th>AMR Genes</th>
+                        <th>Resistance Classes</th>
+                    </tr>
+                </thead>
+                <tbody>"""
+
+        for _, row in samples_with_prophage_amr.iterrows():
+            sample_id = row.get('sample_id', '-')
+            organism = row.get('organism', '-')
+            gene_count = row.get('prophage_amr_gene_count', 0)
+            genes = row.get('prophage_amr_genes', '-')
+            classes = row.get('prophage_amr_classes', '-')
+
+            html += f"""
+                    <tr>
+                        <td><strong>{sample_id}</strong></td>
+                        <td>{organism}</td>
+                        <td style="text-align: center;"><span class="badge badge-danger">{gene_count}</span></td>
+                        <td>{genes}</td>
+                        <td>{classes}</td>
+                    </tr>"""
+
+        html += """
+                </tbody>
+            </table>
+        </div>"""
+
+        # Add Chart.js code
+        # Prepare data for charts
+        top_genes = sorted(gene_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        gene_labels = [g[0] for g in top_genes]
+        gene_values = [g[1] for g in top_genes]
+
+        class_labels = list(class_counts.keys())
+        class_values = list(class_counts.values())
+
+        # Sample-gene matrix data
+        matrix_samples = samples_with_prophage_amr['sample_id'].tolist()[:20]  # Limit to 20 for visibility
+        matrix_genes = unique_prophage_amr_genes[:15]  # Top 15 genes
+
+        html += f"""
+        <script>
+        // Chart 1: Prevalence Bar Chart
+        new Chart(document.getElementById('prophageAmrPrevalenceChart').getContext('2d'), {{
+            type: 'bar',
+            data: {{
+                labels: ['With Prophage-AMR', 'Without Prophage-AMR'],
+                datasets: [{{
+                    label: 'Number of Samples',
+                    data: [{num_positive}, {total_samples - num_positive}],
+                    backgroundColor: ['#ff6b6b', '#51cf66'],
+                    borderColor: ['#e03131', '#2f9e44'],
+                    borderWidth: 2
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {{
+                    legend: {{ display: false }},
+                    tooltip: {{
+                        callbacks: {{
+                            label: function(context) {{
+                                let percentage = (context.parsed.y / {total_samples} * 100).toFixed(1);
+                                return context.label + ': ' + context.parsed.y + ' (' + percentage + '%)';
+                            }}
+                        }}
+                    }}
+                }},
+                scales: {{
+                    y: {{
+                        beginAtZero: true,
+                        title: {{ display: true, text: 'Number of Samples' }}
+                    }}
+                }}
+            }}
+        }});
+
+        // Chart 2: Gene Frequency
+        new Chart(document.getElementById('prophageAmrGeneChart').getContext('2d'), {{
+            type: 'bar',
+            data: {{
+                labels: {json.dumps(gene_labels)},
+                datasets: [{{
+                    label: 'Samples',
+                    data: {json.dumps(gene_values)},
+                    backgroundColor: '#ff6b6b',
+                    borderColor: '#e03131',
+                    borderWidth: 2
+                }}]
+            }},
+            options: {{
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {{
+                    legend: {{ display: false }},
+                    title: {{ display: true, text: 'Top 10 Prophage-Encoded AMR Genes' }}
+                }},
+                scales: {{
+                    x: {{
+                        beginAtZero: true,
+                        title: {{ display: true, text: 'Number of Samples' }}
+                    }}
+                }}
+            }}
+        }});
+
+        // Chart 3: Resistance Class Pie Chart
+        new Chart(document.getElementById('prophageAmrClassChart').getContext('2d'), {{
+            type: 'pie',
+            data: {{
+                labels: {json.dumps(class_labels)},
+                datasets: [{{
+                    data: {json.dumps(class_values)},
+                    backgroundColor: ['#ff6b6b', '#ffd93d', '#6bcf7f', '#4ecdc4', '#a78bfa', '#f472b6'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }}]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {{
+                    legend: {{ position: 'right' }},
+                    title: {{ display: true, text: 'Distribution of Resistance Classes' }}
+                }}
+            }}
+        }});
+        </script>"""
 
     html += """
     </div>
