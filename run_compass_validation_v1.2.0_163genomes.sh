@@ -181,6 +181,7 @@ nextflow run main.nf \
     --max_memory 96.GB \
     --prophage_db /fastscratch/tylerdoe/databases/prophage_db.dmnd \
     --busco_download_path /fastscratch/tylerdoe/databases/busco_downloads \
+    --skip_prokka false \
     --skip_panaroo false \
     --skip_iqtree false \
     $SNIPPY_REF \
@@ -267,16 +268,15 @@ if [ $EXIT_CODE -eq 0 ]; then
 
     cd "$PIPELINE_DIR"
 
-    # Build optional module flags
-    OPTIONAL_FLAGS=""
-    [ -d "${OUTDIR}/results/panaroo" ] && OPTIONAL_FLAGS="$OPTIONAL_FLAGS --panaroo"
-    [ -d "${OUTDIR}/results/iqtree" ] && OPTIONAL_FLAGS="$OPTIONAL_FLAGS --iqtree"
-    [ -d "${OUTDIR}/results/snippy" ] && OPTIONAL_FLAGS="$OPTIONAL_FLAGS --snippy"
+    # NOTE: The pipeline already generated compass_summary.html
+    # But we can regenerate it manually if needed with correct parameters:
+    # python3 bin/generate_compass_summary.py \
+    #     --outdir "${OUTDIR}/results" \
+    #     --output_html "${OUTDIR}/results/summary/compass_summary_manual.html"
 
-    python3 bin/generate_compass_summary.py \
-        --results_dir "${OUTDIR}/results" \
-        --output_dir "${OUTDIR}/results/summary" \
-        $OPTIONAL_FLAGS
+    # For now, use the pipeline-generated summary
+    echo "Using pipeline-generated HTML summary at:"
+    echo "${OUTDIR}/results/summary/compass_summary.html"
 
     SUMMARY_EXIT=$?
 
