@@ -10,7 +10,7 @@ process PROPHAGE_AMR_COMPARISON {
 
     // Use AMRFinder container (has Python, AMRFinder, and basic tools)
     // Note: RGI requires separate installation - if not available, Method 3 will be skipped
-    container = 'quay.io/biocontainers/ncbi-amrfinderplus:3.11.26--h6e70893_0'
+    container = 'quay.io/biocontainers/ncbi-amrfinderplus:3.12.8--h283d18e_0'
 
     input:
     tuple val(sample_id), path(vibrant_dir), path(prophage_coords), path(amr_results)
