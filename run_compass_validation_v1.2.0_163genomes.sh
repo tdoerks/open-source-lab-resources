@@ -10,16 +10,18 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=tdoerks@vet.k-state.edu
 
-# COMPASS v1.2.0 Full Validation Run - 163 Genomes
-# Tests all new features including optional modules for complete 15-tab HTML summary
+# COMPASS v1.2.0 Full Validation Run - 163 Genomes with 3-Method Comparison
+# Tests all new features including optional modules for complete 16-tab HTML summary
+# NEW: Enables prophage-AMR 3-method comparison (coordinate, AMRFinder direct, RGI)
 # Reuses cached results from v1.0.1 where possible (via -resume)
-# Date: 2026-03-26
-# Expected runtime: 6-12 hours (much faster with cached results!)
+# Date: 2026-03-27
+# Expected runtime: 8-14 hours with comparison (slower due to AMRFinder re-scans)
 
 set -e
 
 echo "=========================================="
 echo "COMPASS v1.2.0 Full Validation - 163 Genomes"
+echo "WITH 3-METHOD PROPHAGE-AMR COMPARISON"
 echo "=========================================="
 echo "Job ID: $SLURM_JOB_ID"
 echo "Start time: $(date)"
@@ -35,6 +37,8 @@ echo "  - Tab 12: Enhanced Prophage Analysis (quality-based)"
 echo "  - Tab 13: Pangenome Analysis (Panaroo - ENABLED)"
 echo "  - Tab 14: Phylogenetic Tree (IQ-TREE - ENABLED)"
 echo "  - Tab 15: SNP Analysis (Snippy - ENABLED)"
+echo "  - Tab 16: Prophage-Encoded AMR (NEW!)"
+echo "  - VALIDATION: 3-method comparison (coordinate, AMRFinder direct, RGI)"
 echo ""
 
 # Load required modules
@@ -163,6 +167,8 @@ echo "  ✓ Base modules (QUAST, MLST, AMR, Plasmids, etc.)"
 echo "  ✓ Genome Annotation (Prokka)"
 echo "  ✓ Virulence Factors (VFDB)"
 echo "  ✓ Enhanced Prophage (VIBRANT)"
+echo "  ✓ Prophage-AMR Analysis (Tab 16)"
+echo "  ✓ 3-Method Comparison (Validation Mode - SLOW!)"
 echo "  ✓ Pangenome Analysis (Panaroo)"
 echo "  ✓ Phylogenetic Tree (IQ-TREE)"
 if [ -n "$SNIPPY_REF" ]; then
@@ -170,6 +176,9 @@ if [ -n "$SNIPPY_REF" ]; then
 else
     echo "  ✗ SNP Analysis (Snippy - no reference)"
 fi
+echo ""
+echo "⚠️  Note: 3-method comparison adds ~1-2 minutes per sample"
+echo "   Expected total runtime: 8-14 hours (vs 6-12 hours without comparison)"
 echo ""
 
 nextflow run main.nf \
@@ -184,6 +193,7 @@ nextflow run main.nf \
     --skip_prokka false \
     --skip_panaroo false \
     --skip_iqtree false \
+    --prophage_amr_comparison true \
     $SNIPPY_REF \
     $RESUME_FLAG \
     -with-report "${OUTDIR}/results/nextflow_report.html" \
@@ -229,6 +239,28 @@ if [ $EXIT_CODE -eq 0 ]; then
     VIBRANT_COUNT=$(find ${OUTDIR}/results/vibrant -name "*_results.tsv" 2>/dev/null | wc -l)
     echo "    - VIBRANT prophage: $VIBRANT_COUNT / $SAMPLE_COUNT"
 
+    # Check prophage-AMR outputs
+    echo ""
+    echo "  Prophage-AMR modules:"
+
+    PROPHAGE_AMR_COUNT=$(find ${OUTDIR}/results/prophage_amr -name "*_prophage_amr.tsv" 2>/dev/null | wc -l)
+    echo "    - Prophage-AMR results: $PROPHAGE_AMR_COUNT / $SAMPLE_COUNT"
+
+    # Check comparison outputs
+    COMPARISON_COUNT=$(find ${OUTDIR}/results/prophage_amr_comparison -name "*_comparison_summary.tsv" 2>/dev/null | wc -l)
+    if [ $COMPARISON_COUNT -gt 0 ]; then
+        echo "    - 3-method comparisons: $COMPARISON_COUNT / $SAMPLE_COUNT"
+
+        if [ -f "${OUTDIR}/results/prophage_amr_comparison/comparison_aggregate_report.txt" ]; then
+            echo "    ✓ Aggregate comparison report generated"
+            echo ""
+            echo "  Comparison Summary:"
+            grep -A 10 "DETECTIONS BY METHOD" "${OUTDIR}/results/prophage_amr_comparison/comparison_aggregate_report.txt" || true
+        fi
+    else
+        echo "    - 3-method comparisons: Not found"
+    fi
+
     # Check optional module outputs
     echo ""
     echo "  Optional modules:"
@@ -257,6 +289,7 @@ if [ $EXIT_CODE -eq 0 ]; then
     echo "Key outputs:"
     echo "  - MultiQC report: ${OUTDIR}/results/multiqc/multiqc_report.html"
     echo "  - Summary report: ${OUTDIR}/results/summary/compass_summary.html"
+    echo "  - Prophage-AMR comparison: ${OUTDIR}/results/prophage_amr_comparison/comparison_aggregate_report.txt"
     echo "  - All results: ${OUTDIR}/results/"
     echo ""
 
@@ -325,12 +358,23 @@ if [ $EXIT_CODE -eq 0 ]; then
     echo "1. Download and review HTML summary:"
     echo "   scp beocat:${OUTDIR}/results/summary/compass_summary.html ."
     echo ""
-    echo "2. Verify all 15 tabs render correctly with 163 samples"
+    echo "2. Review 3-method comparison report:"
+    echo "   scp beocat:${OUTDIR}/results/prophage_amr_comparison/comparison_aggregate_report.txt ."
+    echo "   cat comparison_aggregate_report.txt"
     echo ""
-    echo "3. Check browser console for JavaScript errors"
+    echo "3. Verify all 16 tabs render correctly with 163 samples"
+    echo "   (Including new Tab 16: Prophage-Encoded AMR)"
     echo ""
-    echo "4. If validation passes:"
+    echo "4. Check browser console for JavaScript errors"
+    echo ""
+    echo "5. Analyze method agreement:"
+    echo "   - Method 1 (Coordinate) vs Method 2 (AMRFinder Direct)"
+    echo "   - Expected agreement: >90%"
+    echo "   - Method 3 (RGI) may differ due to different database (CARD vs NCBI)"
+    echo ""
+    echo "6. If validation passes:"
     echo "   - Document results in session notes"
+    echo "   - Note method agreement percentage"
     echo "   - Merge 1.2.0-candidate → main"
     echo "   - Tag v1.2.0 release"
     echo ""
