@@ -112,8 +112,8 @@ process VISUALIZE_TREE {
     container = 'quay.io/biocontainers/python:3.9--1'
 
     input:
-    path(tree)
-    path(metadata), optional: true
+    path tree
+    path metadata, optional: true
 
     output:
     path("phylogenetic_tree.pdf"), emit: pdf, optional: true
