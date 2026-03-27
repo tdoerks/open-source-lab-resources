@@ -503,7 +503,30 @@ results/
 - **Impact:** **Critical for phage studies** - answers "which AMR genes on prophages?"
 - **Files:** `bin/categorize_amr_by_location.py`
 
-### 5. Master results table
+### 5. ✅ Prophage-Encoded AMR Detection 🔥🔥🔥
+- **Status:** **COMPLETED** (2026-03-27)
+- **Time:** ~6 hours
+- **Impact:** **CRITICAL** - Identifies phage-mediated AMR spread
+- **Files:**
+  - `bin/intersect_prophage_amr.py` - Single sample analysis
+  - `bin/batch_prophage_amr_analysis.sh` - Batch processing for datasets
+  - `PROPHAGE_AMR_ANALYSIS.md` - Comprehensive documentation
+- **Methodology:** Implements coordinate intersection from *Genes* 2024, 16(5), 656
+- **Features:**
+  - Terminal region filtering (5kb buffer) to exclude host contamination
+  - Identifies AMR genes within internal prophage regions (high-confidence)
+  - Batch processing for large datasets (Vibrio 3,750, Salmonella 2,700, diverse 1,000)
+  - Comprehensive reporting with positive sample identification
+- **Next Steps:**
+  - [ ] Test on Vibrio cholerae (3,750 samples) - Expected: ~1-5% prophage-AMR prevalence
+  - [ ] Test on Salmonella (2,700 samples)
+  - [ ] Test on diverse bacteria (1,000 samples)
+  - [ ] Add Nextflow module wrapper (v1.3)
+  - [ ] Create HTML summary visualization (Tab 16)
+  - [ ] Publish findings if significant prophage-AMR detected
+- **Scientific Significance:** Prophage-encoded AMR can be horizontally transferred via transduction, representing a high-risk mechanism for rapid AMR dissemination
+
+### 6. Master results table
 - **Time:** 4-5 hours
 - **Impact:** Single file with all results, easy to analyze
 - **Files:** `bin/create_master_results_table.py`, `modules/compile_results.nf`
