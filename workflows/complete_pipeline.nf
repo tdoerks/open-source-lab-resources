@@ -18,6 +18,8 @@ include { QUAST } from '../modules/quast'
 include { CHECK_DATABASES } from '../modules/check_databases'
 include { DOWNLOAD_ASSEMBLY } from '../modules/download_assembly'
 include { PROPHAGE_AMR_INTERSECTION } from '../modules/prophage_amr'
+include { PROPHAGE_AMR_COMPARISON } from '../modules/prophage_amr_comparison'
+include { AGGREGATE_COMPARISON } from '../modules/prophage_amr_comparison'
 
 workflow COMPLETE_PIPELINE {
     take:
@@ -198,8 +200,29 @@ workflow COMPLETE_PIPELINE {
         PROPHAGE_AMR_INTERSECTION(ch_prophage_amr_input)
         ch_versions = ch_versions.mix(PROPHAGE_AMR_INTERSECTION.out.versions)
         ch_prophage_amr_results = PROPHAGE_AMR_INTERSECTION.out.results
+
+        // Optional: Run 3-method comparison for validation (SLOW - adds 1-2 min per sample)
+        if (params.prophage_amr_comparison) {
+            // Prepare input for comparison: [sample_id, vibrant_dir, prophage_coords, amr_results]
+            ch_comparison_input = PHAGE_ANALYSIS.out.vibrant_results
+                .map { sample_id, vibrant_dir -> [sample_id, vibrant_dir] }
+                .join(ch_prophage_coords, by: 0)
+                .join(ch_amr_for_join, by: 0)
+
+            // Run all 3 methods and compare
+            PROPHAGE_AMR_COMPARISON(ch_comparison_input)
+            ch_versions = ch_versions.mix(PROPHAGE_AMR_COMPARISON.out.versions)
+
+            // Aggregate comparison results across all samples
+            AGGREGATE_COMPARISON(PROPHAGE_AMR_COMPARISON.out.summary.collect())
+            ch_versions = ch_versions.mix(AGGREGATE_COMPARISON.out.versions)
+            ch_comparison_results = AGGREGATE_COMPARISON.out.aggregate_summary
+        } else {
+            ch_comparison_results = Channel.empty()
+        }
     } else {
         ch_prophage_amr_results = Channel.empty()
+        ch_comparison_results = Channel.empty()
     }
 
     // Combine all results - runs after all analyses complete
@@ -267,6 +290,7 @@ workflow COMPLETE_PIPELINE {
     mobsuite_results = MOBILE_ELEMENTS.out.mobsuite_results
     plasmids = MOBILE_ELEMENTS.out.plasmids
     prophage_amr_results = ch_prophage_amr_results
+    prophage_amr_comparison = ch_comparison_results
     multiqc_report = ch_multiqc_report
     versions = ch_versions.unique()
 }
