@@ -179,12 +179,17 @@ workflow COMPLETE_PIPELINE {
         ch_prophage_coords = PHAGE_ANALYSIS.out.vibrant_results
             .map { sample_id, vibrant_dir ->
                 // Find prophage coordinates file in VIBRANT output directory
-                def coords_file = file("${vibrant_dir}/VIBRANT_*_contigs/VIBRANT_results_*_contigs/VIBRANT_integrated_prophage_coordinates_*.tsv")
-                if (!coords_file.exists()) {
-                    // Try alternative directory structures
-                    coords_file = file("${vibrant_dir}/VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv")
+                // file() with glob returns a list, so get first match
+                def coords_files = file("${vibrant_dir}/VIBRANT_*_contigs/VIBRANT_results_*_contigs/VIBRANT_integrated_prophage_coordinates_*.tsv")
+                def coords_file = coords_files ? coords_files[0] : null
+
+                // If not found, try alternative directory structures
+                if (!coords_file || !coords_file.exists()) {
+                    coords_files = file("${vibrant_dir}/VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv")
+                    coords_file = coords_files ? coords_files[0] : null
                 }
-                return [sample_id, coords_file]
+
+                return [sample_id, coords_file ?: file('NO_FILE')]
             }
 
         // Extract sample_id from AMR results for joining
