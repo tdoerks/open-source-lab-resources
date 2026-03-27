@@ -721,6 +721,96 @@ def parse_vfdb(abricate_dir):
 
     return vfdb_data
 
+def parse_prophage_amr(prophage_amr_dir):
+    """Parse prophage-AMR intersection results
+
+    Identifies AMR genes encoded within prophage regions using coordinate intersection.
+    Only retains AMR genes in internal prophage regions (>5kb from termini) to exclude
+    potential host contamination.
+
+    Args:
+        prophage_amr_dir: Path to prophage_amr results directory
+
+    Returns:
+        dict[sample_id] = {
+            prophage_amr_gene_count: int (number of prophage-encoded AMR genes),
+            prophage_amr_genes: str (comma-separated gene names),
+            prophage_amr_classes: str (comma-separated resistance classes),
+            has_prophage_amr: bool (True if any prophage-AMR genes found)
+        }
+    """
+    prophage_amr_data = {}
+    prophage_amr_path = Path(prophage_amr_dir)
+
+    if not prophage_amr_path.exists():
+        return prophage_amr_data
+
+    # Find all prophage-AMR result files (*_prophage_amr.tsv)
+    prophage_amr_files = list(prophage_amr_path.glob('*_prophage_amr.tsv'))
+
+    if not prophage_amr_files:
+        return prophage_amr_data
+
+    for prophage_amr_file in prophage_amr_files:
+        sample_id = prophage_amr_file.stem.replace('_prophage_amr', '')
+
+        try:
+            # Read prophage-AMR intersection results
+            df = pd.read_csv(prophage_amr_file, sep='\t')
+
+            # Check if file is empty or only has headers
+            if df.empty or len(df) == 0:
+                prophage_amr_data[sample_id] = {
+                    'prophage_amr_gene_count': 0,
+                    'prophage_amr_genes': '',
+                    'prophage_amr_classes': '',
+                    'has_prophage_amr': False
+                }
+                continue
+
+            # Filter for retained (non-excluded) AMR genes only
+            # These are high-confidence prophage-encoded AMR genes
+            if 'excluded' in df.columns:
+                retained_df = df[df['excluded'] == False]
+            else:
+                # If no excluded column, assume all are retained
+                retained_df = df
+
+            if retained_df.empty:
+                prophage_amr_data[sample_id] = {
+                    'prophage_amr_gene_count': 0,
+                    'prophage_amr_genes': '',
+                    'prophage_amr_classes': '',
+                    'has_prophage_amr': False
+                }
+                continue
+
+            # Extract unique AMR genes and classes
+            unique_genes = retained_df['amr_gene'].unique().tolist() if 'amr_gene' in retained_df.columns else []
+            unique_classes = retained_df['amr_class'].unique().tolist() if 'amr_class' in retained_df.columns else []
+
+            # Remove NA/NaN values
+            unique_genes = [g for g in unique_genes if pd.notna(g) and g != 'NA']
+            unique_classes = [c for c in unique_classes if pd.notna(c) and c != 'NA']
+
+            prophage_amr_data[sample_id] = {
+                'prophage_amr_gene_count': len(unique_genes),
+                'prophage_amr_genes': ', '.join(unique_genes),
+                'prophage_amr_classes': ', '.join(unique_classes),
+                'has_prophage_amr': len(unique_genes) > 0
+            }
+
+        except Exception as e:
+            print(f"Warning: Could not parse prophage-AMR results for {sample_id}: {e}", file=sys.stderr)
+            prophage_amr_data[sample_id] = {
+                'prophage_amr_gene_count': 0,
+                'prophage_amr_genes': '',
+                'prophage_amr_classes': '',
+                'has_prophage_amr': False
+            }
+
+    return prophage_amr_data
+
 def parse_integration_sites(results_dir):
     """Parse prophage integration site analysis results
 
@@ -4996,6 +5086,14 @@ def main():
     if vfdb_data:
         print(f"  → Found VFDB data for {len(vfdb_data)} samples")
 
+    print("Parsing prophage-AMR intersection...")
+    prophage_amr_data = parse_prophage_amr(outdir / 'prophage_amr')
+    if prophage_amr_data:
+        samples_with_prophage_amr = sum(1 for s in prophage_amr_data.values() if s.get('has_prophage_amr', False))
+        print(f"  → Found prophage-AMR data for {len(prophage_amr_data)} samples")
+        if samples_with_prophage_amr > 0:
+            print(f"  🚨 WARNING: {samples_with_prophage_amr} samples contain prophage-encoded AMR genes!")
+
     print("Parsing prophage integration sites...")
     integration_data = parse_integration_sites(outdir)
     if integration_data:
@@ -5135,6 +5233,17 @@ def main():
                 'top_vf_genes': '-',
                 'vf_avg_identity': 0,
                 'vf_avg_coverage': 0
+            })
+
+        # Prophage-AMR intersection (AMR genes within prophage regions)
+        if sample in prophage_amr_data:
+            row.update(prophage_amr_data[sample])
+        else:
+            row.update({
+                'prophage_amr_gene_count': 0,
+                'prophage_amr_genes': '-',
+                'prophage_amr_classes': '-',
+                'has_prophage_amr': False
             })
 
         # Prophage integration sites
