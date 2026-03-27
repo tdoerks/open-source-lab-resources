@@ -10,18 +10,18 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=tdoerks@vet.k-state.edu
 
-# COMPASS v1.2.0 Full Validation Run - 163 Genomes with 3-Method Comparison
+# COMPASS v1.2.0 Full Validation Run - 163 Genomes
 # Tests all new features including optional modules for complete 16-tab HTML summary
-# NEW: Enables prophage-AMR 3-method comparison (coordinate, AMRFinder direct, RGI)
+# NEW: Prophage-AMR analysis (Method 1: Coordinate-based, Pinto et al. 2024)
 # Reuses cached results from v1.0.1 where possible (via -resume)
 # Date: 2026-03-27
-# Expected runtime: 8-14 hours with comparison (slower due to AMRFinder re-scans)
+# Expected runtime: 6-12 hours (without comparison mode)
 
 set -e
 
 echo "=========================================="
 echo "COMPASS v1.2.0 Full Validation - 163 Genomes"
-echo "WITH 3-METHOD PROPHAGE-AMR COMPARISON"
+echo "WITH PROPHAGE-AMR ANALYSIS (TAB 16)"
 echo "=========================================="
 echo "Job ID: $SLURM_JOB_ID"
 echo "Start time: $(date)"
@@ -37,8 +37,7 @@ echo "  - Tab 12: Enhanced Prophage Analysis (quality-based)"
 echo "  - Tab 13: Pangenome Analysis (Panaroo - ENABLED)"
 echo "  - Tab 14: Phylogenetic Tree (IQ-TREE - ENABLED)"
 echo "  - Tab 15: SNP Analysis (Snippy - ENABLED)"
-echo "  - Tab 16: Prophage-Encoded AMR (NEW!)"
-echo "  - VALIDATION: 3-method comparison (coordinate, AMRFinder direct, RGI)"
+echo "  - Tab 16: Prophage-Encoded AMR (NEW! Pinto et al. 2024 method)"
 echo ""
 
 # Load required modules
@@ -167,8 +166,7 @@ echo "  ✓ Base modules (QUAST, MLST, AMR, Plasmids, etc.)"
 echo "  ✓ Genome Annotation (Prokka)"
 echo "  ✓ Virulence Factors (VFDB)"
 echo "  ✓ Enhanced Prophage (VIBRANT)"
-echo "  ✓ Prophage-AMR Analysis (Tab 16)"
-echo "  ✓ 3-Method Comparison (Validation Mode - SLOW!)"
+echo "  ✓ Prophage-AMR Analysis (Tab 16 - Coordinate Method)"
 echo "  ✓ Pangenome Analysis (Panaroo)"
 echo "  ✓ Phylogenetic Tree (IQ-TREE)"
 if [ -n "$SNIPPY_REF" ]; then
@@ -177,8 +175,7 @@ else
     echo "  ✗ SNP Analysis (Snippy - no reference)"
 fi
 echo ""
-echo "⚠️  Note: 3-method comparison adds ~1-2 minutes per sample"
-echo "   Expected total runtime: 8-14 hours (vs 6-12 hours without comparison)"
+echo "Expected runtime: 6-12 hours (with cache from v1.0.1, only new modules will run)"
 echo ""
 
 nextflow run main.nf \
@@ -193,7 +190,7 @@ nextflow run main.nf \
     --skip_prokka false \
     --skip_panaroo false \
     --skip_iqtree false \
-    --prophage_amr_comparison true \
+    --prophage_amr_comparison false \
     $SNIPPY_REF \
     $RESUME_FLAG \
     -with-report "${OUTDIR}/results/nextflow_report.html" \
