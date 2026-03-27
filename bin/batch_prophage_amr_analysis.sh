@@ -94,10 +94,11 @@ while IFS= read -r AMR_FILE; do
     # Find prophage coordinates file (handle various directory structures)
     PROPHAGE_FILE=""
 
-    # Try different possible locations
+    # Try different possible locations (including _contigs suffix)
     SEARCH_PATHS=(
         "$RESULTS_DIR/vibrant/$SAMPLE/VIBRANT_${SAMPLE}/VIBRANT_results_${SAMPLE}/VIBRANT_integrated_prophage_coordinates_${SAMPLE}.tsv"
         "$RESULTS_DIR/vibrant/${SAMPLE}_vibrant/VIBRANT_${SAMPLE}/VIBRANT_results_${SAMPLE}/VIBRANT_integrated_prophage_coordinates_${SAMPLE}.tsv"
+        "$RESULTS_DIR/vibrant/${SAMPLE}_vibrant/VIBRANT_${SAMPLE}_contigs/VIBRANT_results_${SAMPLE}_contigs/VIBRANT_integrated_prophage_coordinates_${SAMPLE}_contigs.tsv"
         "$RESULTS_DIR/vibrant/$SAMPLE/VIBRANT_integrated_prophage_coordinates_${SAMPLE}.tsv"
         "$RESULTS_DIR/vibrant/VIBRANT_${SAMPLE}/VIBRANT_results_${SAMPLE}/VIBRANT_integrated_prophage_coordinates_${SAMPLE}.tsv"
     )
@@ -109,9 +110,9 @@ while IFS= read -r AMR_FILE; do
         fi
     done
 
-    # If still not found, try searching
+    # If still not found, try searching with wildcard (handles _contigs and other suffixes)
     if [ -z "$PROPHAGE_FILE" ]; then
-        PROPHAGE_FILE=$(find "$RESULTS_DIR/vibrant" -name "VIBRANT_integrated_prophage_coordinates_${SAMPLE}.tsv" 2>/dev/null | head -1 || true)
+        PROPHAGE_FILE=$(find "$RESULTS_DIR/vibrant" -name "VIBRANT_integrated_prophage_coordinates_${SAMPLE}*.tsv" 2>/dev/null | head -1 || true)
     fi
 
     if [ -z "$PROPHAGE_FILE" ] || [ ! -f "$PROPHAGE_FILE" ]; then
