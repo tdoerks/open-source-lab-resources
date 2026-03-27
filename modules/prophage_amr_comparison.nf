@@ -25,7 +25,7 @@ process PROPHAGE_AMR_COMPARISON {
     def terminal_buffer = params.prophage_amr_terminal_buffer ?: 5000
     """
     # Run comparison script
-    compare_prophage_amr_methods.py \\
+    python compare_prophage_amr_methods.py \\
         --sample_id ${sample_id} \\
         --vibrant_dir ${vibrant_dir} \\
         --amr_results ${amr_results} \\
