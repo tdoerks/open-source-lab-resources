@@ -24,8 +24,15 @@ process PROPHAGE_AMR_COMPARISON {
     script:
     def terminal_buffer = params.prophage_amr_terminal_buffer ?: 5000
     """
+    # Activate conda environment in biocontainer
+    set +u  # Disable unbound variable checks for conda
+    if [ -f /usr/local/env/bin/activate ]; then
+        source /usr/local/env/bin/activate
+    fi
+    set -u
+
     # Run comparison script
-    python compare_prophage_amr_methods.py \\
+    compare_prophage_amr_methods.py \\
         --sample_id ${sample_id} \\
         --vibrant_dir ${vibrant_dir} \\
         --amr_results ${amr_results} \\
