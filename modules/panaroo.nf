@@ -37,8 +37,7 @@ process PANAROO {
         --alignment core \\
         --aligner mafft \\
         --core_threshold 0.95 \\
-        -t ${task.cpus} \\
-        --verbose
+        -t ${task.cpus}
 
     # Verify outputs were created
     if [ ! -f "panaroo_results/gene_presence_absence.csv" ]; then
