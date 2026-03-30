@@ -52,7 +52,7 @@ process PANAROO {
 process PANAROO_SUMMARY {
     tag "pangenome_stats"
     publishDir "${params.outdir}/panaroo", mode: 'copy'
-    container = 'quay.io/biocontainers/python:3.9--1'
+    container = 'quay.io/biocontainers/pandas:1.5.2'
 
     input:
     path(gene_presence_absence)
@@ -63,10 +63,6 @@ process PANAROO_SUMMARY {
 
     script:
     """
-    # Install pandas if not available
-    python3 -m pip install --quiet pandas 2>/dev/null || true
-
-    # Run Python analysis
     python3 << 'EOF'
 import pandas as pd
 import sys
