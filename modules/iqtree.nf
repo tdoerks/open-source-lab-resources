@@ -1,7 +1,7 @@
 process IQTREE {
     tag "phylogeny"
     publishDir "${params.outdir}/iqtree", mode: 'copy'
-    container = 'quay.io/biocontainers/iqtree:2.2.2.7--0'
+    container = 'staphb/iqtree2:2.2.2.6'
 
     input:
     path(alignment)  // Core genome alignment from Panaroo
@@ -51,7 +51,7 @@ process IQTREE {
         exit 1
     fi
 
-    echo '"IQTREE": {"version": "2.2.2.7", "model": "${model}", "bootstrap": ${bootstrap}}' > versions.yml
+    echo '"IQTREE": {"version": "2.2.2.6", "model": "${model}", "bootstrap": ${bootstrap}}' > versions.yml
     """
 }
 
