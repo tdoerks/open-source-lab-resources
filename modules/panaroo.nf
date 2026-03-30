@@ -63,65 +63,70 @@ process PANAROO_SUMMARY {
 
     script:
     """
-    #!/usr/bin/env python3
-    import pandas as pd
-    import sys
+    # Install pandas if not available
+    python3 -m pip install --quiet pandas 2>/dev/null || true
 
-    # Read gene presence/absence matrix
-    try:
-        df = pd.read_csv('${gene_presence_absence}')
-    except Exception as e:
-        print(f"ERROR: Failed to read gene_presence_absence.csv: {e}", file=sys.stderr)
-        sys.exit(1)
+    # Run Python analysis
+    python3 << 'EOF'
+import pandas as pd
+import sys
 
-    # Calculate pangenome statistics
-    num_samples = len([col for col in df.columns if not col.startswith('Gene') and
-                                                      not col.startswith('Non-unique') and
-                                                      not col.startswith('Annotation')])
+# Read gene presence/absence matrix
+try:
+    df = pd.read_csv('${gene_presence_absence}')
+except Exception as e:
+    print(f"ERROR: Failed to read gene_presence_absence.csv: {e}", file=sys.stderr)
+    sys.exit(1)
 
-    total_genes = len(df)
+# Calculate pangenome statistics
+num_samples = len([col for col in df.columns if not col.startswith('Gene') and
+                                                  not col.startswith('Non-unique') and
+                                                  not col.startswith('Annotation')])
 
-    # Core genes: present in >= 95% of genomes
-    core_threshold = 0.95 * num_samples
-    core_genes = sum(df.iloc[:, 3:].sum(axis=1) >= core_threshold)
+total_genes = len(df)
 
-    # Soft-core: 95% >= x >= 90%
-    softcore_threshold = 0.90 * num_samples
-    softcore_genes = sum((df.iloc[:, 3:].sum(axis=1) >= softcore_threshold) &
-                        (df.iloc[:, 3:].sum(axis=1) < core_threshold))
+# Core genes: present in >= 95% of genomes
+core_threshold = 0.95 * num_samples
+core_genes = sum(df.iloc[:, 3:].sum(axis=1) >= core_threshold)
 
-    # Shell: 15% <= x < 90%
-    shell_low = 0.15 * num_samples
-    shell_genes = sum((df.iloc[:, 3:].sum(axis=1) >= shell_low) &
-                     (df.iloc[:, 3:].sum(axis=1) < softcore_threshold))
+# Soft-core: 95% >= x >= 90%
+softcore_threshold = 0.90 * num_samples
+softcore_genes = sum((df.iloc[:, 3:].sum(axis=1) >= softcore_threshold) &
+                    (df.iloc[:, 3:].sum(axis=1) < core_threshold))
 
-    # Cloud: < 15%
-    cloud_genes = sum(df.iloc[:, 3:].sum(axis=1) < shell_low)
+# Shell: 15% <= x < 90%
+shell_low = 0.15 * num_samples
+shell_genes = sum((df.iloc[:, 3:].sum(axis=1) >= shell_low) &
+                 (df.iloc[:, 3:].sum(axis=1) < softcore_threshold))
 
-    # Write summary statistics
-    with open('pangenome_statistics.tsv', 'w') as out:
-        out.write("metric\\tvalue\\n")
-        out.write(f"total_samples\\t{num_samples}\\n")
-        out.write(f"total_genes\\t{total_genes}\\n")
-        out.write(f"core_genes_95pct\\t{core_genes}\\n")
-        out.write(f"softcore_genes_90-95pct\\t{softcore_genes}\\n")
-        out.write(f"shell_genes_15-90pct\\t{shell_genes}\\n")
-        out.write(f"cloud_genes_lt15pct\\t{cloud_genes}\\n")
-        out.write(f"core_percentage\\t{100*core_genes/total_genes:.2f}\\n")
-        out.write(f"accessory_genes\\t{total_genes - core_genes}\\n")
-        out.write(f"pangenome_size\\t{total_genes}\\n")
+# Cloud: < 15%
+cloud_genes = sum(df.iloc[:, 3:].sum(axis=1) < shell_low)
 
-    # Create data for pangenome size plot
-    with open('pangenome_plot_data.tsv', 'w') as out:
-        out.write("category\\tgene_count\\tpercentage\\n")
-        out.write(f"Core (≥95%)\\t{core_genes}\\t{100*core_genes/total_genes:.2f}\\n")
-        out.write(f"Soft-core (90-95%)\\t{softcore_genes}\\t{100*softcore_genes/total_genes:.2f}\\n")
-        out.write(f"Shell (15-90%)\\t{shell_genes}\\t{100*shell_genes/total_genes:.2f}\\n")
-        out.write(f"Cloud (<15%)\\t{cloud_genes}\\t{100*cloud_genes/total_genes:.2f}\\n")
+# Write summary statistics
+with open('pangenome_statistics.tsv', 'w') as out:
+    out.write("metric\\tvalue\\n")
+    out.write(f"total_samples\\t{num_samples}\\n")
+    out.write(f"total_genes\\t{total_genes}\\n")
+    out.write(f"core_genes_95pct\\t{core_genes}\\n")
+    out.write(f"softcore_genes_90-95pct\\t{softcore_genes}\\n")
+    out.write(f"shell_genes_15-90pct\\t{shell_genes}\\n")
+    out.write(f"cloud_genes_lt15pct\\t{cloud_genes}\\n")
+    out.write(f"core_percentage\\t{100*core_genes/total_genes:.2f}\\n")
+    out.write(f"accessory_genes\\t{total_genes - core_genes}\\n")
+    out.write(f"pangenome_size\\t{total_genes}\\n")
 
-    print(f"✅ Pangenome statistics calculated for {num_samples} samples")
-    print(f"   Total genes: {total_genes}")
-    print(f"   Core genes: {core_genes} ({100*core_genes/total_genes:.1f}%)")
-    print(f"   Accessory genes: {total_genes - core_genes} ({100*(total_genes-core_genes)/total_genes:.1f}%)")
+# Create data for pangenome size plot
+with open('pangenome_plot_data.tsv', 'w') as out:
+    out.write("category\\tgene_count\\tpercentage\\n")
+    out.write(f"Core (≥95%)\\t{core_genes}\\t{100*core_genes/total_genes:.2f}\\n")
+    out.write(f"Soft-core (90-95%)\\t{softcore_genes}\\t{100*softcore_genes/total_genes:.2f}\\n")
+    out.write(f"Shell (15-90%)\\t{shell_genes}\\t{100*shell_genes/total_genes:.2f}\\n")
+    out.write(f"Cloud (<15%)\\t{cloud_genes}\\t{100*cloud_genes/total_genes:.2f}\\n")
+
+print(f"✅ Pangenome statistics calculated for {num_samples} samples")
+print(f"   Total genes: {total_genes}")
+print(f"   Core genes: {core_genes} ({100*core_genes/total_genes:.1f}%)")
+print(f"   Accessory genes: {total_genes - core_genes} ({100*(total_genes-core_genes)/total_genes:.1f}%)")
+EOF
     """
 }
