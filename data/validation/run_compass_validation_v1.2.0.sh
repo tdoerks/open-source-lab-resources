@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=compass_val_v1.2.0
-#SBATCH --output=/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_%j/logs/compass_validation_%j.out
-#SBATCH --error=/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_%j/logs/compass_validation_%j.err
+#SBATCH --output=/fastscratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_%j/logs/compass_validation_%j.out
+#SBATCH --error=/fastscratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_%j/logs/compass_validation_%j.err
 #SBATCH --time=96:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
@@ -84,7 +84,7 @@ echo "Total samples: $SAMPLE_COUNT"
 echo ""
 
 # Set output directory with job ID
-OUTDIR="/scratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_${SLURM_JOB_ID}"
+OUTDIR="/fastscratch/tylerdoe/COMPASS_Validation_Results_v1.2.0_${SLURM_JOB_ID}"
 mkdir -p "$OUTDIR/logs"
 echo "Output directory: $OUTDIR"
 echo ""
