@@ -5,7 +5,7 @@ This directory contains metro-style visualizations of the COMPASS pipeline workf
 ## Files
 
 - **compass_metro.mmd** - Metro map definition in Mermaid format with `%%metro` directives
-- **compass_pipeline_dark.svg** - Rendered dark theme diagram (generated)
+- **compass_pipeline_nfcore.svg** - Rendered nf-core theme diagram (dark colors, generated)
 - **compass_pipeline_light.svg** - Rendered light theme diagram (generated)
 
 ## Pipeline Routes
@@ -76,11 +76,11 @@ pip install .
 
 ## Rendering the Diagram
 
-### Dark Theme (Recommended)
+### nf-core Theme (Dark Colors - Recommended)
 ```bash
 nf-metro render docs/compass_metro.mmd \
-    -o docs/compass_pipeline_dark.svg \
-    --theme dark
+    -o docs/compass_pipeline_nfcore.svg \
+    --theme nfcore
 ```
 
 ### Light Theme
@@ -90,28 +90,21 @@ nf-metro render docs/compass_metro.mmd \
     --theme light
 ```
 
-### nf-core Theme (with logo)
+### Render Both Themes
 ```bash
-# First, add a COMPASS logo to docs/compass_logo.png
-nf-metro render docs/compass_metro.mmd \
-    -o docs/compass_pipeline_nfcore.svg \
-    --theme nfcore \
-    --logo docs/compass_logo.png
-```
+# nf-core theme (dark colors)
+nf-metro render docs/compass_metro.mmd -o docs/compass_pipeline_nfcore.svg --theme nfcore
 
-### Render All Themes
-```bash
-# Dark
-nf-metro render docs/compass_metro.mmd -o docs/compass_pipeline_dark.svg --theme dark
-
-# Light
+# Light theme
 nf-metro render docs/compass_metro.mmd -o docs/compass_pipeline_light.svg --theme light
 
 # Display success message
 echo "✅ Metro diagrams generated successfully!"
-echo "   - docs/compass_pipeline_dark.svg"
+echo "   - docs/compass_pipeline_nfcore.svg"
 echo "   - docs/compass_pipeline_light.svg"
 ```
+
+**Note**: Available themes are `nfcore` (dark colors) and `light`. The `nfcore` theme is recommended for most documentation.
 
 ## Usage in Documentation
 
@@ -119,7 +112,7 @@ echo "   - docs/compass_pipeline_light.svg"
 ```markdown
 ## Pipeline Overview
 
-![COMPASS Pipeline Metro Map](docs/compass_pipeline_dark.svg)
+![COMPASS Pipeline Metro Map](docs/compass_pipeline_nfcore.svg)
 
 The COMPASS pipeline provides 4 different entry points (routes) for genomic analysis,
 all converging at a common analysis hub for comprehensive bacterial characterization.
@@ -127,7 +120,7 @@ all converging at a common analysis hub for comprehensive bacterial characteriza
 
 ### HTML
 ```html
-<img src="docs/compass_pipeline_dark.svg" alt="COMPASS Pipeline Metro Map" width="100%">
+<img src="docs/compass_pipeline_nfcore.svg" alt="COMPASS Pipeline Metro Map" width="100%">
 ```
 
 ## Metro Map Syntax Guide
