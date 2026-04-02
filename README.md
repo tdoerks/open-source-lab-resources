@@ -20,6 +20,31 @@ COMPASS automates the analysis of bacterial genomes, providing:
 - **Gene Prediction**: PHANOTATE for ORF calling in phage sequences
 - **Integrated Reporting**: MultiQC aggregation and COMPASS summary TSV with all metrics
 
+## Pipeline Overview
+
+COMPASS provides **4 different input routes** for genomic analysis, visualized as a metro map:
+
+![COMPASS Pipeline Metro Map](docs/compass_pipeline_dark.svg)
+
+### Pipeline Routes
+
+| Route | Color | Description | Workflow |
+|-------|-------|-------------|----------|
+| 🔵 **FASTA** | Blue | Pre-assembled genomes | Direct to QC → Analyses → Summary |
+| 🟢 **Metadata** | Green | NARMS database | Download SRA → Assembly → QC → Analyses → Summary |
+| 🟠 **SRA** | Orange | SRA accessions | Download → Assembly → QC → Analyses → Summary |
+| 🟣 **Assembly** | Purple | NCBI assemblies | Download → QC → Analyses → Summary |
+
+All routes converge at the **Analysis Hub** where parallel analyses run:
+- 🦠 **AMR Analysis** - AMRFinder Plus + Abricate
+- 🧬 **Phage Analysis** - VIBRANT + DIAMOND + PHANOTATE
+- 🔬 **Molecular Typing** - MLST + SISTR
+- 🧩 **Mobile Elements** - MOB-suite plasmid reconstruction
+- 🌳 **Comparative Genomics** - Prokka + Panaroo + IQ-TREE (optional)
+- 💉 **Prophage-AMR Intersection** - AMR genes within prophage regions (optional)
+
+**See [`docs/README_METRO.md`](docs/README_METRO.md)** for detailed metro diagram documentation, rendering instructions, and customization guide.
+
 ## Features
 
 - **Flexible Input**: Process assemblies, raw reads, or download directly from NCBI SRA

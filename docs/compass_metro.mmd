@@ -1,0 +1,281 @@
+%%{init: {'theme':'base', 'themeVariables': { 'lineColor':'#4A90E2'}}}%%
+%%metro title: COMPASS Pipeline - Comprehensive Omics Analysis
+%%metro style: dark
+
+graph LR
+    %% ========================================
+    %% INPUT STATIONS (Route-specific entry points)
+    %% ========================================
+    fasta_in[📄 FASTA Input]
+    metadata_in[📊 NARMS Metadata]
+    sra_in[🧬 SRA Accessions]
+    assembly_in[🗄️ Assembly Accessions]
+
+    %% ========================================
+    %% DATA ACQUISITION SECTION
+    %% Routes: metadata, sra, assembly
+    %% ========================================
+    subgraph data_acq [Data Acquisition & Download]
+        %%metro direction: LR
+        %%metro entry: left | metadata,sra,assembly
+        %%metro exit: right | metadata,sra,assembly
+
+        check_db[Check Databases]
+        filter_meta[Filter Metadata]
+        download_sra[Download SRA]
+        download_asm[Download Assembly]
+        fastqc_raw[FastQC]
+        fastp[Fastp Trimming]
+    end
+
+    %% ========================================
+    %% ASSEMBLY SECTION
+    %% Routes: metadata, sra
+    %% ========================================
+    subgraph assembly_sect [De Novo Assembly]
+        %%metro direction: LR
+        %%metro entry: left | metadata,sra
+        %%metro exit: right | metadata,sra
+
+        spades[SPAdes Assembly]
+        read_qc[Read QC Check]
+        assembly_qc[Assembly QC Check]
+    end
+
+    %% ========================================
+    %% ASSEMBLY QC SECTION
+    %% All routes converge here
+    %% ========================================
+    subgraph qc_sect [Assembly Quality Control]
+        %%metro direction: LR
+        %%metro entry: left | fasta,metadata,sra,assembly
+        %%metro exit: right | fasta,metadata,sra,assembly
+
+        busco[BUSCO Completeness]
+        quast[QUAST Statistics]
+        busco_qc[BUSCO QC Filter]
+    end
+
+    %% ========================================
+    %% ANALYSIS HUB (Split point for parallel analyses)
+    %% ========================================
+    split_hub[⚡ Analysis Hub]
+
+    %% ========================================
+    %% AMR ANALYSIS SECTION
+    %% Runs in parallel with other analyses
+    %% ========================================
+    subgraph amr_sect [Antimicrobial Resistance Analysis]
+        %%metro direction: TB
+        %%metro entry: top | fasta,metadata,sra,assembly
+        %%metro exit: bottom | fasta,metadata,sra,assembly
+
+        amrfinder_db[AMRFinder Database]
+        amrfinder[AMRFinder Plus]
+        abricate[Abricate Multi-DB]
+        abricate_summary[Abricate Summary]
+    end
+
+    %% ========================================
+    %% PHAGE ANALYSIS SECTION
+    %% Runs in parallel with other analyses
+    %% ========================================
+    subgraph phage_sect [Prophage & Phage Analysis]
+        %%metro direction: TB
+        %%metro entry: top | fasta,metadata,sra,assembly
+        %%metro exit: bottom | fasta,metadata,sra,assembly
+
+        prophage_db[Prophage Database]
+        vibrant[VIBRANT]
+        diamond[DIAMOND Search]
+        phanotate[PHANOTATE]
+    end
+
+    %% ========================================
+    %% TYPING SECTION
+    %% Runs in parallel with other analyses
+    %% ========================================
+    subgraph typing_sect [Molecular Typing]
+        %%metro direction: TB
+        %%metro entry: top | fasta,metadata,sra,assembly
+        %%metro exit: bottom | fasta,metadata,sra,assembly
+
+        mlst[MLST]
+        sistr[SISTR Salmonella]
+    end
+
+    %% ========================================
+    %% MOBILE ELEMENTS SECTION
+    %% Runs in parallel with other analyses
+    %% ========================================
+    subgraph mobile_sect [Mobile Genetic Elements]
+        %%metro direction: TB
+        %%metro entry: top | fasta,metadata,sra,assembly
+        %%metro exit: bottom | fasta,metadata,sra,assembly
+
+        mobsuite[MOB-suite Recon]
+        plasmids[Extract Plasmids]
+    end
+
+    %% ========================================
+    %% COMPARATIVE GENOMICS SECTION (Optional)
+    %% Runs in parallel with other analyses
+    %% ========================================
+    subgraph comparative_sect [Comparative Genomics]
+        %%metro direction: TB
+        %%metro entry: top | fasta,metadata,sra,assembly
+        %%metro exit: bottom | fasta,metadata,sra,assembly
+
+        prokka[Prokka Annotation]
+        panaroo[Panaroo Pangenome]
+        panaroo_summary[Pangenome Summary]
+        iqtree[IQ-TREE Phylogeny]
+        iqtree_root[Midpoint Root]
+        visualize_tree[Visualize Tree]
+    end
+
+    %% ========================================
+    %% PROPHAGE-AMR INTERSECTION (Optional)
+    %% Joins VIBRANT and AMRFinder outputs
+    %% ========================================
+    subgraph prophage_amr_sect [Prophage-Encoded AMR]
+        %%metro direction: LR
+        %%metro entry: left | fasta,metadata,sra,assembly
+        %%metro exit: right | fasta,metadata,sra,assembly
+
+        prophage_amr[Identify AMR in Prophages]
+        prophage_amr_compare[3-Method Comparison]
+        aggregate_comparison[Aggregate Results]
+    end
+
+    %% ========================================
+    %% AGGREGATION & REPORTING SECTION
+    %% All routes merge for final outputs
+    %% ========================================
+    subgraph reporting_sect [Results Aggregation & Reporting]
+        %%metro direction: LR
+        %%metro entry: left | fasta,metadata,sra,assembly
+        %%metro exit: right | fasta,metadata,sra,assembly
+
+        combine[Combine Results]
+        multiqc[MultiQC Report]
+        compass_summary[COMPASS Summary]
+    end
+
+    %% ========================================
+    %% OUTPUT STATIONS
+    %% ========================================
+    tsv_out[📊 Summary TSV]
+    html_out[🌐 HTML Report]
+    multiqc_out[📈 MultiQC Report]
+
+    %% ========================================
+    %% ROUTE CONNECTIONS
+    %% Line IDs indicate which routes use each connection
+    %% ========================================
+
+    %% FASTA Route (Blue) - Direct to QC
+    fasta_in -->|fasta| qc_sect
+
+    %% Metadata Route (Green) - Full pipeline
+    metadata_in -->|metadata| check_db
+    check_db -->|metadata| filter_meta
+    filter_meta -->|metadata| download_sra
+    download_sra -->|metadata| fastqc_raw
+    fastqc_raw -->|metadata| fastp
+    fastp -->|metadata| spades
+    spades -->|metadata| read_qc
+    read_qc -->|metadata| assembly_qc
+    assembly_qc -->|metadata| qc_sect
+
+    %% SRA List Route (Orange) - Download and assemble
+    sra_in -->|sra| download_sra
+    download_sra -->|sra| fastqc_raw
+    fastqc_raw -->|sra| fastp
+    fastp -->|sra| spades
+    spades -->|sra| read_qc
+    read_qc -->|sra| assembly_qc
+    assembly_qc -->|sra| qc_sect
+
+    %% Assembly Accession Route (Purple) - Download assemblies
+    assembly_in -->|assembly| download_asm
+    download_asm -->|assembly| qc_sect
+
+    %% Assembly QC (All routes)
+    qc_sect -->|fasta,metadata,sra,assembly| busco
+    busco -->|fasta,metadata,sra,assembly| quast
+    quast -->|fasta,metadata,sra,assembly| busco_qc
+    busco_qc -->|fasta,metadata,sra,assembly| split_hub
+
+    %% Split to parallel analyses (All routes)
+    split_hub -->|fasta,metadata,sra,assembly| amr_sect
+    split_hub -->|fasta,metadata,sra,assembly| phage_sect
+    split_hub -->|fasta,metadata,sra,assembly| typing_sect
+    split_hub -->|fasta,metadata,sra,assembly| mobile_sect
+    split_hub -->|fasta,metadata,sra,assembly| comparative_sect
+
+    %% AMR Analysis flow
+    amr_sect -->|fasta,metadata,sra,assembly| amrfinder_db
+    amrfinder_db -->|fasta,metadata,sra,assembly| amrfinder
+    amrfinder -->|fasta,metadata,sra,assembly| abricate
+    abricate -->|fasta,metadata,sra,assembly| abricate_summary
+
+    %% Phage Analysis flow
+    phage_sect -->|fasta,metadata,sra,assembly| prophage_db
+    prophage_db -->|fasta,metadata,sra,assembly| vibrant
+    vibrant -->|fasta,metadata,sra,assembly| diamond
+    diamond -->|fasta,metadata,sra,assembly| phanotate
+
+    %% Typing flow
+    typing_sect -->|fasta,metadata,sra,assembly| mlst
+    mlst -->|fasta,metadata,sra,assembly| sistr
+
+    %% Mobile Elements flow
+    mobile_sect -->|fasta,metadata,sra,assembly| mobsuite
+    mobsuite -->|fasta,metadata,sra,assembly| plasmids
+
+    %% Comparative Genomics flow (Optional - shown with dashed lines in final rendering)
+    comparative_sect -->|fasta,metadata,sra,assembly| prokka
+    prokka -->|fasta,metadata,sra,assembly| panaroo
+    panaroo -->|fasta,metadata,sra,assembly| panaroo_summary
+    panaroo_summary -->|fasta,metadata,sra,assembly| iqtree
+    iqtree -->|fasta,metadata,sra,assembly| iqtree_root
+    iqtree_root -->|fasta,metadata,sra,assembly| visualize_tree
+
+    %% Prophage-AMR Intersection (Join point between VIBRANT and AMRFinder)
+    vibrant -->|fasta,metadata,sra,assembly| prophage_amr
+    amrfinder -->|fasta,metadata,sra,assembly| prophage_amr
+    prophage_amr -->|fasta,metadata,sra,assembly| prophage_amr_compare
+    prophage_amr_compare -->|fasta,metadata,sra,assembly| aggregate_comparison
+
+    %% Merge all analyses for final reporting
+    abricate_summary -->|fasta,metadata,sra,assembly| combine
+    phanotate -->|fasta,metadata,sra,assembly| combine
+    sistr -->|fasta,metadata,sra,assembly| combine
+    plasmids -->|fasta,metadata,sra,assembly| combine
+    visualize_tree -->|fasta,metadata,sra,assembly| combine
+    aggregate_comparison -->|fasta,metadata,sra,assembly| combine
+
+    %% Final reporting steps
+    combine -->|fasta,metadata,sra,assembly| multiqc
+    multiqc -->|fasta,metadata,sra,assembly| compass_summary
+
+    %% Output connections
+    compass_summary -->|fasta,metadata,sra,assembly| tsv_out
+    compass_summary -->|fasta,metadata,sra,assembly| html_out
+    multiqc -->|fasta,metadata,sra,assembly| multiqc_out
+
+    %% ========================================
+    %% STYLING NOTES
+    %% ========================================
+    %% Route Colors (auto-assigned by nf-metro):
+    %% - fasta: Blue
+    %% - metadata: Green
+    %% - sra: Orange
+    %% - assembly: Purple
+    %%
+    %% Station shapes represent process types:
+    %% - Rectangle: Standard processes
+    %% - Database cylinders: Database checks
+    %% - Hub: Split/merge points
+    %% - Output: Final deliverables
