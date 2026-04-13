@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Fetch ALL Fusobacterium necrophorum SRA Accessions from NCBI
+Fetch ALL Fusobacterium SRA Accessions from NCBI
 
-Focus: Comprehensive prophage-virulence analysis of F. necrophorum
-Organism: Fusobacterium necrophorum (all subspecies)
-Target: All available WGS Illumina samples (~600 genomes)
+Focus: Comprehensive prophage analysis across Fusobacterium genus
+Organism: Fusobacterium (all species)
+Target: All available WGS Illumina samples
 """
 import requests
 import time
@@ -12,18 +12,18 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 def fetch_all_fnec_accessions():
-    """Fetch ALL F. necrophorum SRA accessions"""
+    """Fetch ALL Fusobacterium SRA accessions (all species)"""
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 
-    # Search for all F. necrophorum WGS data
+    # Search for ALL Fusobacterium WGS data (all species)
     params = {
         'db': 'sra',
-        'term': 'Fusobacterium necrophorum[Organism] AND illumina[Platform] AND GENOMIC[Source] AND WGS[Strategy]',
-        'retmax': 10000,  # Get up to 10,000 (way more than needed)
+        'term': 'Fusobacterium[Organism] AND illumina[Platform] AND GENOMIC[Source] AND WGS[Strategy]',
+        'retmax': 10000,  # Get up to 10,000
         'retmode': 'json'
     }
 
-    print("Searching NCBI SRA for Fusobacterium necrophorum...", flush=True)
+    print("Searching NCBI SRA for ALL Fusobacterium species...", flush=True)
 
     try:
         response = requests.get(base_url, params=params, timeout=30)
@@ -31,7 +31,7 @@ def fetch_all_fnec_accessions():
 
         id_list = data.get('esearchresult', {}).get('idlist', [])
         count = int(data.get('esearchresult', {}).get('count', 0))
-        print(f"Found {count} total F. necrophorum WGS samples")
+        print(f"Found {count} total Fusobacterium WGS samples (all species)")
 
         # Fetch SRR accessions from UIDs using XML format
         if id_list:
@@ -65,7 +65,7 @@ def fetch_all_fnec_accessions():
                     print(f"  Warning: Could not parse XML for batch {i//100 + 1}")
                     pass
 
-            print(f"\n✓ Retrieved {len(accessions)} F. necrophorum SRR accessions")
+            print(f"\n✓ Retrieved {len(accessions)} Fusobacterium SRR accessions")
             return accessions
 
     except Exception as e:
@@ -75,11 +75,11 @@ def fetch_all_fnec_accessions():
 
 def main():
     print("="*70)
-    print("Fusobacterium necrophorum Comprehensive Prophage Study")
+    print("Fusobacterium Genus Comprehensive Prophage Study")
     print("="*70)
-    print("Organism: Fusobacterium necrophorum (all subspecies)")
-    print("Target: ALL available WGS Illumina genomes (~600)")
-    print("Focus: Prophage burden, subspecies comparison, host source analysis")
+    print("Organism: Fusobacterium (all species)")
+    print("Target: ALL available WGS Illumina genomes")
+    print("Focus: Prophage burden across Fusobacterium genus, species comparison")
     print("="*70)
     print()
 
@@ -91,7 +91,7 @@ def main():
         return
 
     # Write to file
-    output_file = "data/sra_accessions_fusobacterium_necrophorum_all.txt"
+    output_file = "data/sra_accessions_fusobacterium_all.txt"
 
     with open(output_file, 'w') as f:
         for acc in accessions:
@@ -102,12 +102,12 @@ def main():
     print("="*70)
     print("Summary")
     print("="*70)
-    print(f"Total samples: {len(accessions)}")
+    print(f"Total samples: {len(accessions)} (all Fusobacterium species)")
     print(f"Output file: {output_file}")
     print()
     print("Next steps:")
     print("  1. Generate samplesheet: python3 scripts/create_samplesheet.py")
-    print("  2. Submit COMPASS job: sbatch run_fusobacterium_necrophorum.sh")
+    print("  2. Submit COMPASS job: sbatch run_fusobacterium.sh")
     print("="*70)
 
 if __name__ == "__main__":

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Generate COMPASS samplesheet for Fusobacterium necrophorum study
+Generate COMPASS samplesheet for Fusobacterium genus study
 """
 
 def main():
-    input_file = "data/sra_accessions_fusobacterium_necrophorum_all.txt"
-    output_file = "data/samplesheet_fusobacterium_necrophorum.txt"
+    input_file = "data/sra_accessions_fusobacterium_all.txt"
+    output_file = "data/samplesheet_fusobacterium.txt"
 
     print("="*70)
     print("Generating COMPASS Samplesheet")
@@ -28,7 +28,7 @@ def main():
     print()
     print("="*70)
     print("Next step:")
-    print("  Submit COMPASS job: sbatch run_fusobacterium_necrophorum.sh")
+    print("  Submit COMPASS job: sbatch run_fusobacterium.sh")
     print("="*70)
 
 if __name__ == "__main__":
