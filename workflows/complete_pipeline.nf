@@ -9,6 +9,7 @@ include { AMR_ANALYSIS } from '../subworkflows/amr_analysis'
 include { PHAGE_ANALYSIS } from '../subworkflows/phage_analysis'
 include { TYPING } from '../subworkflows/typing'
 include { MOBILE_ELEMENTS } from '../subworkflows/mobile_elements'
+include { COMPARATIVE_GENOMICS } from '../subworkflows/comparative_genomics'
 include { COMBINE_RESULTS } from '../modules/combine_results'
 include { COMPASS_SUMMARY } from '../modules/compass_summary'
 include { MULTIQC } from '../modules/multiqc'
@@ -16,6 +17,9 @@ include { BUSCO } from '../modules/busco'
 include { QUAST } from '../modules/quast'
 include { CHECK_DATABASES } from '../modules/check_databases'
 include { DOWNLOAD_ASSEMBLY } from '../modules/download_assembly'
+include { PROPHAGE_AMR_INTERSECTION } from '../modules/prophage_amr'
+include { PROPHAGE_AMR_COMPARISON } from '../modules/prophage_amr_comparison'
+include { AGGREGATE_COMPARISON } from '../modules/prophage_amr_comparison'
 
 workflow COMPLETE_PIPELINE {
     take:
@@ -140,8 +144,15 @@ workflow COMPLETE_PIPELINE {
             phage: [meta, fasta]
             typing: [meta, fasta]
             mobile: [meta, fasta]
+            annotation: [meta, fasta]
         }
         .set { ch_assemblies_split }
+
+    // Run genome annotation (Prokka) if enabled - optional for comparative genomics
+    if (!params.skip_prokka) {
+        COMPARATIVE_GENOMICS(ch_assemblies_split.annotation)
+        ch_versions = ch_versions.mix(COMPARATIVE_GENOMICS.out.versions)
+    }
 
     // Run AMR analysis - samples processed as they arrive
     AMR_ANALYSIS(ch_assemblies_split.amr)
@@ -158,6 +169,66 @@ workflow COMPLETE_PIPELINE {
     // Run Mobile Elements analysis (plasmids) - samples processed as they arrive
     MOBILE_ELEMENTS(ch_assemblies_split.mobile)
     ch_versions = ch_versions.mix(MOBILE_ELEMENTS.out.versions)
+
+    // Run Prophage-AMR intersection analysis (if enabled)
+    // Joins VIBRANT prophage coordinates with AMRFinder results to identify
+    // AMR genes encoded within prophage regions
+    if (!params.skip_prophage_amr) {
+        // Extract prophage coordinates from VIBRANT results
+        // VIBRANT.out.results format: [sample_id, vibrant_results_dir]
+        ch_prophage_coords = PHAGE_ANALYSIS.out.vibrant_results
+            .map { sample_id, vibrant_dir ->
+                // Find prophage coordinates file in VIBRANT output directory
+                // file() with glob returns a list, so get first match
+                def coords_files = file("${vibrant_dir}/VIBRANT_*_contigs/VIBRANT_results_*_contigs/VIBRANT_integrated_prophage_coordinates_*.tsv")
+                def coords_file = coords_files ? coords_files[0] : null
+
+                // If not found, try alternative directory structures
+                if (!coords_file || !coords_file.exists()) {
+                    coords_files = file("${vibrant_dir}/VIBRANT_*/VIBRANT_results_*/VIBRANT_integrated_prophage_coordinates_*.tsv")
+                    coords_file = coords_files ? coords_files[0] : null
+                }
+
+                return [sample_id, coords_file ?: file('NO_FILE')]
+            }
+
+        // Extract sample_id from AMR results for joining
+        // AMR_ANALYSIS.out.results format: [meta, amr_results_file]
+        ch_amr_for_join = AMR_ANALYSIS.out.results
+            .map { meta, amr_file -> [meta.id, amr_file] }
+
+        // Join prophage coordinates with AMR results by sample_id
+        ch_prophage_amr_input = ch_prophage_coords
+            .join(ch_amr_for_join, by: 0)  // Join on sample_id (first element)
+
+        // Run prophage-AMR intersection
+        PROPHAGE_AMR_INTERSECTION(ch_prophage_amr_input)
+        ch_versions = ch_versions.mix(PROPHAGE_AMR_INTERSECTION.out.versions)
+        ch_prophage_amr_results = PROPHAGE_AMR_INTERSECTION.out.results
+
+        // Optional: Run 3-method comparison for validation (SLOW - adds 1-2 min per sample)
+        if (params.prophage_amr_comparison) {
+            // Prepare input for comparison: [sample_id, vibrant_dir, prophage_coords, amr_results]
+            ch_comparison_input = PHAGE_ANALYSIS.out.vibrant_results
+                .map { sample_id, vibrant_dir -> [sample_id, vibrant_dir] }
+                .join(ch_prophage_coords, by: 0)
+                .join(ch_amr_for_join, by: 0)
+
+            // Run all 3 methods and compare
+            PROPHAGE_AMR_COMPARISON(ch_comparison_input)
+            ch_versions = ch_versions.mix(PROPHAGE_AMR_COMPARISON.out.versions)
+
+            // Aggregate comparison results across all samples
+            AGGREGATE_COMPARISON(PROPHAGE_AMR_COMPARISON.out.summary.collect())
+            ch_versions = ch_versions.mix(AGGREGATE_COMPARISON.out.versions)
+            ch_comparison_results = AGGREGATE_COMPARISON.out.aggregate_summary
+        } else {
+            ch_comparison_results = Channel.empty()
+        }
+    } else {
+        ch_prophage_amr_results = Channel.empty()
+        ch_comparison_results = Channel.empty()
+    }
 
     // Combine all results - runs after all analyses complete
     // Filter out failed samples that emit sample IDs instead of files
@@ -223,6 +294,8 @@ workflow COMPLETE_PIPELINE {
     sistr_results = TYPING.out.sistr_results
     mobsuite_results = MOBILE_ELEMENTS.out.mobsuite_results
     plasmids = MOBILE_ELEMENTS.out.plasmids
+    prophage_amr_results = ch_prophage_amr_results
+    prophage_amr_comparison = ch_comparison_results
     multiqc_report = ch_multiqc_report
     versions = ch_versions.unique()
 }
