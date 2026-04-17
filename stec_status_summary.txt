@@ -1,0 +1,42 @@
+STEC Study Status Check - 2026-04-17
+=====================================
+
+Main Job: 7614525
+- Study: STEC (Shiga toxin E. coli) prophage analysis
+- Runtime: 3 days, 16 hours, 33 minutes
+- Status: RUNNING
+- Node: hero17
+
+Active Sub-processes (from squeue output):
+------------------------------------------
+Job 7736236 - VIBRANT phage analysis (PENDING)
+Job 7736232 - AMRFinderPlus analysis (PENDING - Priority)
+Job 7736225 - VIBRANT phage analysis (RUNNING - 0:12 on warlock41)
+Job 7736200 - VIBRANT phage analysis (RUNNING - 2:01 on warlock41)
+Job 7736201 - VIBRANT phage analysis (RUNNING - 2:01 on hero53)
+Job 7736224 - MOB-suite mobile elements (RUNNING - 0:12 on warlock41)
+Job 7736111 - MOB-suite mobile elements (RUNNING - 8:59 on hero53)
+Job 7736228 - BUSCO quality assessment (RUNNING - 0:12 on warlock41)
+Job 7736221 - AMRFinderPlus analysis (RUNNING - 0:12 on warlock40)
+Job 7736231 - AMRFinderPlus analysis (RUNNING - 0:12 on warlock41)
+
+Total active jobs: 11 (2 pending, 9 running)
+
+Progress Indicators:
+- Multiple VIBRANT jobs indicate prophage detection is ongoing
+- MOB-suite jobs show plasmid/mobile element analysis in progress
+- BUSCO jobs indicate assembly quality checks ongoing
+- AMRFinderPlus jobs show AMR analysis in progress
+
+Expected behavior for 7,340 samples:
+- Download phase: ~1-2 days (likely complete by now)
+- Assembly phase: ~2-3 days (likely ongoing)
+- Analysis phase: ~1-2 days (VIBRANT, BUSCO, etc. - currently running)
+
+Estimated completion: ~1-2 more days
+Total runtime estimate: ~5 days for 7,340 samples
+
+Notes:
+- Log file not found at standard location (may be in different path)
+- Multiple parallel jobs indicate pipeline is actively processing samples
+- This is normal for a large 7,340-sample study
