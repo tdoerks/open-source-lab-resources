@@ -711,10 +711,18 @@ Sample3        18.5            A03              Plate1      3"
                         <span class="control-label">Loading Conc (pM)</span>
                         <input type="number" class="control-input" id="protocolLoadingConc" value="11.75" step="0.25" min="8" max="20" onchange="calculateProtocol()">
                     </div>
-                    <div class="control-item">
-                        <span class="control-label">PhiX %</span>
-                        <input type="number" class="control-input" id="protocolPhiXPercent" value="1" step="0.5" min="0" max="50" onchange="calculateProtocol()">
+                    <div class="control-item" style="grid-column: span 1;">
+                        <label style="display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                            <input type="checkbox" id="includePhiX" onchange="togglePhiX()" checked style="margin-right: 8px; width: auto; cursor: pointer;">
+                            Include PhiX?
+                        </label>
                     </div>
+                </div>
+
+                <!-- PhiX Percentage Control (shown when PhiX enabled) -->
+                <div style="text-align: center; margin-bottom: 15px;" id="phixPercentControl">
+                    <span class="control-label">PhiX %</span>
+                    <input type="number" class="control-input" id="protocolPhiXPercent" value="1" step="0.5" min="0" max="50" onchange="calculateProtocol()">
                 </div>
 
                 <!-- Protocol Steps -->
@@ -768,7 +776,7 @@ Sample3        18.5            A03              Plate1      3"
                     <div class="step-note" style="color: #27ae60;">Library ready</div>
                 </div>
 
-                <div class="step-box" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5;">
+                <div class="step-box" id="step6Box" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5;">
                     <h4 style="color: #7b1fa2;">Step 6: Add PhiX Control</h4>
                     <div class="step-content">
                         • <span id="step6LibraryVol">990</span> μL library<br>
@@ -776,6 +784,19 @@ Sample3        18.5            A03              Plate1      3"
                         = 1000 μL with <span id="step6PhiXPercent">1</span>% PhiX
                     </div>
                     <div class="step-note" style="color: #7b1fa2;">Ready for MiSeq</div>
+                </div>
+
+                <div class="step-box" style="border-left: 4px solid #673ab7; background-color: #ede7f6;">
+                    <h4 style="color: #512da8;">Step 7: Load Pool onto MiSeq Cartridge</h4>
+                    <div class="step-content">
+                        <strong style="color: #512da8;">Loading Instructions:</strong><br>
+                        • Pierce the foil seal on the reagent cartridge reservoir with a clean pipette tip<br>
+                        • Load 600 μL of the final prepared pool into the designated reservoir<br>
+                        • Dispense slowly and steadily to avoid introducing air bubbles<br>
+                        • Verify the full 600 μL volume has been loaded<br>
+                        • Ensure no liquid is on the cartridge exterior or foil surface
+                    </div>
+                    <div class="step-note" style="color: #512da8;">⚠️ Handle cartridge carefully - avoid disturbing other reagent wells</div>
                 </div>
 
                 <!-- Materials Summary -->
@@ -1518,6 +1539,19 @@ Sample3        18.5            A03              Plate1      3"
         }
 
         function buildProtocolSection() {
+            const includePhiX = document.getElementById('includePhiX').checked;
+
+            let step6HTML = '';
+            if (includePhiX) {
+                step6HTML = `
+                    <div class="protocol-step">
+                        <strong>Step 6: Add PhiX Control</strong><br>
+                        • ${document.getElementById('step6LibraryVol').textContent} μL library<br>
+                        • ${document.getElementById('step6PhiXVol').textContent} μL PhiX<br>
+                        = 1000 μL with ${document.getElementById('step6PhiXPercent').textContent}% PhiX
+                    </div>`;
+            }
+
             return `
                 <div class="section">
                     <div class="section-title">MiSeq Loading Protocol</div>
@@ -1548,11 +1582,13 @@ Sample3        18.5            A03              Plate1      3"
                         • ${document.getElementById('step5HyBVol').textContent} μL HyB buffer<br>
                         = 1000 μL at ${document.getElementById('step5FinalConc').textContent} pM
                     </div>
+                    ${step6HTML}
                     <div class="protocol-step">
-                        <strong>Step 6: Add PhiX Control</strong><br>
-                        • ${document.getElementById('step6LibraryVol').textContent} μL library<br>
-                        • ${document.getElementById('step6PhiXVol').textContent} μL PhiX<br>
-                        = 1000 μL with ${document.getElementById('step6PhiXPercent').textContent}% PhiX
+                        <strong>Step 7: Load Pool onto MiSeq Cartridge</strong><br>
+                        • Pierce the foil seal on the reagent cartridge reservoir with a clean pipette tip<br>
+                        • Load 600 μL of the final prepared pool into the designated reservoir<br>
+                        • Dispense slowly and steadily to avoid introducing air bubbles<br>
+                        • Verify the full 600 μL volume has been loaded
                     </div>
                 </div>
             `;
@@ -1976,6 +2012,27 @@ Sample3        18.5            A03              Plate1      3"
             }
         }
 
+        function togglePhiX() {
+            const checkbox = document.getElementById('includePhiX');
+            const phixPercentControl = document.getElementById('phixPercentControl');
+            const phixPercentInput = document.getElementById('protocolPhiXPercent');
+            const step6Box = document.getElementById('step6Box');
+
+            if (checkbox.checked) {
+                // Enable PhiX
+                phixPercentControl.style.display = 'block';
+                phixPercentInput.disabled = false;
+                step6Box.style.display = 'block';
+            } else {
+                // Disable PhiX
+                phixPercentControl.style.display = 'none';
+                phixPercentInput.disabled = true;
+                step6Box.style.display = 'none';
+            }
+
+            calculateProtocol(); // Recalculate with new PhiX setting
+        }
+
         function calculateProtocol() {
             const poolConcText = document.getElementById('protocolPoolConc').textContent;
             const poolConc = parseFloat(poolConcText.replace(' nM', '')) || 0;
@@ -2036,13 +2093,19 @@ Sample3        18.5            A03              Plate1      3"
             document.getElementById('step5HyBVol').textContent = hybVol.toFixed(1);
             document.getElementById('step5FinalConc').textContent = targetLoadingConc.toFixed(2);
 
-            // Step 6: PhiX calculation
-            const phixVol = (phixPercent / 100) * 1000;
-            const libraryVol = 1000 - phixVol;
-            document.getElementById('step6LibraryVol').textContent = libraryVol.toFixed(0);
-            document.getElementById('step6PhiXVol').textContent = phixVol.toFixed(0);
-            document.getElementById('step6PhiXConc').textContent = targetLoadingConc.toFixed(2);
-            document.getElementById('step6PhiXPercent').textContent = phixPercent.toFixed(1);
+            // Step 6: PhiX calculation (only if enabled)
+            const includePhiX = document.getElementById('includePhiX').checked;
+            let phixVol = 0;
+            let libraryVol = 1000;
+
+            if (includePhiX) {
+                phixVol = (phixPercent / 100) * 1000;
+                libraryVol = 1000 - phixVol;
+                document.getElementById('step6LibraryVol').textContent = libraryVol.toFixed(0);
+                document.getElementById('step6PhiXVol').textContent = phixVol.toFixed(0);
+                document.getElementById('step6PhiXConc').textContent = targetLoadingConc.toFixed(2);
+                document.getElementById('step6PhiXPercent').textContent = phixPercent.toFixed(1);
+            }
 
             // Materials summary
             if (poolConc > 4) {
