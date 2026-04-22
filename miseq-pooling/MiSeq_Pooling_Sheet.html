@@ -766,28 +766,52 @@ Sample3        18.5            A03              Plate1      3"
                     <div class="step-note" style="color: #2980b9;">100-fold dilution</div>
                 </div>
 
-                <div class="step-box" style="border-left: 4px solid #27ae60; background-color: #f0fff0;">
-                    <h4 style="color: #27ae60;">Step 5: Loading Concentration</h4>
+                <!-- Step 5: Without PhiX (simple single step) -->
+                <div class="step-box" id="step5NoPhiX" style="border-left: 4px solid #27ae60; background-color: #f0fff0; display: none;">
+                    <h4 style="color: #27ae60;">Step 5: Prepare Loading Concentration</h4>
                     <div class="step-content">
-                        • <span id="step5PoolVol">587.5</span> μL of 20 pM<br>
-                        • <span id="step5HyBVol">412.5</span> μL HyB buffer<br>
-                        = 1000 μL at <span id="step5FinalConc">11.75</span> pM
+                        • <span id="step5aPoolVol">587.5</span> μL of 20 pM library<br>
+                        • <span id="step5aHyBVol">412.5</span> μL HyB buffer<br>
+                        = 1000 μL at <span id="step5aFinalConc">11.75</span> pM
                     </div>
-                    <div class="step-note" style="color: #27ae60;">Library ready</div>
+                    <div class="step-note" style="color: #27ae60;">Library ready for loading</div>
                 </div>
 
-                <div class="step-box" id="step6Box" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5;">
-                    <h4 style="color: #7b1fa2;">Step 6: Add PhiX Control</h4>
-                    <div class="step-content">
-                        • <span id="step6LibraryVol">990</span> μL library<br>
-                        • <span id="step6PhiXVol">10</span> μL PhiX (<span id="step6PhiXConc">11.75</span> pM)<br>
-                        = 1000 μL with <span id="step6PhiXPercent">1</span>% PhiX
+                <!-- Step 5: With PhiX (substeps a, b, c) -->
+                <div id="step5WithPhiX" style="display: block;">
+                    <div class="step-box" style="border-left: 4px solid #27ae60; background-color: #f0fff0;">
+                        <h4 style="color: #27ae60;">Step 5a: Prepare Loading Concentration (Library)</h4>
+                        <div class="step-content">
+                            • <span id="step5PoolVol">587.5</span> μL of 20 pM library<br>
+                            • <span id="step5HyBVol">412.5</span> μL HyB buffer<br>
+                            = 1000 μL at <span id="step5FinalConc">11.75</span> pM
+                        </div>
+                        <div class="step-note" style="color: #27ae60;">Library at final concentration</div>
                     </div>
-                    <div class="step-note" style="color: #7b1fa2;">Ready for MiSeq</div>
+
+                    <div class="step-box" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5;">
+                        <h4 style="color: #7b1fa2;">Step 5b: Dilute PhiX to Loading Concentration</h4>
+                        <div class="step-content">
+                            • Dilute PhiX stock (10 nM) to <span id="step5bPhiXConc">11.75</span> pM<br>
+                            • Use same concentration as library for proper mixing<br>
+                            • Prepare at least <span id="step5bPhiXVol">15</span> μL
+                        </div>
+                        <div class="step-note" style="color: #7b1fa2;">⚠ PhiX must match library concentration</div>
+                    </div>
+
+                    <div class="step-box" style="border-left: 4px solid #9c27b0; background-color: #f3e5f5;">
+                        <h4 style="color: #7b1fa2;">Step 5c: Combine Library + PhiX</h4>
+                        <div class="step-content">
+                            • <span id="step6LibraryVol">990</span> μL library (<span id="step6PhiXConc2">11.75</span> pM)<br>
+                            • <span id="step6PhiXVol">10</span> μL PhiX (<span id="step6PhiXConc">11.75</span> pM)<br>
+                            = 1000 μL with <span id="step6PhiXPercent">1.0</span>% PhiX
+                        </div>
+                        <div class="step-note" style="color: #7b1fa2;">Final pool ready for MiSeq</div>
+                    </div>
                 </div>
 
                 <div class="step-box" style="border-left: 4px solid #673ab7; background-color: #ede7f6;">
-                    <h4 style="color: #512da8;">Step 7: Load Pool onto MiSeq Cartridge</h4>
+                    <h4 style="color: #512da8;">Step 6: Load Pool onto MiSeq Cartridge</h4>
                     <div class="step-content">
                         <strong style="color: #512da8;">Loading Instructions:</strong><br>
                         • Pierce the foil seal on the reagent cartridge reservoir with a clean pipette tip<br>
@@ -1541,14 +1565,36 @@ Sample3        18.5            A03              Plate1      3"
         function buildProtocolSection() {
             const includePhiX = document.getElementById('includePhiX').checked;
 
-            let step6HTML = '';
+            let step5HTML = '';
             if (includePhiX) {
-                step6HTML = `
+                // With PhiX: Show substeps 5a, 5b, 5c
+                step5HTML = `
                     <div class="protocol-step">
-                        <strong>Step 6: Add PhiX Control</strong><br>
-                        • ${document.getElementById('step6LibraryVol').textContent} μL library<br>
-                        • ${document.getElementById('step6PhiXVol').textContent} μL PhiX<br>
+                        <strong>Step 5a: Prepare Loading Concentration (Library)</strong><br>
+                        • ${document.getElementById('step5PoolVol').textContent} μL of 20 pM library<br>
+                        • ${document.getElementById('step5HyBVol').textContent} μL HyB buffer<br>
+                        = 1000 μL at ${document.getElementById('step5FinalConc').textContent} pM
+                    </div>
+                    <div class="protocol-step">
+                        <strong>Step 5b: Dilute PhiX to Loading Concentration</strong><br>
+                        • Dilute PhiX stock (10 nM) to ${document.getElementById('step5bPhiXConc').textContent} pM<br>
+                        • Use same concentration as library for proper mixing<br>
+                        • Prepare at least ${document.getElementById('step5bPhiXVol').textContent} μL
+                    </div>
+                    <div class="protocol-step">
+                        <strong>Step 5c: Combine Library + PhiX</strong><br>
+                        • ${document.getElementById('step6LibraryVol').textContent} μL library (${document.getElementById('step6PhiXConc2').textContent} pM)<br>
+                        • ${document.getElementById('step6PhiXVol').textContent} μL PhiX (${document.getElementById('step6PhiXConc').textContent} pM)<br>
                         = 1000 μL with ${document.getElementById('step6PhiXPercent').textContent}% PhiX
+                    </div>`;
+            } else {
+                // Without PhiX: Show simple Step 5
+                step5HTML = `
+                    <div class="protocol-step">
+                        <strong>Step 5: Prepare Loading Concentration</strong><br>
+                        • ${document.getElementById('step5aPoolVol').textContent} μL of 20 pM library<br>
+                        • ${document.getElementById('step5aHyBVol').textContent} μL HyB buffer<br>
+                        = 1000 μL at ${document.getElementById('step5aFinalConc').textContent} pM
                     </div>`;
             }
 
@@ -1576,15 +1622,9 @@ Sample3        18.5            A03              Plate1      3"
                         <strong>Step 4: First HyB Dilution</strong><br>
                         • 10 μL of 2 nM pool + 990 μL HyB buffer = 1000 μL at 20 pM
                     </div>
+                    ${step5HTML}
                     <div class="protocol-step">
-                        <strong>Step 5: Loading Concentration</strong><br>
-                        • ${document.getElementById('step5PoolVol').textContent} μL of 20 pM<br>
-                        • ${document.getElementById('step5HyBVol').textContent} μL HyB buffer<br>
-                        = 1000 μL at ${document.getElementById('step5FinalConc').textContent} pM
-                    </div>
-                    ${step6HTML}
-                    <div class="protocol-step">
-                        <strong>Step 7: Load Pool onto MiSeq Cartridge</strong><br>
+                        <strong>Step 6: Load Pool onto MiSeq Cartridge</strong><br>
                         • Pierce the foil seal on the reagent cartridge reservoir with a clean pipette tip<br>
                         • Load 600 μL of the final prepared pool into the designated reservoir<br>
                         • Dispense slowly and steadily to avoid introducing air bubbles<br>
@@ -2016,18 +2056,21 @@ Sample3        18.5            A03              Plate1      3"
             const checkbox = document.getElementById('includePhiX');
             const phixPercentControl = document.getElementById('phixPercentControl');
             const phixPercentInput = document.getElementById('protocolPhiXPercent');
-            const step6Box = document.getElementById('step6Box');
+            const step5NoPhiX = document.getElementById('step5NoPhiX');
+            const step5WithPhiX = document.getElementById('step5WithPhiX');
 
             if (checkbox.checked) {
-                // Enable PhiX
+                // Enable PhiX - show substeps 5a, 5b, 5c
                 phixPercentControl.style.display = 'block';
                 phixPercentInput.disabled = false;
-                step6Box.style.display = 'block';
+                step5NoPhiX.style.display = 'none';
+                step5WithPhiX.style.display = 'block';
             } else {
-                // Disable PhiX
+                // Disable PhiX - show simple Step 5
                 phixPercentControl.style.display = 'none';
                 phixPercentInput.disabled = true;
-                step6Box.style.display = 'none';
+                step5NoPhiX.style.display = 'block';
+                step5WithPhiX.style.display = 'none';
             }
 
             calculateProtocol(); // Recalculate with new PhiX setting
@@ -2089,11 +2132,18 @@ Sample3        18.5            A03              Plate1      3"
             // Step 5: Loading concentration calculation
             const poolVol20pM = (targetLoadingConc / 20) * 1000;
             const hybVol = 1000 - poolVol20pM;
+
+            // Update Step 5a (with PhiX) values
             document.getElementById('step5PoolVol').textContent = poolVol20pM.toFixed(1);
             document.getElementById('step5HyBVol').textContent = hybVol.toFixed(1);
             document.getElementById('step5FinalConc').textContent = targetLoadingConc.toFixed(2);
 
-            // Step 6: PhiX calculation (only if enabled)
+            // Update Step 5 (no PhiX) values
+            document.getElementById('step5aPoolVol').textContent = poolVol20pM.toFixed(1);
+            document.getElementById('step5aHyBVol').textContent = hybVol.toFixed(1);
+            document.getElementById('step5aFinalConc').textContent = targetLoadingConc.toFixed(2);
+
+            // Step 5b & 5c: PhiX calculations (only if enabled)
             const includePhiX = document.getElementById('includePhiX').checked;
             let phixVol = 0;
             let libraryVol = 1000;
@@ -2101,9 +2151,16 @@ Sample3        18.5            A03              Plate1      3"
             if (includePhiX) {
                 phixVol = (phixPercent / 100) * 1000;
                 libraryVol = 1000 - phixVol;
+
+                // Step 5b: PhiX dilution info
+                document.getElementById('step5bPhiXConc').textContent = targetLoadingConc.toFixed(2);
+                document.getElementById('step5bPhiXVol').textContent = (phixVol + 5).toFixed(0); // Extra for safety
+
+                // Step 5c: Combine library + PhiX
                 document.getElementById('step6LibraryVol').textContent = libraryVol.toFixed(0);
                 document.getElementById('step6PhiXVol').textContent = phixVol.toFixed(0);
                 document.getElementById('step6PhiXConc').textContent = targetLoadingConc.toFixed(2);
+                document.getElementById('step6PhiXConc2').textContent = targetLoadingConc.toFixed(2);
                 document.getElementById('step6PhiXPercent').textContent = phixPercent.toFixed(1);
             }
 
