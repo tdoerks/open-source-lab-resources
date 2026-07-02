@@ -89,6 +89,16 @@ Convert images to high-contrast black & white for thermal label printers:
   - Download as PNG or JPG
   - Perfect for logos, calibration stickers, equipment labels
 
+#### 🧪 [EtOH Wash Volume Calculator](./etoh-wash-calculator/)
+Compute ethanol/water volumes for bead-cleanup ethanol washes:
+- **Live Calculation** - total, EtOH, and H₂O volumes update as you type
+- **Fully Adjustable** - per-wash volume, wash count, %EtOH, and loss margin
+- **Quick-Reference Table** - pre-computed volumes for common sample counts
+- **Features:**
+  - Sanity-check warning for an unusually high loss margin
+  - Print-ready one-page bench sheet
+  - No data saved - starts fresh from defaults every time
+
 ---
 
 ## 🚀 Quick Start
@@ -147,6 +157,15 @@ Convert images to high-contrast black & white for thermal label printers:
 4. **Adjust** threshold, contrast, and brightness sliders
 5. **Preview** the black & white conversion
 6. **Download** as PNG for printing on DYMO 450
+
+### EtOH Wash Volume Calculator
+
+1. **Download** the [EtOH Wash Calculator](./etoh-wash-calculator/EtOH_Wash_Calculator.html)
+2. **Open** in any web browser
+3. **Enter** your number of samples
+4. **Confirm or adjust** per-wash volume, wash count, %EtOH, and loss margin
+5. **Read off** the total/EtOH/H₂O volumes, or check the quick-reference table
+6. **Print** for a bench-ready sheet
 
 No installation required! Works offline after first load.
 
