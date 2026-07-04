@@ -99,6 +99,17 @@ Compute ethanol/water volumes for bead-cleanup ethanol washes:
   - Print-ready one-page bench sheet
   - No data saved - starts fresh from defaults every time
 
+#### 🖨️ [DYMO Label Batch Printer](./dymo-label-batch-printer/)
+Batch-print DYMO labels from a saved template merged with a list of entries:
+- **Template Manager** - design a label once (click/drag text, date, counter, and QR fields onto your image)
+- **Batch Table** - one row per label, with CSV paste and column mapping for bulk entry
+- **Features:**
+  - Auto-incrementing counters with configurable start, step, and zero-padding
+  - Fully offline QR code generation (no CDN)
+  - "Fill today" button to stamp a date into every row at once
+  - JSON template export/import (self-contained, includes the image)
+  - Print-ready, one label per physical page
+
 ---
 
 ## 🚀 Quick Start
@@ -166,6 +177,14 @@ Compute ethanol/water volumes for bead-cleanup ethanol washes:
 4. **Confirm or adjust** per-wash volume, wash count, %EtOH, and loss margin
 5. **Read off** the total/EtOH/H₂O volumes, or check the quick-reference table
 6. **Print** for a bench-ready sheet
+
+### DYMO Label Batch Printer
+
+1. **Download** the [Batch Printer](./dymo-label-batch-printer/DYMO_Label_Batch_Printer.html)
+2. **Open** in any web browser
+3. **Create a template**: upload your label image, place text/date/counter/QR fields by clicking and dragging
+4. **Build a batch**: type rows or paste a CSV and map columns to fields
+5. **Print** - one label per physical page
 
 No installation required! Works offline after first load.
 
