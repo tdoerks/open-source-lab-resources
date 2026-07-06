@@ -3273,9 +3273,49 @@ var qrcode = function() {
     importCsv(document.getElementById('csvArea').value);
   });
 
-  // Browser print (primary)
+  // Browser print — open a dedicated window with only label HTML so the app UI never appears
   document.getElementById('printBtn').addEventListener('click', function () {
-    window.print();
+    if (!state.rows.length || !state.objects.length) return;
+
+    var printWin = window.open('', '_blank');
+    if (!printWin) {
+      alert('Popup blocked — please allow popups for this site, then try again.');
+      return;
+    }
+
+    var css = '<style>' +
+      '@page { size: ' + state.labelWidthIn + 'in ' + state.labelHeightIn + 'in; margin: 0; }' +
+      'body { margin: 0; padding: 0; background: white; }' +
+      '.lp { page-break-after: always; }' +
+      '.lp:last-child { page-break-after: auto; }' +
+      '</style>';
+
+    printWin.document.write('<!DOCTYPE html><html><head>' + css + '</head><body>');
+
+    state.rows.forEach(function (row) {
+      var values = {};
+      state.fields.forEach(function (f, i) { values[f.name] = row[i] || ''; });
+      var labelEl = renderLabelEl(state.objects, state.labelWidthIn, state.labelHeightIn, values);
+
+      // canvas elements don't serialize to HTML — convert to <img> with data URL first
+      labelEl.querySelectorAll('canvas').forEach(function (canvas) {
+        var img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.style.cssText = canvas.style.cssText;
+        canvas.parentNode.replaceChild(img, canvas);
+      });
+
+      var page = document.createElement('div');
+      page.className = 'lp';
+      page.appendChild(labelEl);
+      printWin.document.write(page.outerHTML);
+    });
+
+    printWin.document.write('</body></html>');
+    printWin.document.close();
+    printWin.focus();
+    // data: URLs are synchronous so a short delay is enough for layout
+    setTimeout(function () { printWin.print(); }, 250);
   });
 
   // DYMO Connect (advanced)
