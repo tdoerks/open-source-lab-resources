@@ -2954,6 +2954,90 @@ var qrcode = function() {
     return wrap;
   }
 
+  // Render label to a Canvas (used for printing — avoids all cross-document CSS issues)
+  function renderLabelToCanvas(objects, wIn, hIn, values) {
+    var SCALE = 4; // 4× for ~384 dpi print quality
+    var W = Math.round(wIn * 96 * SCALE);
+    var H = Math.round(hIn * 96 * SCALE);
+    var canvas = document.createElement('canvas');
+    canvas.width  = W;
+    canvas.height = H;
+    var ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    objects.forEach(function (obj) {
+      var x = Math.round(obj.bounds.x * 96 * SCALE);
+      var y = Math.round(obj.bounds.y * 96 * SCALE);
+      var w = Math.round(obj.bounds.w * 96 * SCALE);
+      var h = Math.round(obj.bounds.h * 96 * SCALE);
+
+      if (obj.type === 'text' || obj.type === 'datetime') {
+        var val;
+        if (obj.type === 'datetime') {
+          val = formatDateTime(obj.includeTime, obj.use24Hour);
+        } else {
+          val = obj.isVariable ? (values[obj.name] || '') : obj.defaultText;
+        }
+
+        // Background fill
+        if (obj.backColor) {
+          ctx.fillStyle = obj.backColor;
+          ctx.fillRect(x, y, w, h);
+        }
+
+        if (val) {
+          // Base font size, then auto-shrink to fit width
+          var basePx = obj.font.sizePt * (96 / 72) * SCALE;
+          var prefix = (obj.font.italic ? 'italic ' : '') + (obj.font.bold ? 'bold ' : '');
+          var family = '"' + obj.font.family + '",Arial,sans-serif';
+
+          var fitPx = basePx;
+          ctx.font = prefix + fitPx + 'px ' + family;
+          if (ctx.measureText(val).width > w && w > 0) {
+            fitPx = Math.floor(basePx * w / ctx.measureText(val).width);
+            ctx.font = prefix + fitPx + 'px ' + family;
+          }
+
+          ctx.fillStyle = obj.foreColor || '#000000';
+          ctx.textBaseline = 'middle';
+          var tx;
+          if (obj.align === 'center') { ctx.textAlign = 'center'; tx = x + w / 2; }
+          else if (obj.align === 'right')  { ctx.textAlign = 'right';  tx = x + w; }
+          else                             { ctx.textAlign = 'left';   tx = x; }
+
+          ctx.save();
+          ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+          ctx.fillText(val, tx, y + h / 2);
+          ctx.restore();
+        }
+
+      } else if (obj.type === 'barcode' && obj.barcodeType === 'QRCode') {
+        var val = obj.linkedObjectName ? (values[obj.linkedObjectName] || '') :
+                  obj.isVariable ? (values[obj.name] || '') : obj.defaultText;
+        if (val && typeof qrcode !== 'undefined') {
+          try {
+            var qr = qrcode(0, 'M');
+            qr.addData(val);
+            qr.make();
+            var mCount = qr.getModuleCount();
+            var cell = Math.max(1, Math.floor(Math.min(w, h) / mCount));
+            var qrSize = mCount * cell;
+            var qrCanvas = document.createElement('canvas');
+            qrCanvas.width  = qrSize;
+            qrCanvas.height = qrSize;
+            qr.renderTo2dContext(qrCanvas.getContext('2d'), cell);
+            // center QR within its bounds
+            ctx.drawImage(qrCanvas, x + Math.floor((w - qrSize) / 2), y + Math.floor((h - qrSize) / 2), qrSize, qrSize);
+          } catch (e) { /* skip un-encodable value */ }
+        }
+      }
+    });
+
+    return canvas;
+  }
+
   function updatePreview() {
     var preview = document.getElementById('labelPreview');
     preview.innerHTML = '';
@@ -3273,7 +3357,8 @@ var qrcode = function() {
     importCsv(document.getElementById('csvArea').value);
   });
 
-  // Browser print — open a dedicated window with only label HTML so the app UI never appears
+  // Browser print — render each label to canvas, embed as PNG data URL in a clean popup.
+  // Canvas approach avoids all cross-document CSS issues (white text, color-adjust, etc.)
   document.getElementById('printBtn').addEventListener('click', function () {
     if (!state.rows.length || !state.objects.length) return;
 
@@ -3283,36 +3368,28 @@ var qrcode = function() {
       return;
     }
 
-    // print-color-adjust: exact forces Chrome to print background colors (black fill, etc.)
     var css = '@page { size: ' + state.labelWidthIn + 'in ' + state.labelHeightIn + 'in; margin: 0; }' +
-      'body { margin: 0; padding: 0; }' +
-      '* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
-      '.lp { page-break-after: always; }' +
-      '.lp:last-child { page-break-after: auto; }';
+      'html,body { margin:0; padding:0; background:white; }' +
+      'img { display:block; }' +
+      '.lp { page-break-after:always; margin:0; padding:0; }' +
+      '.lp:last-child { page-break-after:auto; }';
 
-    printWin.document.write('<!DOCTYPE html><html><head><style>' + css + '</style></head><body></body></html>');
-    printWin.document.close();
-
+    var bodyHTML = '';
     state.rows.forEach(function (row) {
       var values = {};
       state.fields.forEach(function (f, i) { values[f.name] = row[i] || ''; });
-      var labelEl = renderLabelEl(state.objects, state.labelWidthIn, state.labelHeightIn, values);
-
-      // Convert canvases to <img> data URLs before moving to the new document
-      // (canvas pixel data doesn't survive cross-document adoption or outerHTML serialization)
-      Array.from(labelEl.querySelectorAll('canvas')).forEach(function (canvas) {
-        var img = document.createElement('img');
-        img.src = canvas.toDataURL('image/png');
-        img.style.cssText = canvas.style.cssText;
-        canvas.parentNode.replaceChild(img, canvas);
-      });
-
-      var page = printWin.document.createElement('div');
-      page.className = 'lp';
-      printWin.document.body.appendChild(page);
-      page.appendChild(labelEl); // browser auto-adopts cross-document nodes
+      var dataUrl = renderLabelToCanvas(
+        state.objects, state.labelWidthIn, state.labelHeightIn, values
+      ).toDataURL('image/png');
+      bodyHTML += '<div class="lp"><img src="' + dataUrl +
+        '" style="width:' + state.labelWidthIn + 'in;height:' + state.labelHeightIn + 'in;"></div>';
     });
 
+    printWin.document.write(
+      '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + css +
+      '</style></head><body>' + bodyHTML + '</body></html>'
+    );
+    printWin.document.close();
     printWin.focus();
     setTimeout(function () { printWin.print(); }, 300);
   });
