@@ -3283,39 +3283,38 @@ var qrcode = function() {
       return;
     }
 
-    var css = '<style>' +
-      '@page { size: ' + state.labelWidthIn + 'in ' + state.labelHeightIn + 'in; margin: 0; }' +
-      'body { margin: 0; padding: 0; background: white; }' +
+    // print-color-adjust: exact forces Chrome to print background colors (black fill, etc.)
+    var css = '@page { size: ' + state.labelWidthIn + 'in ' + state.labelHeightIn + 'in; margin: 0; }' +
+      'body { margin: 0; padding: 0; }' +
+      '* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }' +
       '.lp { page-break-after: always; }' +
-      '.lp:last-child { page-break-after: auto; }' +
-      '</style>';
+      '.lp:last-child { page-break-after: auto; }';
 
-    printWin.document.write('<!DOCTYPE html><html><head>' + css + '</head><body>');
+    printWin.document.write('<!DOCTYPE html><html><head><style>' + css + '</style></head><body></body></html>');
+    printWin.document.close();
 
     state.rows.forEach(function (row) {
       var values = {};
       state.fields.forEach(function (f, i) { values[f.name] = row[i] || ''; });
       var labelEl = renderLabelEl(state.objects, state.labelWidthIn, state.labelHeightIn, values);
 
-      // canvas elements don't serialize to HTML — convert to <img> with data URL first
-      labelEl.querySelectorAll('canvas').forEach(function (canvas) {
+      // Convert canvases to <img> data URLs before moving to the new document
+      // (canvas pixel data doesn't survive cross-document adoption or outerHTML serialization)
+      Array.from(labelEl.querySelectorAll('canvas')).forEach(function (canvas) {
         var img = document.createElement('img');
         img.src = canvas.toDataURL('image/png');
         img.style.cssText = canvas.style.cssText;
         canvas.parentNode.replaceChild(img, canvas);
       });
 
-      var page = document.createElement('div');
+      var page = printWin.document.createElement('div');
       page.className = 'lp';
-      page.appendChild(labelEl);
-      printWin.document.write(page.outerHTML);
+      printWin.document.body.appendChild(page);
+      page.appendChild(labelEl); // browser auto-adopts cross-document nodes
     });
 
-    printWin.document.write('</body></html>');
-    printWin.document.close();
     printWin.focus();
-    // data: URLs are synchronous so a short delay is enough for layout
-    setTimeout(function () { printWin.print(); }, 250);
+    setTimeout(function () { printWin.print(); }, 300);
   });
 
   // DYMO Connect (advanced)
