@@ -2733,10 +2733,14 @@ var qrcode = function() {
     var parser = new DOMParser();
     var doc = parser.parseFromString(xmlStr, 'text/xml');
 
-    // Label dimensions from DrawCommands/RoundRectangle (in twips, ÷1440 = inches)
+    // Label dimensions: for Landscape labels X-axis = RoundRectangle.Height, Y-axis = Width
     var rectEl = doc.getElementsByTagName('RoundRectangle')[0];
-    var labelWidthIn  = rectEl ? parseFloat(rectEl.getAttribute('Width'))  / 1440 : 2;
-    var labelHeightIn = rectEl ? parseFloat(rectEl.getAttribute('Height')) / 1440 : 1;
+    var rectW = rectEl ? parseFloat(rectEl.getAttribute('Width'))  / 1440 : 1;
+    var rectH = rectEl ? parseFloat(rectEl.getAttribute('Height')) / 1440 : 2;
+    var orientEl = doc.getElementsByTagName('PaperOrientation')[0];
+    var isLandscape = orientEl && orientEl.textContent.trim() === 'Landscape';
+    var labelWidthIn  = isLandscape ? rectH : rectW;
+    var labelHeightIn = isLandscape ? rectW : rectH;
 
     var fields = [];
     var objects = [];
@@ -2766,9 +2770,12 @@ var qrcode = function() {
         var align     = normalizeAlign(getText(textEl, 'HorizontalAlignment'));
         var font      = getStyledFont(textEl);
         var defText   = getStyledString(textEl);
+        var foreColor = parseColorEl(textEl.getElementsByTagName('ForeColor')[0]);
+        var backColor = parseColorEl(textEl.getElementsByTagName('BackColor')[0]);
 
         objects.push({ type: 'text', name: name, isVariable: isVar,
-                       defaultText: defText, bounds: bounds, font: font, align: align });
+                       defaultText: defText, bounds: bounds, font: font, align: align,
+                       foreColor: foreColor, backColor: backColor });
 
         if (isVar && name && !seen[name]) {
           seen[name] = true;
@@ -2776,13 +2783,15 @@ var qrcode = function() {
         }
 
       } else if (barcodeEl) {
-        var name      = getText(barcodeEl, 'Name');
-        var isVar     = getText(barcodeEl, 'IsVariable') === 'True';
-        var bType     = getText(barcodeEl, 'Type');
-        var defText   = getText(barcodeEl, 'Text');
+        var name       = getText(barcodeEl, 'Name');
+        var isVar      = getText(barcodeEl, 'IsVariable') === 'True';
+        var bType      = getText(barcodeEl, 'Type');
+        var defText    = getText(barcodeEl, 'Text');
+        var linkedName = getText(barcodeEl, 'LinkedObjectName');
 
         objects.push({ type: 'barcode', name: name, isVariable: isVar,
                        defaultText: defText, bounds: bounds, barcodeType: bType,
+                       linkedObjectName: linkedName,
                        font: { family: 'Arial', sizePt: 8, bold: false, italic: false },
                        align: 'center' });
 
@@ -2796,10 +2805,12 @@ var qrcode = function() {
         var dtFormat  = getText(dtEl, 'DateTimeFormat') || 'MonthDayLongYear';
         var font      = getFlatFont(dtEl);
         var align     = normalizeAlign(getText(dtEl, 'HorizontalAlignment'));
+        var incTime   = getText(dtEl, 'IncludeTime') === 'True';
+        var use24H    = getText(dtEl, 'Use24HourFormat') === 'True';
 
         objects.push({ type: 'datetime', name: name, isVariable: false,
                        defaultText: '', bounds: bounds, font: font, align: align,
-                       dateFormat: dtFormat });
+                       dateFormat: dtFormat, includeTime: incTime, use24Hour: use24H });
       }
     }
 
@@ -2856,6 +2867,27 @@ var qrcode = function() {
     return 'left';
   }
 
+  // Helper: parse a ForeColor/BackColor element to CSS rgb() string, or null
+  function parseColorEl(el) {
+    if (!el) return null;
+    var alpha = parseInt(el.getAttribute('Alpha') || 0);
+    if (alpha === 0) return null;
+    return 'rgb(' + el.getAttribute('Red') + ',' + el.getAttribute('Green') + ',' + el.getAttribute('Blue') + ')';
+  }
+
+  // Format current datetime for DateTimeObject rendering
+  function formatDateTime(includeTime, use24Hour) {
+    var d = new Date();
+    var date = String(d.getMonth() + 1).padStart(2, '0') + '/' +
+               String(d.getDate()).padStart(2, '0') + '/' + d.getFullYear();
+    if (!includeTime) return date;
+    var h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0');
+    if (use24Hour) return date + ' ' + String(h).padStart(2, '0') + ':' + m;
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return date + ' ' + h + ':' + m + ' ' + ampm;
+  }
+
   // ── Label rendering ────────────────────────────────────────────────────────
 
   function renderLabelEl(objects, wIn, hIn, values) {
@@ -2882,8 +2914,11 @@ var qrcode = function() {
           'text-align:'  + obj.align + ';' +
           'line-height:1.2;white-space:pre-wrap;';
 
+        if (obj.foreColor) el.style.color = obj.foreColor;
+        if (obj.backColor) el.style.backgroundColor = obj.backColor;
+
         if (obj.type === 'datetime') {
-          el.textContent = todayFormatted();
+          el.textContent = formatDateTime(obj.includeTime, obj.use24Hour);
         } else if (obj.isVariable) {
           el.textContent = values[obj.name] || '';
         } else {
@@ -2892,7 +2927,8 @@ var qrcode = function() {
         wrap.appendChild(el);
 
       } else if (obj.type === 'barcode' && obj.barcodeType === 'QRCode') {
-        var val = obj.isVariable ? (values[obj.name] || '') : obj.defaultText;
+        var val = obj.linkedObjectName ? (values[obj.linkedObjectName] || '') :
+                  obj.isVariable ? (values[obj.name] || '') : obj.defaultText;
         if (val && typeof qrcode !== 'undefined') {
           try {
             var SCALE = 4; // render at 4× physical size for print quality
