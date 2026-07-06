@@ -175,6 +175,7 @@
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
   .btn-secondary { background: #e9ecef; color: #2c3e50; }
   .btn-secondary:hover { background: #dee2e6; }
+  .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-date { background: #d1ecf1; color: #0c5460; }
   .btn-date:hover { background: #bee5eb; }
 
@@ -195,12 +196,58 @@
   }
   .csv-paste textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 2px rgba(102,126,234,0.15); }
 
+  /* Label preview */
+  .label-preview-wrap {
+    background: #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 60px;
+    max-height: 560px;
+    overflow-y: auto;
+    margin-bottom: 14px;
+  }
+
+  .label-render {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: block;
+    background: white;
+  }
+
+  .print-hint {
+    font-size: 0.82em;
+    color: #6c757d;
+    margin-top: 6px;
+  }
+
+  details.dymo-advanced {
+    margin-top: 20px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  details.dymo-advanced summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    background: #f8f9fa;
+    font-weight: 600;
+    font-size: 0.88em;
+    color: #6c757d;
+    user-select: none;
+  }
+  details.dymo-advanced summary:hover { background: #e9ecef; }
+  details.dymo-advanced .dymo-inner { padding: 16px; }
+
   .printer-row {
     display: flex;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
   }
   .printer-row select {
     flex: 1;
@@ -232,13 +279,31 @@
   }
 
   .hidden { display: none !important; }
+
+  /* Print styles */
+  @media print {
+    body * { visibility: hidden; }
+    #labelPreview, #labelPreview * { visibility: visible; }
+    #labelPreview {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: block !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+    }
+    .label-page { page-break-after: always; margin: 0; padding: 0; }
+    .label-page:last-child { page-break-after: auto; }
+    .label-render { box-shadow: none !important; }
+  }
 </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
     <h1>DYMO Label Batch Printer</h1>
-    <p>Load a .label template, enter data, print via DYMO Connect.</p>
+    <p>Load a .label template &mdash; works on any computer with a DYMO printer.</p>
   </div>
 
   <div class="content">
@@ -280,22 +345,35 @@
       </div>
     </div>
 
-    <!-- Step 3: Print -->
+    <!-- Step 3: Preview & Print -->
     <div class="card hidden" id="stepPrint">
-      <h2><span class="step-badge">3</span> Print</h2>
-      <div class="printer-row">
-        <select id="printerSelect"><option value="">&mdash; select printer &mdash;</option></select>
-        <button class="btn btn-secondary" id="refreshPrintersBtn">Refresh printers</button>
-      </div>
+      <h2><span class="step-badge">3</span> Preview &amp; Print</h2>
+      <div id="labelPreview" class="label-preview-wrap"></div>
       <div class="actions">
         <button class="btn btn-primary" id="printBtn" disabled>Print 0 label(s)</button>
       </div>
-      <div id="statusMsg" class="status-msg info hidden"></div>
+      <p class="print-hint">Opens the browser print dialog. Select your DYMO printer &rarr; set Margins to <strong>None</strong> &rarr; Scale <strong>100%</strong>.</p>
+
+      <details class="dymo-advanced">
+        <summary>Advanced: Print via DYMO Connect (requires DYMO Label Software running)</summary>
+        <div class="dymo-inner">
+          <div class="printer-row">
+            <select id="printerSelect"><option value="">&mdash; select printer &mdash;</option></select>
+            <button class="btn btn-secondary" id="refreshPrintersBtn">Refresh printers</button>
+          </div>
+          <div class="actions">
+            <button class="btn btn-secondary" id="dymoConnectPrintBtn" disabled>Print via DYMO Connect</button>
+          </div>
+          <div id="statusMsg" class="status-msg info hidden"></div>
+        </div>
+      </details>
     </div>
 
     <div class="footnote">open-source-lab-resources &mdash; dymo-label-batch-printer</div>
   </div>
 </div>
+
+<style id="printPageSize"></style>
 
 <script>
 //---------------------------------------------------------------------
@@ -2607,11 +2685,16 @@ var qrcode = function() {
   var state = {
     labelXml: null,
     labelFilename: '',
-    fields: [],
+    fields: [],          // [{name, isDate}] — variable fields for data table
+    objects: [],         // full parsed layout for rendering
+    labelWidthIn: 0,
+    labelHeightIn: 0,
     rows: [],
     printers: [],
     selectedPrinter: null
   };
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
 
   function uid() {
     return 'r' + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -2619,9 +2702,9 @@ var qrcode = function() {
 
   function todayFormatted() {
     var d = new Date();
-    var m = String(d.getMonth() + 1).padStart(2, '0');
-    var day = String(d.getDate()).padStart(2, '0');
-    return m + '/' + day + '/' + d.getFullYear();
+    return String(d.getMonth() + 1).padStart(2, '0') + '/' +
+           String(d.getDate()).padStart(2, '0') + '/' +
+           d.getFullYear();
   }
 
   function showStatus(msg, type) {
@@ -2635,65 +2718,228 @@ var qrcode = function() {
     document.getElementById('statusMsg').classList.add('hidden');
   }
 
-  // Parse .label XML — returns [{name, isDate}] for all variable fields
-  function parseLabelFields(xmlStr) {
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(xmlStr, 'text/xml');
-    var fields = [];
-    var seen = {};
-    ['TextObject', 'BarcodeObject', 'CounterObject', 'DateObject'].forEach(function (tag) {
-      var nodes = doc.getElementsByTagName(tag);
-      for (var i = 0; i < nodes.length; i++) {
-        var node = nodes[i];
-        var isVarEl = node.getElementsByTagName('IsVariable')[0];
-        var nameEl  = node.getElementsByTagName('Name')[0];
-        if (!nameEl) continue;
-        var name = nameEl.textContent.trim();
-        if (!name || seen[name]) continue;
-        var isVar = isVarEl && isVarEl.textContent.trim() === 'True';
-        var isDate = tag === 'DateObject';
-        if (!isVar && !isDate) continue;
-        seen[name] = true;
-        fields.push({ name: name, isDate: isDate || /date/i.test(name) });
-      }
-    });
-    return fields;
-  }
-
   function escHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function escXml(str) {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&apos;');
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
   }
 
-  function renderFieldTags() {
-    var container = document.getElementById('fieldTags');
-    container.innerHTML = '';
-    state.fields.forEach(function (f) {
-      var span = document.createElement('span');
-      span.className = 'field-tag' + (f.isDate ? ' date-field' : '');
-      span.textContent = f.name + (f.isDate ? ' (date)' : '');
-      container.appendChild(span);
+  // ── .label XML parser ──────────────────────────────────────────────────────
+
+  function parseLabelXml(xmlStr) {
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(xmlStr, 'text/xml');
+
+    // Label dimensions from DrawCommands/RoundRectangle (in twips, ÷1440 = inches)
+    var rectEl = doc.getElementsByTagName('RoundRectangle')[0];
+    var labelWidthIn  = rectEl ? parseFloat(rectEl.getAttribute('Width'))  / 1440 : 2;
+    var labelHeightIn = rectEl ? parseFloat(rectEl.getAttribute('Height')) / 1440 : 1;
+
+    var fields = [];
+    var objects = [];
+    var seen = {};
+
+    var objectInfos = doc.getElementsByTagName('ObjectInfo');
+    for (var i = 0; i < objectInfos.length; i++) {
+      var objInfo = objectInfos[i];
+
+      // Bounds is a sibling of the object element inside ObjectInfo
+      var boundsEl = objInfo.getElementsByTagName('Bounds')[0];
+      var bounds = { x: 0, y: 0, w: 0.5, h: 0.1 };
+      if (boundsEl) {
+        bounds.x = parseFloat(boundsEl.getAttribute('X')      || 0) / 1440;
+        bounds.y = parseFloat(boundsEl.getAttribute('Y')      || 0) / 1440;
+        bounds.w = parseFloat(boundsEl.getAttribute('Width')  || 0) / 1440;
+        bounds.h = parseFloat(boundsEl.getAttribute('Height') || 0) / 1440;
+      }
+
+      var textEl    = objInfo.getElementsByTagName('TextObject')[0];
+      var barcodeEl = objInfo.getElementsByTagName('BarcodeObject')[0];
+      var dtEl      = objInfo.getElementsByTagName('DateTimeObject')[0];
+
+      if (textEl) {
+        var name      = getText(textEl, 'Name');
+        var isVar     = getText(textEl, 'IsVariable') === 'True';
+        var align     = normalizeAlign(getText(textEl, 'HorizontalAlignment'));
+        var font      = getStyledFont(textEl);
+        var defText   = getStyledString(textEl);
+
+        objects.push({ type: 'text', name: name, isVariable: isVar,
+                       defaultText: defText, bounds: bounds, font: font, align: align });
+
+        if (isVar && name && !seen[name]) {
+          seen[name] = true;
+          fields.push({ name: name, isDate: /date/i.test(name) });
+        }
+
+      } else if (barcodeEl) {
+        var name      = getText(barcodeEl, 'Name');
+        var isVar     = getText(barcodeEl, 'IsVariable') === 'True';
+        var bType     = getText(barcodeEl, 'Type');
+        var defText   = getText(barcodeEl, 'Text');
+
+        objects.push({ type: 'barcode', name: name, isVariable: isVar,
+                       defaultText: defText, bounds: bounds, barcodeType: bType,
+                       font: { family: 'Arial', sizePt: 8, bold: false, italic: false },
+                       align: 'center' });
+
+        if (isVar && name && !seen[name]) {
+          seen[name] = true;
+          fields.push({ name: name, isDate: false });
+        }
+
+      } else if (dtEl) {
+        var name      = getText(dtEl, 'Name');
+        var dtFormat  = getText(dtEl, 'DateTimeFormat') || 'MonthDayLongYear';
+        var font      = getFlatFont(dtEl);
+        var align     = normalizeAlign(getText(dtEl, 'HorizontalAlignment'));
+
+        objects.push({ type: 'datetime', name: name, isVariable: false,
+                       defaultText: '', bounds: bounds, font: font, align: align,
+                       dateFormat: dtFormat });
+      }
+    }
+
+    return { labelWidthIn: labelWidthIn, labelHeightIn: labelHeightIn,
+             fields: fields, objects: objects };
+  }
+
+  // Helper: get text content of first matching child element
+  function getText(parent, tag) {
+    var el = parent.getElementsByTagName(tag)[0];
+    return el ? el.textContent.trim() : '';
+  }
+
+  // Helper: get font from TextObject's StyledText/Element/Attributes/Font
+  function getStyledFont(textEl) {
+    var styledText = textEl.getElementsByTagName('StyledText')[0];
+    var fontEl = styledText ? styledText.getElementsByTagName('Font')[0] : null;
+    return {
+      family: fontEl ? (fontEl.getAttribute('Family') || 'Arial') : 'Arial',
+      sizePt: fontEl ? parseFloat(fontEl.getAttribute('Size') || 10) : 10,
+      bold:   fontEl ? fontEl.getAttribute('Bold')   === 'True' : false,
+      italic: fontEl ? fontEl.getAttribute('Italic') === 'True' : false
+    };
+  }
+
+  // Helper: get font from a flat <Font .../> element (DateTimeObject, BarcodeObject)
+  function getFlatFont(el) {
+    var fontEl = el.getElementsByTagName('Font')[0];
+    return {
+      family: fontEl ? (fontEl.getAttribute('Family') || 'Arial') : 'Arial',
+      sizePt: fontEl ? parseFloat(fontEl.getAttribute('Size') || 10) : 10,
+      bold:   fontEl ? fontEl.getAttribute('Bold')   === 'True' : false,
+      italic: fontEl ? fontEl.getAttribute('Italic') === 'True' : false
+    };
+  }
+
+  // Helper: get default text string from StyledText/Element/String
+  function getStyledString(textEl) {
+    var styledText = textEl.getElementsByTagName('StyledText')[0];
+    if (!styledText) return '';
+    var stringEls = styledText.getElementsByTagName('String');
+    var parts = [];
+    for (var i = 0; i < stringEls.length; i++) {
+      parts.push(stringEls[i].textContent);
+    }
+    return parts.join('');
+  }
+
+  // Helper: normalize DYMO alignment string to CSS
+  function normalizeAlign(val) {
+    val = (val || '').toLowerCase();
+    if (val === 'center' || val === 'centre') return 'center';
+    if (val === 'right') return 'right';
+    return 'left';
+  }
+
+  // ── Label rendering ────────────────────────────────────────────────────────
+
+  function renderLabelEl(objects, wIn, hIn, values) {
+    var wrap = document.createElement('div');
+    wrap.className = 'label-render';
+    wrap.style.cssText = 'position:relative;width:' + wIn + 'in;height:' + hIn +
+                         'in;background:white;overflow:hidden;box-sizing:border-box;';
+
+    objects.forEach(function (obj) {
+      var posCSS = 'position:absolute;' +
+        'left:'   + obj.bounds.x + 'in;' +
+        'top:'    + obj.bounds.y + 'in;' +
+        'width:'  + obj.bounds.w + 'in;' +
+        'height:' + obj.bounds.h + 'in;' +
+        'overflow:hidden;box-sizing:border-box;';
+
+      if (obj.type === 'text' || obj.type === 'datetime') {
+        var el = document.createElement('div');
+        el.style.cssText = posCSS +
+          'font-family:"' + obj.font.family + '",Arial,sans-serif;' +
+          'font-size:' + obj.font.sizePt + 'pt;' +
+          'font-weight:' + (obj.font.bold   ? 'bold'   : 'normal') + ';' +
+          'font-style:'  + (obj.font.italic ? 'italic' : 'normal') + ';' +
+          'text-align:'  + obj.align + ';' +
+          'line-height:1.2;white-space:pre-wrap;';
+
+        if (obj.type === 'datetime') {
+          el.textContent = todayFormatted();
+        } else if (obj.isVariable) {
+          el.textContent = values[obj.name] || '';
+        } else {
+          el.textContent = obj.defaultText;
+        }
+        wrap.appendChild(el);
+
+      } else if (obj.type === 'barcode' && obj.barcodeType === 'QRCode') {
+        var val = obj.isVariable ? (values[obj.name] || '') : obj.defaultText;
+        if (val && typeof qrcode !== 'undefined') {
+          try {
+            var SCALE = 4; // render at 4× physical size for print quality
+            var wPx = Math.round(obj.bounds.w * 96 * SCALE);
+            var hPx = Math.round(obj.bounds.h * 96 * SCALE);
+            var size = Math.min(wPx, hPx);
+            var qr = qrcode(0, 'M');
+            qr.addData(val);
+            qr.make();
+            var mCount = qr.getModuleCount();
+            var cell = Math.max(1, Math.floor(size / mCount));
+            var canvas = document.createElement('canvas');
+            canvas.width  = mCount * cell;
+            canvas.height = mCount * cell;
+            canvas.style.cssText = posCSS + 'width:' + obj.bounds.w + 'in;height:' + obj.bounds.h + 'in;';
+            qr.renderTo2dContext(canvas.getContext('2d'), cell);
+            wrap.appendChild(canvas);
+          } catch (e) { /* empty value or too-long string — skip */ }
+        }
+      }
+    });
+
+    return wrap;
+  }
+
+  function updatePreview() {
+    var preview = document.getElementById('labelPreview');
+    preview.innerHTML = '';
+    if (!state.objects.length) return;
+    state.rows.forEach(function (row) {
+      var page = document.createElement('div');
+      page.className = 'label-page';
+      page.appendChild(renderLabelEl(state.objects, state.labelWidthIn, state.labelHeightIn, row.values));
+      preview.appendChild(page);
     });
   }
+
+  // ── Batch table ────────────────────────────────────────────────────────────
 
   function renderBatchTable() {
     var head = document.getElementById('batchHead');
     var body = document.getElementById('batchBody');
 
-    var headerHtml = '';
-    state.fields.forEach(function (f) {
-      headerHtml += '<th>' + escHtml(f.name) + '</th>';
-    });
-    headerHtml += '<th style="width:40px;"></th>';
-    head.innerHTML = headerHtml;
+    var hHtml = '';
+    state.fields.forEach(function (f) { hHtml += '<th>' + escHtml(f.name) + '</th>'; });
+    hHtml += '<th style="width:40px;"></th>';
+    head.innerHTML = hHtml;
 
     body.innerHTML = '';
     state.rows.forEach(function (row) {
@@ -2705,6 +2951,7 @@ var qrcode = function() {
         inp.value = row.values[f.name] || '';
         inp.addEventListener('input', function () {
           row.values[f.name] = this.value;
+          updatePreview();
           updatePrintButton();
         });
         td.appendChild(inp);
@@ -2718,19 +2965,25 @@ var qrcode = function() {
       delBtn.addEventListener('click', function () {
         state.rows = state.rows.filter(function (r) { return r.id !== row.id; });
         renderBatchTable();
+        updatePreview();
         updatePrintButton();
       });
       delTd.appendChild(delBtn);
       tr.appendChild(delTd);
       body.appendChild(tr);
     });
+
+    updatePreview();
   }
 
   function updatePrintButton() {
-    var btn = document.getElementById('printBtn');
     var n = state.rows.length;
+    var btn = document.getElementById('printBtn');
     btn.textContent = 'Print ' + n + ' label' + (n !== 1 ? 's' : '');
-    btn.disabled = !state.selectedPrinter || n === 0;
+    btn.disabled = n === 0;
+
+    var dcBtn = document.getElementById('dymoConnectPrintBtn');
+    if (dcBtn) dcBtn.disabled = !state.selectedPrinter || n === 0;
   }
 
   function showSteps() {
@@ -2738,7 +2991,8 @@ var qrcode = function() {
     document.getElementById('stepPrint').classList.remove('hidden');
   }
 
-  // DYMO Connect API calls
+  // ── DYMO Connect (advanced / optional) ────────────────────────────────────
+
   function loadPrinters() {
     showStatus('Connecting to DYMO Connect…', 'info');
     fetch(DYMO_HTTP + '/DYMO/DLS/Printing/GetPrinters')
@@ -2758,14 +3012,15 @@ var qrcode = function() {
         state.printers = names;
         renderPrinterSelect();
         if (names.length === 0) {
-          showStatus('DYMO Connect is running but no LabelWriter printers found.', 'warning');
+          showStatus('Connected but no LabelWriter printers found.', 'warning');
         } else {
           hideStatus();
         }
       })
       .catch(function () {
         showStatus(
-          'Cannot reach DYMO Connect (http://127.0.0.1:41951). Make sure DYMO Label Software is open.',
+          'Cannot reach DYMO Connect (http://127.0.0.1:41951). ' +
+          'Open DYMO Label Software first, or use the browser Print button above.',
           'error'
         );
         state.printers = [];
@@ -2791,8 +3046,7 @@ var qrcode = function() {
     state.rows.forEach(function (row) {
       parts.push('  <LabelRecord>');
       state.fields.forEach(function (f) {
-        var val = row.values[f.name] || '';
-        parts.push('    <ObjectData Name="' + escXml(f.name) + '">' + escXml(val) + '</ObjectData>');
+        parts.push('    <ObjectData Name="' + escXml(f.name) + '">' + escXml(row.values[f.name] || '') + '</ObjectData>');
       });
       parts.push('  </LabelRecord>');
     });
@@ -2800,10 +3054,10 @@ var qrcode = function() {
     return parts.join('\n');
   }
 
-  function printLabels() {
+  function printViaConnect() {
     if (!state.labelXml || !state.rows.length || !state.selectedPrinter) return;
     showStatus('Sending to printer…', 'info');
-    document.getElementById('printBtn').disabled = true;
+    document.getElementById('dymoConnectPrintBtn').disabled = true;
 
     var printParams = '<LabelWriterPrintParams><Copies>1</Copies><JobTitle>Batch Labels</JobTitle></LabelWriterPrintParams>';
     var body = new URLSearchParams();
@@ -2831,14 +3085,13 @@ var qrcode = function() {
       .then(function () { updatePrintButton(); });
   }
 
+  // ── CSV import ─────────────────────────────────────────────────────────────
+
   function importCsv(text) {
     text = text.trim();
     if (!text) return;
     var lines = text.split(/\r?\n/);
-    if (lines.length < 2) {
-      showStatus('CSV needs at least a header row and one data row.', 'warning');
-      return;
-    }
+    if (lines.length < 2) { showStatus('CSV needs at least a header row and one data row.', 'warning'); return; }
     var headers = lines[0].split(',').map(function (h) { return h.trim().replace(/^"|"$/g, ''); });
     var added = 0;
     for (var i = 1; i < lines.length; i++) {
@@ -2863,26 +3116,29 @@ var qrcode = function() {
     }
   }
 
+  // ── File loading ───────────────────────────────────────────────────────────
+
   function loadLabelFile(file) {
     if (!file) return;
     var reader = new FileReader();
     reader.onload = function (e) {
       var xml = e.target.result;
-      var fields = parseLabelFields(xml);
-      if (fields.length === 0) {
-        showStatus(
-          'No variable fields found. In DYMO Label Software, right-click each text object and enable "Variable text".',
-          'warning'
-        );
-        showSteps();
-        return;
-      }
-      state.labelXml = xml;
-      state.labelFilename = file.name;
-      state.fields = fields;
+      var parsed = parseLabelXml(xml);
 
+      state.labelXml      = xml;
+      state.labelFilename = file.name;
+      state.fields        = parsed.fields;
+      state.objects       = parsed.objects;
+      state.labelWidthIn  = parsed.labelWidthIn;
+      state.labelHeightIn = parsed.labelHeightIn;
+
+      // Set @page size for browser print
+      document.getElementById('printPageSize').textContent =
+        '@page { size: ' + parsed.labelWidthIn + 'in ' + parsed.labelHeightIn + 'in; margin: 0; }';
+
+      // Seed first row with today's date in any date fields
       var firstRow = { id: uid(), values: {} };
-      fields.forEach(function (f) {
+      parsed.fields.forEach(function (f) {
         firstRow.values[f.name] = f.isDate ? todayFormatted() : '';
       });
       state.rows = [firstRow];
@@ -2890,34 +3146,62 @@ var qrcode = function() {
       document.getElementById('loadedFilename').textContent = file.name;
       renderFieldTags();
       document.getElementById('loadedInfo').classList.remove('hidden');
+
+      if (parsed.fields.length === 0 && parsed.objects.length === 0) {
+        showStatus(
+          'No objects found. This may not be a valid DYMO .label file.',
+          'warning'
+        );
+      } else if (parsed.fields.length === 0) {
+        showStatus(
+          'No variable fields found — showing static label preview. ' +
+          'To make fields variable, right-click them in DYMO Label Software and enable "Variable text".',
+          'info'
+        );
+      }
+
       renderBatchTable();
       updatePrintButton();
       showSteps();
-      loadPrinters();
     };
     reader.readAsText(file);
   }
 
-  // Wire up events
+  function renderFieldTags() {
+    var container = document.getElementById('fieldTags');
+    container.innerHTML = '';
+    if (state.fields.length === 0) {
+      var span = document.createElement('span');
+      span.style.cssText = 'font-size:0.85em; color:#868e96; font-style:italic;';
+      span.textContent = 'None (static label)';
+      container.appendChild(span);
+      return;
+    }
+    state.fields.forEach(function (f) {
+      var span = document.createElement('span');
+      span.className = 'field-tag' + (f.isDate ? ' date-field' : '');
+      span.textContent = f.name + (f.isDate ? ' (date)' : '');
+      container.appendChild(span);
+    });
+  }
+
+  // ── Event wiring ───────────────────────────────────────────────────────────
+
   var dropZone = document.getElementById('dropZone');
 
   dropZone.addEventListener('click', function () {
     document.getElementById('labelFileInput').click();
   });
-
   document.getElementById('labelFileInput').addEventListener('change', function () {
     if (this.files[0]) loadLabelFile(this.files[0]);
   });
-
   dropZone.addEventListener('dragover', function (e) {
     e.preventDefault();
     dropZone.classList.add('dragover');
   });
-
   dropZone.addEventListener('dragleave', function () {
     dropZone.classList.remove('dragover');
   });
-
   dropZone.addEventListener('drop', function (e) {
     e.preventDefault();
     dropZone.classList.remove('dragover');
@@ -2939,27 +3223,37 @@ var qrcode = function() {
     var dateFields = state.fields.filter(function (f) { return f.isDate; });
     if (!dateFields.length) {
       showStatus('No date fields found. Rename a field to include "date" so this button knows which to fill.', 'warning');
+      document.getElementById('statusMsg').classList.remove('hidden');
       return;
     }
     state.rows.forEach(function (row) {
       dateFields.forEach(function (f) { row.values[f.name] = today; });
     });
     renderBatchTable();
-    showStatus('Set ' + dateFields.length + ' date field' + (dateFields.length !== 1 ? 's' : '') + ' to ' + today + '.', 'success');
+    updatePreview();
   });
 
   document.getElementById('importCsvBtn').addEventListener('click', function () {
     importCsv(document.getElementById('csvArea').value);
   });
 
+  // Browser print (primary)
+  document.getElementById('printBtn').addEventListener('click', function () {
+    window.print();
+  });
+
+  // DYMO Connect (advanced)
   document.getElementById('printerSelect').addEventListener('change', function () {
     state.selectedPrinter = this.value || null;
     updatePrintButton();
   });
-
   document.getElementById('refreshPrintersBtn').addEventListener('click', loadPrinters);
+  document.getElementById('dymoConnectPrintBtn').addEventListener('click', printViaConnect);
 
-  document.getElementById('printBtn').addEventListener('click', printLabels);
+  // Auto-try DYMO Connect when the details section is opened
+  document.querySelector('details.dymo-advanced').addEventListener('toggle', function (e) {
+    if (e.target.open && state.printers.length === 0) loadPrinters();
+  });
 
 })();
 </script>
