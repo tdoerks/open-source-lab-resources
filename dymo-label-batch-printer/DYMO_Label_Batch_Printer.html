@@ -336,7 +336,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>DYMO Label Batch Printer</h1>
+    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07e</span></h1>
     <p>Load a .label template &mdash; works on any computer with a DYMO printer.</p>
   </div>
 
@@ -390,7 +390,7 @@
       <div class="actions">
         <button class="btn btn-primary" id="printBtn" disabled>Print 0 label(s)</button>
       </div>
-      <p class="print-hint">Opens the browser print dialog. Select your DYMO printer &rarr; set Margins to <strong>None</strong> &rarr; Scale <strong>100%</strong>.</p>
+      <p class="print-hint">Opens the browser print dialog. Select your DYMO printer &rarr; set Paper size to the <strong>DYMO label size</strong> (not Letter) &rarr; Margins to <strong>None</strong> &rarr; Scale <strong>100%</strong> &rarr; turn <strong>Headers and footers</strong> off (More settings). Leaving Paper size on Letter or headers/footers on is what causes an oversized print with a page number in the corner.</p>
 
       <details class="dymo-advanced">
         <summary>Advanced: Print via DYMO Connect (requires DYMO Label Software running)</summary>
@@ -2827,7 +2827,11 @@ var qrcode = function() {
 
       if (textEl) {
         var name      = getText(textEl, 'Name');
-        var isVar     = getText(textEl, 'IsVariable') === 'True';
+        // Treat every named text field as batch-editable, regardless of the
+        // .label file's IsVariable flag — DYMO Label Software users often
+        // forget (or don't know) to check "Variable text" per field, and
+        // this is a batch tool, so any named field should be fillable.
+        var isVar     = !!name;
         var align     = normalizeAlign(getText(textEl, 'HorizontalAlignment'));
         var font      = getStyledFont(textEl);
         var defText   = getStyledString(textEl);
@@ -2846,10 +2850,12 @@ var qrcode = function() {
 
       } else if (barcodeEl) {
         var name       = getText(barcodeEl, 'Name');
-        var isVar      = getText(barcodeEl, 'IsVariable') === 'True';
+        var linkedName = getText(barcodeEl, 'LinkedObjectName');
+        // Only a standalone (unlinked) barcode gets its own editable field —
+        // a linked barcode always mirrors its linked text field's value.
+        var isVar      = !!name && !linkedName;
         var bType      = getText(barcodeEl, 'Type');
         var defText    = getText(barcodeEl, 'Text');
-        var linkedName = getText(barcodeEl, 'LinkedObjectName');
         var rotation   = rotMap[getText(barcodeEl, 'Rotation')] || 0;
 
         objects.push({ type: 'barcode', name: name, isVariable: isVar,
@@ -2880,7 +2886,7 @@ var qrcode = function() {
     }
 
     return { labelWidthIn: labelWidthIn, labelHeightIn: labelHeightIn,
-             fields: fields, objects: objects };
+             isLandscape: isLandscape, fields: fields, objects: objects };
   }
 
   // Helper: get text content of first matching child element
@@ -3326,13 +3332,23 @@ var qrcode = function() {
     state.objects       = parsed.objects;
     state.labelWidthIn  = parsed.labelWidthIn;
     state.labelHeightIn = parsed.labelHeightIn;
+    state.isLandscape   = parsed.isLandscape;
 
     document.getElementById('printPageSize').textContent =
       '@page { size: ' + parsed.labelWidthIn + 'in ' + parsed.labelHeightIn + 'in; margin: 0; }';
 
     var firstRow = { id: uid(), values: {} };
     parsed.fields.forEach(function (f) {
-      firstRow.values[f.name] = f.isDate ? todayFormatted() : '';
+      if (f.isDate) {
+        firstRow.values[f.name] = todayFormatted();
+        return;
+      }
+      // Pre-fill row 1 with whatever text was already saved in the file,
+      // so loading a template doesn't blank out values that were visible
+      // in DYMO Label Software (e.g. a Serial Number typed in but never
+      // marked "Variable text").
+      var srcObj = parsed.objects.filter(function (o) { return o.name === f.name; })[0];
+      firstRow.values[f.name] = (srcObj && srcObj.defaultText) || '';
     });
     state.rows = [firstRow];
 
@@ -3344,8 +3360,8 @@ var qrcode = function() {
       showStatus('No objects found. This may not be a valid DYMO .label file.', 'warning');
     } else if (parsed.fields.length === 0) {
       showStatus(
-        'No variable fields found — showing static label preview. ' +
-        'To make fields variable, right-click them in DYMO Label Software and enable "Variable text".',
+        'No named text fields found — showing static label preview. ' +
+        'Give text objects a name in DYMO Label Software so they can be filled in per label.',
         'info'
       );
     }
@@ -3409,7 +3425,13 @@ var qrcode = function() {
       });
       chip.appendChild(del);
 
-      chip.addEventListener('click', function () { loadLabelFromXml(t.name, t.xml); });
+      chip.addEventListener('click', function () {
+        loadLabelFromXml(t.name, t.xml);
+        showStatus(
+          'Loaded "' + t.name + '" from your browser\'s saved copy. If you\'ve edited the .label file since last uploading it, drag & drop the file again to pick up those changes.',
+          'info'
+        );
+      });
       list.appendChild(chip);
     });
   }
@@ -3423,6 +3445,7 @@ var qrcode = function() {
   });
   document.getElementById('labelFileInput').addEventListener('change', function () {
     if (this.files[0]) loadLabelFile(this.files[0]);
+    this.value = '';
   });
   dropZone.addEventListener('dragover', function (e) {
     e.preventDefault();
@@ -3477,7 +3500,17 @@ var qrcode = function() {
       return;
     }
 
-    var css = '@page { size: ' + state.labelWidthIn + 'in ' + state.labelHeightIn + 'in; margin: 0; }' +
+    // The .label design canvas for a "Landscape" label is authored sideways
+    // (wide x narrow) for easier editing, but the physical DYMO media itself
+    // is the un-rotated die-cut shape (narrow x long — e.g. a 1in x 1.5in
+    // label is a 1in-wide roll). Printing must request the *physical* page
+    // size and rotate the rendered content 90° into it, or the browser page
+    // ends up wider than the actual label stock and the driver auto-rotates
+    // unpredictably (the "too wide" / "upside down" symptom).
+    var physW = state.isLandscape ? state.labelHeightIn : state.labelWidthIn;
+    var physH = state.isLandscape ? state.labelWidthIn  : state.labelHeightIn;
+
+    var css = '@page { size: ' + physW + 'in ' + physH + 'in; margin: 0; }' +
       'html,body { margin:0; padding:0; background:white; }' +
       'img { display:block; }' +
       '.lp { page-break-after:always; margin:0; padding:0; }' +
@@ -3487,11 +3520,27 @@ var qrcode = function() {
     state.rows.forEach(function (row) {
       var values = {};
       state.fields.forEach(function (f) { values[f.name] = row.values[f.name] || ''; });
-      var dataUrl = renderLabelToCanvas(
+      var designCanvas = renderLabelToCanvas(
         state.objects, state.labelWidthIn, state.labelHeightIn, values
-      ).toDataURL('image/png');
+      );
+
+      var dataUrl;
+      if (state.isLandscape) {
+        var SCALE = 4;
+        var finalCanvas = document.createElement('canvas');
+        finalCanvas.width  = Math.round(physW * 96 * SCALE);
+        finalCanvas.height = Math.round(physH * 96 * SCALE);
+        var fctx = finalCanvas.getContext('2d');
+        fctx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
+        fctx.rotate(90 * Math.PI / 180);
+        fctx.drawImage(designCanvas, -designCanvas.width / 2, -designCanvas.height / 2);
+        dataUrl = finalCanvas.toDataURL('image/png');
+      } else {
+        dataUrl = designCanvas.toDataURL('image/png');
+      }
+
       bodyHTML += '<div class="lp"><img src="' + dataUrl +
-        '" style="width:' + state.labelWidthIn + 'in;height:' + state.labelHeightIn + 'in;"></div>';
+        '" style="width:' + physW + 'in;height:' + physH + 'in;"></div>';
     });
 
     printWin.document.write(
@@ -3521,28 +3570,25 @@ var qrcode = function() {
     {
       name: 'PLATE LABEL WITH QR AND DATE .74x2..label',
       xml: '<?xml version="1.0" encoding="utf-8"?>\n<DieCutLabel Version="8.0" Units="twips" MediaType="Durable">\n\t<PaperOrientation>Landscape</PaperOrientation>\n\t<PaperName>30345 3/4 in x 2-1/2 in</PaperName>\n\t<DrawCommands><RoundRectangle X="0" Y="0" Width="1080" Height="3600" Rx="180" Ry="180" /></DrawCommands>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>TEXT</Name>\n\t\t\t<ForeColor Alpha="255" Red="255" Green="255" Blue="255" />\n\t\t\t<BackColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<HorizontalAlignment>Center</HorizontalAlignment>\n\t\t\t<VerticalAlignment>Middle</VerticalAlignment>\n\t\t\t<TextFitMode>AlwaysFit</TextFitMode>\n\t\t\t<StyledText><Element><String xml:space="preserve">PLATE-ID</String><Attributes><Font Family="Arial" Size="12" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="255" Green="255" Blue="255" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="326" Y="168" Width="2595" Height="452" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<BarcodeObject>\n\t\t\t<Name>BARCODE</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName>TEXT</LinkedObjectName>\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>False</IsVariable>\n\t\t\t<Text>PLATE-ID</Text>\n\t\t\t<Type>QRCode</Type>\n\t\t\t<Size>Medium</Size>\n\t\t\t<TextPosition>None</TextPosition>\n\t\t\t<TextFont Family="Arial" Size="8" Bold="False" Italic="False" Underline="False" Strikeout="False" />\n\t\t\t<HorizontalAlignment>Center</HorizontalAlignment>\n\t\t\t<QuietZonesPadding Left="0" Top="0" Right="0" Bottom="0" />\n\t\t</BarcodeObject>\n\t\t<Bounds X="2964" Y="57" Width="549" Height="651" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<DateTimeObject>\n\t\t\t<Name>DATE-TIME</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsVariable>False</IsVariable>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<DateTimeFormat>MonthDayLongYear</DateTimeFormat>\n\t\t\t<Font Family="Arial" Size="12" Bold="False" Italic="False" Underline="False" Strikeout="False" />\n\t\t\t<IncludeTime>True</IncludeTime>\n\t\t\t<Use24HourFormat>False</Use24HourFormat>\n\t\t</DateTimeObject>\n\t\t<Bounds X="776" Y="674" Width="1797" Height="285" />\n\t</ObjectInfo>\n</DieCutLabel>'
-    },
-    {
-      name: 'CI Pipette Label with QR (1).label',
-      xml: '<?xml version="1.0" encoding="utf-8"?>\n<DieCutLabel Version="8.0" Units="twips" MediaType="Default">\n\t<PaperOrientation>Landscape</PaperOrientation>\n\t<PaperName>30347 1 in x 1-1/2 in</PaperName>\n\t<DrawCommands><RoundRectangle X="0" Y="0" Width="1440" Height="2160" Rx="180" Ry="180" /></DrawCommands>\n\t<ObjectInfo>\n\t\t<BarcodeObject>\n\t\t\t<Name>BARCODE</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="255" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName>TEXT</LinkedObjectName>\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>False</IsVariable>\n\t\t\t<Text>SN</Text>\n\t\t\t<Type>QRCode</Type>\n\t\t\t<Size>Small</Size>\n\t\t\t<TextPosition>None</TextPosition>\n\t\t\t<TextFont Family="Helvetica" Size="10" Bold="False" Italic="False" Underline="False" Strikeout="False" />\n\t\t\t<HorizontalAlignment>Right</HorizontalAlignment>\n\t\t\t<QuietZonesPadding Left="0" Top="0" Right="0" Bottom="0" />\n\t\t</BarcodeObject>\n\t\t<Bounds X="1513" Y="798" Width="560" Height="560" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>TEXT</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<TextFitMode>ShrinkToFit</TextFitMode>\n\t\t\t<StyledText><Element><String xml:space="preserve">Serial #</String><Attributes><Font Family="Tahoma" Size="9" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="326" Y="443" Width="1733" Height="233" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>TEXT_1</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<TextFitMode>ShrinkToFit</TextFitMode>\n\t\t\t<StyledText><Element><String xml:space="preserve">Cal date</String><Attributes><Font Family="Helvetica" Size="13" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="384" Y="862" Width="949" Height="203" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>TEXT_1_1</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<TextFitMode>ShrinkToFit</TextFitMode>\n\t\t\t<StyledText><Element><String xml:space="preserve">Exp date</String><Attributes><Font Family="Helvetica" Size="13" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="369" Y="1145" Width="1065" Height="201" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>TEXT_1_1_1</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation90</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<TextFitMode>ShrinkToFit</TextFitMode>\n\t\t\t<StyledText><Element><String xml:space="preserve">TSD</String><Attributes><Font Family="Helvetica" Size="24" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="1458" Y="920" Width="237" Height="320" />\n\t</ObjectInfo>\n</DieCutLabel>'
     }
   ];
 
+  // Templates to actively strip out of localStorage on load, even if a user
+  // already has them saved — used to retire a bundled demo template.
+  var RETIRED_TEMPLATE_NAMES = ['CI Pipette Label with QR (1).label'];
+
   (function seedBundled() {
-    var existing = getSavedTemplates();
+    // Only add bundled templates the user doesn't already have saved —
+    // never overwrite a name that's already in localStorage, since that
+    // could be the user's own edited/re-uploaded version.
+    var existing = getSavedTemplates().filter(function (t) {
+      return RETIRED_TEMPLATE_NAMES.indexOf(t.name) === -1;
+    });
     var existingNames = {};
     existing.forEach(function (t) { existingNames[t.name] = true; });
-    var added = false;
-    // Add bundled templates at the END (so user templates stay on top)
-    BUNDLED.forEach(function (b) {
-      if (!existingNames[b.name]) {
-        existing.push({ name: b.name, xml: b.xml });
-        added = true;
-      }
-    });
-    if (added) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(existing)); } catch (e) {}
-    }
+    var missing = BUNDLED.filter(function (b) { return !existingNames[b.name]; });
+    var merged = existing.concat(missing.map(function (b) { return { name: b.name, xml: b.xml }; }));
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)); } catch (e) {}
   })();
 
   // Populate saved templates on load

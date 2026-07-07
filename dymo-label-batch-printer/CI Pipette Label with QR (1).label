@@ -12,7 +12,7 @@
 			<Name>BARCODE</Name>
 			<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
 			<BackColor Alpha="255" Red="255" Green="255" Blue="255" />
-			<LinkedObjectName>TEXT</LinkedObjectName>
+			<LinkedObjectName>Serial Number</LinkedObjectName>
 			<Rotation>Rotation0</Rotation>
 			<IsMirrored>False</IsMirrored>
 			<IsVariable>False</IsVariable>
@@ -33,7 +33,7 @@
 	</ObjectInfo>
 	<ObjectInfo>
 		<TextObject>
-			<Name>TEXT</Name>
+			<Name>Serial Number</Name>
 			<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
 			<BackColor Alpha="0" Red="255" Green="255" Blue="255" />
 			<LinkedObjectName />
@@ -61,7 +61,7 @@
 	</ObjectInfo>
 	<ObjectInfo>
 		<TextObject>
-			<Name>TEXT_1</Name>
+			<Name>Cal date</Name>
 			<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
 			<BackColor Alpha="0" Red="255" Green="255" Blue="255" />
 			<LinkedObjectName />
@@ -79,7 +79,7 @@
 				<Element>
 					<String xml:space="preserve">Aug 2024</String>
 					<Attributes>
-						<Font Family="Helvetica" Size="13" Bold="True" Italic="False" Underline="False" Strikeout="False" />
+						<Font Family="Tahoma" Size="9" Bold="True" Italic="False" Underline="False" Strikeout="False" />
 						<ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" />
 					</Attributes>
 				</Element>
@@ -89,7 +89,7 @@
 	</ObjectInfo>
 	<ObjectInfo>
 		<TextObject>
-			<Name>TEXT_1_1</Name>
+			<Name>Due date</Name>
 			<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
 			<BackColor Alpha="0" Red="255" Green="255" Blue="255" />
 			<LinkedObjectName />
@@ -107,7 +107,7 @@
 				<Element>
 					<String xml:space="preserve">Aug 2025</String>
 					<Attributes>
-						<Font Family="Helvetica" Size="13" Bold="True" Italic="False" Underline="False" Strikeout="False" />
+						<Font Family="Tahoma" Size="9" Bold="True" Italic="False" Underline="False" Strikeout="False" />
 						<ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" />
 					</Attributes>
 				</Element>
@@ -117,7 +117,7 @@
 	</ObjectInfo>
 	<ObjectInfo>
 		<TextObject>
-			<Name>TEXT_1_1_1</Name>
+			<Name>Tech</Name>
 			<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
 			<BackColor Alpha="0" Red="255" Green="255" Blue="255" />
 			<LinkedObjectName />
@@ -135,7 +135,7 @@
 				<Element>
 					<String xml:space="preserve">TSD</String>
 					<Attributes>
-						<Font Family="Helvetica" Size="24" Bold="True" Italic="False" Underline="False" Strikeout="False" />
+						<Font Family="Tahoma" Size="9" Bold="True" Italic="False" Underline="False" Strikeout="False" />
 						<ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" />
 					</Attributes>
 				</Element>
