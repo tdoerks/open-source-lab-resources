@@ -339,7 +339,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07h</span></h1>
+    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07i</span></h1>
     <p>Load a .label template &mdash; works on any computer with a DYMO printer.</p>
   </div>
 
@@ -2875,6 +2875,7 @@ var qrcode = function() {
         // this is a batch tool, so any named field should be fillable.
         var isVar     = !!name;
         var align     = normalizeAlign(getText(textEl, 'HorizontalAlignment'));
+        var valign    = normalizeVAlign(getText(textEl, 'VerticalAlignment'));
         var font      = getStyledFont(textEl);
         var defText   = getStyledString(textEl);
         var foreColor = parseColorEl(textEl.getElementsByTagName('ForeColor')[0]);
@@ -2883,7 +2884,8 @@ var qrcode = function() {
 
         objects.push({ type: 'text', name: name, isVariable: isVar,
                        defaultText: defText, bounds: bounds, font: font, align: align,
-                       foreColor: foreColor, backColor: backColor, rotation: rotation });
+                       valign: valign, foreColor: foreColor, backColor: backColor,
+                       rotation: rotation });
 
         if (isVar && name && !seen[name]) {
           seen[name] = true;
@@ -2899,12 +2901,16 @@ var qrcode = function() {
         var bType      = getText(barcodeEl, 'Type');
         var defText    = getText(barcodeEl, 'Text');
         var rotation   = rotMap[getText(barcodeEl, 'Rotation')] || 0;
+        // Honor the QR's own alignment from the .label (DYMO right-aligns the
+        // CI Pipette QR); default to center only when unspecified.
+        var bAlign     = normalizeAlign(getText(barcodeEl, 'HorizontalAlignment') || 'Center');
+        var bVAlign    = normalizeVAlign(getText(barcodeEl, 'VerticalAlignment') || 'Middle');
 
         objects.push({ type: 'barcode', name: name, isVariable: isVar,
                        defaultText: defText, bounds: bounds, barcodeType: bType,
                        linkedObjectName: linkedName, rotation: rotation,
                        font: { family: 'Arial', sizePt: 8, bold: false, italic: false },
-                       align: 'center' });
+                       align: bAlign, valign: bVAlign });
 
         if (isVar && name && !seen[name]) {
           seen[name] = true;
@@ -2981,6 +2987,13 @@ var qrcode = function() {
     return 'left';
   }
 
+  function normalizeVAlign(val) {
+    val = (val || '').toLowerCase();
+    if (val === 'top') return 'top';
+    if (val === 'bottom') return 'bottom';
+    return 'middle';
+  }
+
   // Helper: parse a ForeColor/BackColor element to CSS rgb() string, or null
   function parseColorEl(el) {
     if (!el) return null;
@@ -3024,12 +3037,15 @@ var qrcode = function() {
 
       if (obj.type === 'text' || obj.type === 'datetime') {
         var el = document.createElement('div');
+        var vJustify = obj.valign === 'top' ? 'flex-start'
+                     : (obj.valign === 'bottom' ? 'flex-end' : 'center');
         el.style.cssText = posCSS +
           'font-family:"' + obj.font.family + '",Arial,sans-serif;' +
           'font-size:' + obj.font.sizePt + 'pt;' +
           'font-weight:' + (obj.font.bold   ? 'bold'   : 'normal') + ';' +
           'font-style:'  + (obj.font.italic ? 'italic' : 'normal') + ';' +
           'text-align:'  + obj.align + ';' +
+          'display:flex;flex-direction:column;justify-content:' + vJustify + ';' +
           'line-height:1.2;white-space:pre-wrap;';
 
         if (obj.foreColor) el.style.color = obj.foreColor;
@@ -3061,8 +3077,21 @@ var qrcode = function() {
             var canvas = document.createElement('canvas');
             canvas.width  = mCount * cell;
             canvas.height = mCount * cell;
-            canvas.style.cssText = posCSS + 'width:' + obj.bounds.w + 'in;height:' + obj.bounds.h + 'in;';
             qr.renderTo2dContext(canvas.getContext('2d'), cell);
+            if (obj.rotation) {
+              // Rotated QR (rare): keep the fill-bounds behavior.
+              canvas.style.cssText = posCSS + 'width:' + obj.bounds.w + 'in;height:' + obj.bounds.h + 'in;';
+            } else {
+              // Match the print: a square QR aligned within its bounds per
+              // the label's Horizontal/Vertical alignment.
+              var qrIn = Math.min(obj.bounds.w, obj.bounds.h);
+              var qa = obj.align || 'center', qva = obj.valign || 'middle';
+              var hOff = qa === 'left'  ? 0 : (qa === 'right'  ? (obj.bounds.w - qrIn) : (obj.bounds.w - qrIn) / 2);
+              var vOff = qva === 'top'  ? 0 : (qva === 'bottom' ? (obj.bounds.h - qrIn) : (obj.bounds.h - qrIn) / 2);
+              canvas.style.cssText = 'position:absolute;' +
+                'left:' + (obj.bounds.x + hOff) + 'in;top:' + (obj.bounds.y + vOff) + 'in;' +
+                'width:' + qrIn + 'in;height:' + qrIn + 'in;';
+            }
             wrap.appendChild(canvas);
           } catch (e) { /* empty value or too-long string — skip */ }
         }
@@ -3133,11 +3162,14 @@ var qrcode = function() {
           ctx.rotate(rad);
           ctx.beginPath(); ctx.rect(-availW / 2, -availH / 2, availW, availH); ctx.clip();
           ctx.fillStyle = obj.foreColor || '#000000';
-          ctx.textBaseline = 'middle';
           var txAlign = obj.align === 'center' ? 'center' : (obj.align === 'right' ? 'right' : 'left');
           ctx.textAlign = txAlign;
           var tx = txAlign === 'center' ? 0 : (txAlign === 'right' ? availW / 2 : -availW / 2);
-          ctx.fillText(val, tx, 0);
+          // Honor vertical alignment (DYMO stores Top/Middle/Bottom per field).
+          var vAlign = obj.valign || 'middle';
+          ctx.textBaseline = vAlign === 'top' ? 'top' : (vAlign === 'bottom' ? 'bottom' : 'middle');
+          var ty = vAlign === 'top' ? -availH / 2 : (vAlign === 'bottom' ? availH / 2 : 0);
+          ctx.fillText(val, tx, ty);
           ctx.restore();
         }
 
@@ -3156,8 +3188,13 @@ var qrcode = function() {
             qrCanvas.width  = qrSize;
             qrCanvas.height = qrSize;
             qr.renderTo2dContext(qrCanvas.getContext('2d'), cell);
-            // center QR within its bounds
-            ctx.drawImage(qrCanvas, x + Math.floor((w - qrSize) / 2), y + Math.floor((h - qrSize) / 2), qrSize, qrSize);
+            // Position the QR within its bounds per the label's alignment
+            // (DYMO right-aligns the CI Pipette QR), instead of always centering.
+            var qa = obj.align || 'center';
+            var qx = qa === 'left'  ? x : (qa === 'right'  ? x + (w - qrSize) : x + Math.floor((w - qrSize) / 2));
+            var qva = obj.valign || 'middle';
+            var qy = qva === 'top' ? y : (qva === 'bottom' ? y + (h - qrSize) : y + Math.floor((h - qrSize) / 2));
+            ctx.drawImage(qrCanvas, qx, qy, qrSize, qrSize);
           } catch (e) { /* skip un-encodable value */ }
         }
       }
