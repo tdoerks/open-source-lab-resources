@@ -102,6 +102,40 @@
   }
   .field-tag.date-field { background: #d1ecf1; color: #0c5460; }
 
+  .saved-templates-section { margin-bottom: 14px; }
+  .saved-templates-label { font-size: 0.82em; font-weight: 600; color: #868e96; margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .saved-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #e9ecef;
+    border-radius: 20px;
+    padding: 4px 10px 4px 12px;
+    font-size: 0.82em;
+    font-weight: 600;
+    color: #495057;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: none;
+    font-family: inherit;
+  }
+  .saved-chip:hover { background: #dee2e6; color: #2c3e50; }
+  .saved-chip .chip-del {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #adb5bd;
+    color: white;
+    font-size: 0.75em;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .saved-chip .chip-del:hover { background: #dc3545; }
+
   .table-scroll { overflow-x: auto; margin-bottom: 12px; }
 
   table.batch-table {
@@ -311,6 +345,10 @@
     <!-- Step 1: Load .label template -->
     <div class="card" id="stepLoad">
       <h2><span class="step-badge">1</span> Load label template</h2>
+      <div id="savedTemplatesSection" class="saved-templates-section hidden">
+        <div class="saved-templates-label">Saved templates</div>
+        <div id="savedTemplatesList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
       <div class="upload-area" id="dropZone">
         <p>Drag &amp; drop a <strong>.label</strong> file here, or click to browse</p>
         <small>Created with DYMO Label Software &mdash; any .label file works</small>
@@ -2727,6 +2765,27 @@ var qrcode = function() {
               .replace(/"/g,'&quot;').replace(/'/g,'&apos;');
   }
 
+  // ── Saved templates (localStorage) ────────────────────────────────────────
+
+  var STORAGE_KEY = 'dymo_label_templates';
+  var MAX_SAVED = 10;
+
+  function getSavedTemplates() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; }
+  }
+
+  function saveTemplate(name, xml) {
+    var list = getSavedTemplates().filter(function (t) { return t.name !== name; });
+    list.unshift({ name: name, xml: xml });
+    if (list.length > MAX_SAVED) list = list.slice(0, MAX_SAVED);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  function deleteTemplate(name) {
+    var list = getSavedTemplates().filter(function (t) { return t.name !== name; });
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
   // ── .label XML parser ──────────────────────────────────────────────────────
 
   function parseLabelXml(xmlStr) {
@@ -3238,52 +3297,50 @@ var qrcode = function() {
 
   // ── File loading ───────────────────────────────────────────────────────────
 
+  function loadLabelFromXml(name, xml) {
+    var parsed = parseLabelXml(xml);
+
+    state.labelXml      = xml;
+    state.labelFilename = name;
+    state.fields        = parsed.fields;
+    state.objects       = parsed.objects;
+    state.labelWidthIn  = parsed.labelWidthIn;
+    state.labelHeightIn = parsed.labelHeightIn;
+
+    document.getElementById('printPageSize').textContent =
+      '@page { size: ' + parsed.labelWidthIn + 'in ' + parsed.labelHeightIn + 'in; margin: 0; }';
+
+    var firstRow = { id: uid(), values: {} };
+    parsed.fields.forEach(function (f) {
+      firstRow.values[f.name] = f.isDate ? todayFormatted() : '';
+    });
+    state.rows = [firstRow];
+
+    document.getElementById('loadedFilename').textContent = name;
+    renderFieldTags();
+    document.getElementById('loadedInfo').classList.remove('hidden');
+
+    if (parsed.fields.length === 0 && parsed.objects.length === 0) {
+      showStatus('No objects found. This may not be a valid DYMO .label file.', 'warning');
+    } else if (parsed.fields.length === 0) {
+      showStatus(
+        'No variable fields found — showing static label preview. ' +
+        'To make fields variable, right-click them in DYMO Label Software and enable "Variable text".',
+        'info'
+      );
+    }
+
+    saveTemplate(name, xml);
+    renderSavedTemplates();
+    renderBatchTable();
+    updatePrintButton();
+    showSteps();
+  }
+
   function loadLabelFile(file) {
     if (!file) return;
     var reader = new FileReader();
-    reader.onload = function (e) {
-      var xml = e.target.result;
-      var parsed = parseLabelXml(xml);
-
-      state.labelXml      = xml;
-      state.labelFilename = file.name;
-      state.fields        = parsed.fields;
-      state.objects       = parsed.objects;
-      state.labelWidthIn  = parsed.labelWidthIn;
-      state.labelHeightIn = parsed.labelHeightIn;
-
-      // Set @page size for browser print
-      document.getElementById('printPageSize').textContent =
-        '@page { size: ' + parsed.labelWidthIn + 'in ' + parsed.labelHeightIn + 'in; margin: 0; }';
-
-      // Seed first row with today's date in any date fields
-      var firstRow = { id: uid(), values: {} };
-      parsed.fields.forEach(function (f) {
-        firstRow.values[f.name] = f.isDate ? todayFormatted() : '';
-      });
-      state.rows = [firstRow];
-
-      document.getElementById('loadedFilename').textContent = file.name;
-      renderFieldTags();
-      document.getElementById('loadedInfo').classList.remove('hidden');
-
-      if (parsed.fields.length === 0 && parsed.objects.length === 0) {
-        showStatus(
-          'No objects found. This may not be a valid DYMO .label file.',
-          'warning'
-        );
-      } else if (parsed.fields.length === 0) {
-        showStatus(
-          'No variable fields found — showing static label preview. ' +
-          'To make fields variable, right-click them in DYMO Label Software and enable "Variable text".',
-          'info'
-        );
-      }
-
-      renderBatchTable();
-      updatePrintButton();
-      showSteps();
-    };
+    reader.onload = function (e) { loadLabelFromXml(file.name, e.target.result); };
     reader.readAsText(file);
   }
 
@@ -3302,6 +3359,38 @@ var qrcode = function() {
       span.className = 'field-tag' + (f.isDate ? ' date-field' : '');
       span.textContent = f.name + (f.isDate ? ' (date)' : '');
       container.appendChild(span);
+    });
+  }
+
+  function renderSavedTemplates() {
+    var templates = getSavedTemplates();
+    var section = document.getElementById('savedTemplatesSection');
+    var list    = document.getElementById('savedTemplatesList');
+    list.innerHTML = '';
+    if (templates.length === 0) { section.classList.add('hidden'); return; }
+    section.classList.remove('hidden');
+    templates.forEach(function (t) {
+      var chip = document.createElement('button');
+      chip.className = 'saved-chip';
+      chip.title = t.name;
+
+      var nameSpan = document.createElement('span');
+      nameSpan.textContent = t.name.replace(/\.label$/i, '');
+      chip.appendChild(nameSpan);
+
+      var del = document.createElement('span');
+      del.className = 'chip-del';
+      del.title = 'Remove saved template';
+      del.textContent = '×';
+      del.addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteTemplate(t.name);
+        renderSavedTemplates();
+      });
+      chip.appendChild(del);
+
+      chip.addEventListener('click', function () { loadLabelFromXml(t.name, t.xml); });
+      list.appendChild(chip);
     });
   }
 
@@ -3406,6 +3495,9 @@ var qrcode = function() {
   document.querySelector('details.dymo-advanced').addEventListener('toggle', function (e) {
     if (e.target.open && state.printers.length === 0) loadPrinters();
   });
+
+  // Populate saved templates on load
+  renderSavedTemplates();
 
 })();
 </script>
