@@ -3377,7 +3377,7 @@ var qrcode = function() {
     var bodyHTML = '';
     state.rows.forEach(function (row) {
       var values = {};
-      state.fields.forEach(function (f, i) { values[f.name] = row[i] || ''; });
+      state.fields.forEach(function (f) { values[f.name] = row.values[f.name] || ''; });
       var dataUrl = renderLabelToCanvas(
         state.objects, state.labelWidthIn, state.labelHeightIn, values
       ).toDataURL('image/png');
