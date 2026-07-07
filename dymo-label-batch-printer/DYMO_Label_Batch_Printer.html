@@ -339,7 +339,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07g</span></h1>
+    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07h</span></h1>
     <p>Load a .label template &mdash; works on any computer with a DYMO printer.</p>
   </div>
 
@@ -402,7 +402,8 @@
       <div class="actions">
         <button class="btn btn-primary" id="printBtn" disabled>Print 0 label(s)</button>
       </div>
-      <p class="print-hint">Opens the browser print dialog. Select your DYMO printer &rarr; set Paper size to the <strong>DYMO label size</strong> (not Letter) &rarr; Margins to <strong>None</strong> &rarr; Scale <strong>100%</strong> &rarr; turn <strong>Headers and footers</strong> off (More settings). Leaving Paper size on Letter or headers/footers on is what causes an oversized print with a page number in the corner.</p>
+      <p id="paperSizeNote" class="print-hint hidden" style="background:#fff3cd;border:1px solid #ffe08a;border-radius:6px;padding:8px 10px;"></p>
+      <p class="print-hint">Opens the browser print dialog. Select your DYMO printer &rarr; set <strong>Paper size</strong> to the exact label type shown above (not Letter) &rarr; Margins <strong>None</strong> &rarr; Scale <strong>100%</strong> &rarr; turn <strong>Headers and footers</strong> off (More settings). The roll width is fixed, so width always looks right &mdash; but if Paper size is on Letter or the wrong label type, the printer feeds a <strong>full page length</strong> instead of one label. If it&rsquo;s still wrong there, set the label size in Windows &rarr; Printers &amp; scanners &rarr; your DYMO &rarr; Printing preferences.</p>
 
       <details class="dymo-advanced">
         <summary>Advanced: Print via DYMO Connect (requires DYMO Label Software running)</summary>
@@ -2839,6 +2840,8 @@ var qrcode = function() {
     var isLandscape = orientEl && orientEl.textContent.trim() === 'Landscape';
     var labelWidthIn  = isLandscape ? rectH : rectW;
     var labelHeightIn = isLandscape ? rectW : rectH;
+    var paperEl = doc.getElementsByTagName('PaperName')[0];
+    var paperName = paperEl ? paperEl.textContent.trim() : '';
 
     var fields = [];
     var objects = [];
@@ -2925,7 +2928,8 @@ var qrcode = function() {
     }
 
     return { labelWidthIn: labelWidthIn, labelHeightIn: labelHeightIn,
-             isLandscape: isLandscape, fields: fields, objects: objects };
+             isLandscape: isLandscape, paperName: paperName,
+             fields: fields, objects: objects };
   }
 
   // Helper: get text content of first matching child element
@@ -3375,6 +3379,22 @@ var qrcode = function() {
     state.labelWidthIn  = parsed.labelWidthIn;
     state.labelHeightIn = parsed.labelHeightIn;
     state.isLandscape   = parsed.isLandscape;
+    state.paperName     = parsed.paperName;
+
+    // Surface the label's declared DYMO paper size — the print dialog's
+    // "Paper size" must be set to this, or the printer feeds a full page
+    // length (the roll width is fixed, so width always looks right, but the
+    // feed length comes from the selected label type, not the CSS page size).
+    var paperNote = document.getElementById('paperSizeNote');
+    if (paperNote) {
+      if (parsed.paperName) {
+        paperNote.innerHTML = 'In the print dialog set <strong>Paper size</strong> to: ' +
+          '<strong>' + escHtml(parsed.paperName) + '</strong>';
+        paperNote.classList.remove('hidden');
+      } else {
+        paperNote.classList.add('hidden');
+      }
+    }
 
     document.getElementById('printPageSize').textContent =
       '@page { size: ' + parsed.labelWidthIn + 'in ' + parsed.labelHeightIn + 'in; margin: 0; }';
