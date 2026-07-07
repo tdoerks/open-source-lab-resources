@@ -2823,6 +2823,8 @@ var qrcode = function() {
       var barcodeEl = objInfo.getElementsByTagName('BarcodeObject')[0];
       var dtEl      = objInfo.getElementsByTagName('DateTimeObject')[0];
 
+      var rotMap = { Rotation90: 90, Rotation180: 180, Rotation270: 270 };
+
       if (textEl) {
         var name      = getText(textEl, 'Name');
         var isVar     = getText(textEl, 'IsVariable') === 'True';
@@ -2831,10 +2833,11 @@ var qrcode = function() {
         var defText   = getStyledString(textEl);
         var foreColor = parseColorEl(textEl.getElementsByTagName('ForeColor')[0]);
         var backColor = parseColorEl(textEl.getElementsByTagName('BackColor')[0]);
+        var rotation  = rotMap[getText(textEl, 'Rotation')] || 0;
 
         objects.push({ type: 'text', name: name, isVariable: isVar,
                        defaultText: defText, bounds: bounds, font: font, align: align,
-                       foreColor: foreColor, backColor: backColor });
+                       foreColor: foreColor, backColor: backColor, rotation: rotation });
 
         if (isVar && name && !seen[name]) {
           seen[name] = true;
@@ -2847,10 +2850,11 @@ var qrcode = function() {
         var bType      = getText(barcodeEl, 'Type');
         var defText    = getText(barcodeEl, 'Text');
         var linkedName = getText(barcodeEl, 'LinkedObjectName');
+        var rotation   = rotMap[getText(barcodeEl, 'Rotation')] || 0;
 
         objects.push({ type: 'barcode', name: name, isVariable: isVar,
                        defaultText: defText, bounds: bounds, barcodeType: bType,
-                       linkedObjectName: linkedName,
+                       linkedObjectName: linkedName, rotation: rotation,
                        font: { family: 'Arial', sizePt: 8, bold: false, italic: false },
                        align: 'center' });
 
@@ -2866,10 +2870,12 @@ var qrcode = function() {
         var align     = normalizeAlign(getText(dtEl, 'HorizontalAlignment'));
         var incTime   = getText(dtEl, 'IncludeTime') === 'True';
         var use24H    = getText(dtEl, 'Use24HourFormat') === 'True';
+        var rotation  = rotMap[getText(dtEl, 'Rotation')] || 0;
 
         objects.push({ type: 'datetime', name: name, isVariable: false,
                        defaultText: '', bounds: bounds, font: font, align: align,
-                       dateFormat: dtFormat, includeTime: incTime, use24Hour: use24H });
+                       dateFormat: dtFormat, includeTime: incTime, use24Hour: use24H,
+                       rotation: rotation });
       }
     }
 
@@ -2956,11 +2962,15 @@ var qrcode = function() {
                          'in;background:white;overflow:hidden;box-sizing:border-box;';
 
     objects.forEach(function (obj) {
+      // For 90°/270° rotations, W and H in the XML are the rotated bounding box — swap to get natural dims
+      var rot90 = obj.rotation === 90 || obj.rotation === 270;
+      var cx = obj.bounds.x + obj.bounds.w / 2, cy = obj.bounds.y + obj.bounds.h / 2;
+      var elW = rot90 ? obj.bounds.h : obj.bounds.w;
+      var elH = rot90 ? obj.bounds.w : obj.bounds.h;
       var posCSS = 'position:absolute;' +
-        'left:'   + obj.bounds.x + 'in;' +
-        'top:'    + obj.bounds.y + 'in;' +
-        'width:'  + obj.bounds.w + 'in;' +
-        'height:' + obj.bounds.h + 'in;' +
+        'left:' + (cx - elW/2) + 'in;top:' + (cy - elH/2) + 'in;' +
+        'width:' + elW + 'in;height:' + elH + 'in;' +
+        (obj.rotation ? 'transform:rotate(' + obj.rotation + 'deg);transform-origin:50% 50%;' : '') +
         'overflow:hidden;box-sizing:border-box;';
 
       if (obj.type === 'text' || obj.type === 'datetime') {
@@ -3040,35 +3050,45 @@ var qrcode = function() {
           val = obj.isVariable ? (values[obj.name] || '') : obj.defaultText;
         }
 
+        // For 90°/270° the bounds W/H are the rotated bounding box — swap to get available text area
+        var rot90 = obj.rotation === 90 || obj.rotation === 270;
+        var cx = x + w / 2, cy = y + h / 2;
+        var availW = rot90 ? h : w;
+        var availH = rot90 ? w : h;
+        var rad = (obj.rotation || 0) * Math.PI / 180;
+
         // Background fill
         if (obj.backColor) {
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(rad);
           ctx.fillStyle = obj.backColor;
-          ctx.fillRect(x, y, w, h);
+          ctx.fillRect(-availW / 2, -availH / 2, availW, availH);
+          ctx.restore();
         }
 
         if (val) {
-          // Base font size, then auto-shrink to fit width
           var basePx = obj.font.sizePt * (96 / 72) * SCALE;
           var prefix = (obj.font.italic ? 'italic ' : '') + (obj.font.bold ? 'bold ' : '');
           var family = '"' + obj.font.family + '",Arial,sans-serif';
 
           var fitPx = basePx;
           ctx.font = prefix + fitPx + 'px ' + family;
-          if (ctx.measureText(val).width > w && w > 0) {
-            fitPx = Math.floor(basePx * w / ctx.measureText(val).width);
+          if (ctx.measureText(val).width > availW && availW > 0) {
+            fitPx = Math.floor(basePx * availW / ctx.measureText(val).width);
             ctx.font = prefix + fitPx + 'px ' + family;
           }
 
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(rad);
+          ctx.beginPath(); ctx.rect(-availW / 2, -availH / 2, availW, availH); ctx.clip();
           ctx.fillStyle = obj.foreColor || '#000000';
           ctx.textBaseline = 'middle';
-          var tx;
-          if (obj.align === 'center') { ctx.textAlign = 'center'; tx = x + w / 2; }
-          else if (obj.align === 'right')  { ctx.textAlign = 'right';  tx = x + w; }
-          else                             { ctx.textAlign = 'left';   tx = x; }
-
-          ctx.save();
-          ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-          ctx.fillText(val, tx, y + h / 2);
+          var txAlign = obj.align === 'center' ? 'center' : (obj.align === 'right' ? 'right' : 'left');
+          ctx.textAlign = txAlign;
+          var tx = txAlign === 'center' ? 0 : (txAlign === 'right' ? availW / 2 : -availW / 2);
+          ctx.fillText(val, tx, 0);
           ctx.restore();
         }
 

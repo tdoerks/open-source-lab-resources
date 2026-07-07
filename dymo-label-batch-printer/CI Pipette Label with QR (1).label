@@ -12,7 +12,7 @@
 			<Name>BARCODE</Name>
 			<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />
 			<BackColor Alpha="255" Red="255" Green="255" Blue="255" />
-			<LinkedObjectName />
+			<LinkedObjectName>TEXT</LinkedObjectName>
 			<Rotation>Rotation0</Rotation>
 			<IsMirrored>False</IsMirrored>
 			<IsVariable>False</IsVariable>
@@ -39,7 +39,7 @@
 			<LinkedObjectName />
 			<Rotation>Rotation0</Rotation>
 			<IsMirrored>False</IsMirrored>
-			<IsVariable>False</IsVariable>
+			<IsVariable>True</IsVariable>
 			<GroupID>-1</GroupID>
 			<IsOutlined>False</IsOutlined>
 			<HorizontalAlignment>Left</HorizontalAlignment>
@@ -67,7 +67,7 @@
 			<LinkedObjectName />
 			<Rotation>Rotation0</Rotation>
 			<IsMirrored>False</IsMirrored>
-			<IsVariable>False</IsVariable>
+			<IsVariable>True</IsVariable>
 			<GroupID>-1</GroupID>
 			<IsOutlined>False</IsOutlined>
 			<HorizontalAlignment>Left</HorizontalAlignment>
@@ -95,7 +95,7 @@
 			<LinkedObjectName />
 			<Rotation>Rotation0</Rotation>
 			<IsMirrored>False</IsMirrored>
-			<IsVariable>False</IsVariable>
+			<IsVariable>True</IsVariable>
 			<GroupID>-1</GroupID>
 			<IsOutlined>False</IsOutlined>
 			<HorizontalAlignment>Left</HorizontalAlignment>
@@ -123,7 +123,7 @@
 			<LinkedObjectName />
 			<Rotation>Rotation90</Rotation>
 			<IsMirrored>False</IsMirrored>
-			<IsVariable>False</IsVariable>
+			<IsVariable>True</IsVariable>
 			<GroupID>-1</GroupID>
 			<IsOutlined>False</IsOutlined>
 			<HorizontalAlignment>Left</HorizontalAlignment>
