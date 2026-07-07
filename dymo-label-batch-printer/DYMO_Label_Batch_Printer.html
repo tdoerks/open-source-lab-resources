@@ -210,6 +210,9 @@
   .btn-secondary { background: #e9ecef; color: #2c3e50; }
   .btn-secondary:hover { background: #dee2e6; }
   .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-sm { padding: 5px 12px; min-height: 32px; font-size: 13px; background: #e9ecef; color: #2c3e50; }
+  .btn-sm:hover { background: #dee2e6; }
+  .rotate-opt.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
   .btn-date { background: #d1ecf1; color: #0c5460; }
   .btn-date:hover { background: #bee5eb; }
 
@@ -336,7 +339,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07e</span></h1>
+    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07g</span></h1>
     <p>Load a .label template &mdash; works on any computer with a DYMO printer.</p>
   </div>
 
@@ -387,6 +390,15 @@
     <div class="card hidden" id="stepPrint">
       <h2><span class="step-badge">3</span> Preview &amp; Print</h2>
       <div id="labelPreview" class="label-preview-wrap"></div>
+      <div class="rotate-row" style="display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap;">
+        <span style="font-size:0.9em;color:#495057;">If the print comes out sideways, upside-down, or spanning several labels, change the print rotation:</span>
+        <div id="rotateBtns" style="display:inline-flex;gap:4px;">
+          <button type="button" class="btn btn-sm rotate-opt" data-rot="0">0&deg;</button>
+          <button type="button" class="btn btn-sm rotate-opt" data-rot="90">90&deg;</button>
+          <button type="button" class="btn btn-sm rotate-opt" data-rot="180">180&deg;</button>
+          <button type="button" class="btn btn-sm rotate-opt" data-rot="270">270&deg;</button>
+        </div>
+      </div>
       <div class="actions">
         <button class="btn btn-primary" id="printBtn" disabled>Print 0 label(s)</button>
       </div>
@@ -2767,6 +2779,33 @@ var qrcode = function() {
 
   // ── Saved templates (localStorage) ────────────────────────────────────────
 
+  // DYMO auto-names text objects TEXT, TEXT_1, TEXT_1_1 … when you don't
+  // rename them. The CI Pipette calibration label uses that exact 4-field
+  // layout, so show friendly column labels for it (without touching the real
+  // field names, which the .label XML and QR linking still depend on).
+  var CI_FIELD_LABELS = {
+    'TEXT': 'Serial Number',
+    'TEXT_1': 'Cal date',
+    'TEXT_1_1': 'Due date',
+    'TEXT_1_1_1': 'Tech'
+  };
+
+  // Attach a display label + date-flag to each parsed field. The CI layout is
+  // identified by its unique 4th auto-name so this never mislabels other
+  // templates (e.g. the plate label's single "TEXT" field).
+  function applyFriendlyLabels(fields) {
+    var isCi = fields.some(function (f) { return f.name === 'TEXT_1_1_1'; });
+    fields.forEach(function (f) {
+      if (isCi && CI_FIELD_LABELS[f.name]) {
+        f.label  = CI_FIELD_LABELS[f.name];
+        f.isDate = /date/i.test(f.label);
+      } else {
+        f.label = f.name;
+      }
+    });
+    return fields;
+  }
+
   var STORAGE_KEY = 'dymo_label_templates';
   var MAX_SAVED = 10;
 
@@ -3142,7 +3181,7 @@ var qrcode = function() {
     var body = document.getElementById('batchBody');
 
     var hHtml = '';
-    state.fields.forEach(function (f) { hHtml += '<th>' + escHtml(f.name) + '</th>'; });
+    state.fields.forEach(function (f) { hHtml += '<th>' + escHtml(f.label || f.name) + '</th>'; });
     hHtml += '<th style="width:40px;"></th>';
     head.innerHTML = hHtml;
 
@@ -3305,7 +3344,10 @@ var qrcode = function() {
       var cells = line.split(',').map(function (c) { return c.trim().replace(/^"|"$/g, ''); });
       var row = { id: uid(), values: {} };
       state.fields.forEach(function (f) {
+        // Accept either the real field name or the friendly display label
+        // as the CSV column header.
         var idx = headers.indexOf(f.name);
+        if (idx < 0 && f.label) idx = headers.indexOf(f.label);
         row.values[f.name] = idx >= 0 ? (cells[idx] || '') : '';
       });
       state.rows.push(row);
@@ -3328,7 +3370,7 @@ var qrcode = function() {
 
     state.labelXml      = xml;
     state.labelFilename = name;
-    state.fields        = parsed.fields;
+    state.fields        = applyFriendlyLabels(parsed.fields);
     state.objects       = parsed.objects;
     state.labelWidthIn  = parsed.labelWidthIn;
     state.labelHeightIn = parsed.labelHeightIn;
@@ -3393,7 +3435,7 @@ var qrcode = function() {
     state.fields.forEach(function (f) {
       var span = document.createElement('span');
       span.className = 'field-tag' + (f.isDate ? ' date-field' : '');
-      span.textContent = f.name + (f.isDate ? ' (date)' : '');
+      span.textContent = (f.label || f.name) + (f.isDate ? ' (date)' : '');
       container.appendChild(span);
     });
   }
@@ -3500,15 +3542,17 @@ var qrcode = function() {
       return;
     }
 
-    // The .label design canvas for a "Landscape" label is authored sideways
-    // (wide x narrow) for easier editing, but the physical DYMO media itself
-    // is the un-rotated die-cut shape (narrow x long — e.g. a 1in x 1.5in
-    // label is a 1in-wide roll). Printing must request the *physical* page
-    // size and rotate the rendered content 90° into it, or the browser page
-    // ends up wider than the actual label stock and the driver auto-rotates
-    // unpredictably (the "too wide" / "upside down" symptom).
-    var physW = state.isLandscape ? state.labelHeightIn : state.labelWidthIn;
-    var physH = state.isLandscape ? state.labelWidthIn  : state.labelHeightIn;
+    // The label design is authored at labelWidthIn x labelHeightIn. The user
+    // picks a print rotation to match how their physical DYMO media feeds — a
+    // 90°/270° turn swaps the page dimensions (portrait <-> landscape), which
+    // is also what makes the browser accept the exact page size instead of
+    // falling back to Letter (the "prints several labels / webpage chrome"
+    // symptom). Default 90° preserves the previous behavior.
+    var rot = ((state.printRotation || 0) % 360 + 360) % 360;
+    var Wd = state.labelWidthIn, Hd = state.labelHeightIn;
+    var swap = (rot === 90 || rot === 270);
+    var physW = swap ? Hd : Wd;
+    var physH = swap ? Wd : Hd;
 
     var css = '@page { size: ' + physW + 'in ' + physH + 'in; margin: 0; }' +
       'html,body { margin:0; padding:0; background:white; }' +
@@ -3516,27 +3560,25 @@ var qrcode = function() {
       '.lp { page-break-after:always; margin:0; padding:0; }' +
       '.lp:last-child { page-break-after:auto; }';
 
+    var SCALE = 4;
     var bodyHTML = '';
     state.rows.forEach(function (row) {
       var values = {};
       state.fields.forEach(function (f) { values[f.name] = row.values[f.name] || ''; });
-      var designCanvas = renderLabelToCanvas(
-        state.objects, state.labelWidthIn, state.labelHeightIn, values
-      );
+      var designCanvas = renderLabelToCanvas(state.objects, Wd, Hd, values);
 
       var dataUrl;
-      if (state.isLandscape) {
-        var SCALE = 4;
+      if (rot === 0) {
+        dataUrl = designCanvas.toDataURL('image/png');
+      } else {
         var finalCanvas = document.createElement('canvas');
         finalCanvas.width  = Math.round(physW * 96 * SCALE);
         finalCanvas.height = Math.round(physH * 96 * SCALE);
         var fctx = finalCanvas.getContext('2d');
         fctx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
-        fctx.rotate(90 * Math.PI / 180);
+        fctx.rotate(rot * Math.PI / 180);
         fctx.drawImage(designCanvas, -designCanvas.width / 2, -designCanvas.height / 2);
         dataUrl = finalCanvas.toDataURL('image/png');
-      } else {
-        dataUrl = designCanvas.toDataURL('image/png');
       }
 
       bodyHTML += '<div class="lp"><img src="' + dataUrl +
@@ -3551,6 +3593,28 @@ var qrcode = function() {
     printWin.focus();
     setTimeout(function () { printWin.print(); }, 300);
   });
+
+  // Print-rotation control — persists per browser so a lab keeps its setting.
+  var ROT_KEY = 'dymo_print_rotation';
+  function setPrintRotation(deg) {
+    state.printRotation = deg;
+    try { localStorage.setItem(ROT_KEY, String(deg)); } catch (e) {}
+    var btns = document.querySelectorAll('.rotate-opt');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', parseInt(btns[i].getAttribute('data-rot'), 10) === deg);
+    }
+    updatePreview();
+  }
+  (function initRotation() {
+    var saved = parseInt(localStorage.getItem(ROT_KEY), 10);
+    setPrintRotation(isNaN(saved) ? 90 : saved);
+    var btns = document.querySelectorAll('.rotate-opt');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener('click', function () {
+        setPrintRotation(parseInt(this.getAttribute('data-rot'), 10));
+      });
+    }
+  })();
 
   // DYMO Connect (advanced)
   document.getElementById('printerSelect').addEventListener('change', function () {
