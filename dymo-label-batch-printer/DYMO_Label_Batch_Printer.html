@@ -339,7 +339,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07i</span></h1>
+    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07j</span></h1>
     <p>Load a .label template &mdash; works on any computer with a DYMO printer.</p>
   </div>
 
@@ -391,7 +391,7 @@
       <h2><span class="step-badge">3</span> Preview &amp; Print</h2>
       <div id="labelPreview" class="label-preview-wrap"></div>
       <div class="rotate-row" style="display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap;">
-        <span style="font-size:0.9em;color:#495057;">If the print comes out sideways, upside-down, or spanning several labels, change the print rotation:</span>
+        <span style="font-size:0.9em;color:#495057;">Print rotation (the preview above updates live &mdash; pick the one where the QR &amp; text land where you want them on the physical label):</span>
         <div id="rotateBtns" style="display:inline-flex;gap:4px;">
           <button type="button" class="btn btn-sm rotate-opt" data-rot="0">0&deg;</button>
           <button type="button" class="btn btn-sm rotate-opt" data-rot="90">90&deg;</button>
@@ -3203,14 +3203,45 @@ var qrcode = function() {
     return canvas;
   }
 
+  // Render one label exactly as it will PRINT: the design canvas rotated by the
+  // chosen print rotation into the physical page. Shared by the print handler and
+  // the on-screen preview so the preview always matches the printed result.
+  function buildRotatedCanvas(values) {
+    var SCALE = 4;
+    var rot = ((state.printRotation || 0) % 360 + 360) % 360;
+    var Wd = state.labelWidthIn, Hd = state.labelHeightIn;
+    var swap = (rot === 90 || rot === 270);
+    var physW = swap ? Hd : Wd;
+    var physH = swap ? Wd : Hd;
+
+    var designCanvas = renderLabelToCanvas(state.objects, Wd, Hd, values);
+    if (rot === 0) return { canvas: designCanvas, physW: physW, physH: physH };
+
+    var finalCanvas = document.createElement('canvas');
+    finalCanvas.width  = Math.round(physW * 96 * SCALE);
+    finalCanvas.height = Math.round(physH * 96 * SCALE);
+    var fctx = finalCanvas.getContext('2d');
+    fctx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
+    fctx.rotate(rot * Math.PI / 180);
+    fctx.drawImage(designCanvas, -designCanvas.width / 2, -designCanvas.height / 2);
+    return { canvas: finalCanvas, physW: physW, physH: physH };
+  }
+
   function updatePreview() {
     var preview = document.getElementById('labelPreview');
     preview.innerHTML = '';
     if (!state.objects.length) return;
     state.rows.forEach(function (row) {
+      var values = {};
+      state.fields.forEach(function (f) { values[f.name] = row.values[f.name] || ''; });
+      var out = buildRotatedCanvas(values);
+      var img = out.canvas;
+      // Show the rotated (as-printed) label, scaled to the physical size.
+      img.style.cssText = 'display:block;width:' + out.physW + 'in;height:' + out.physH +
+        'in;border:1px solid #ced4da;background:white;';
       var page = document.createElement('div');
       page.className = 'label-page';
-      page.appendChild(renderLabelEl(state.objects, state.labelWidthIn, state.labelHeightIn, row.values));
+      page.appendChild(img);
       preview.appendChild(page);
     });
   }
@@ -3599,47 +3630,25 @@ var qrcode = function() {
       return;
     }
 
-    // The label design is authored at labelWidthIn x labelHeightIn. The user
-    // picks a print rotation to match how their physical DYMO media feeds — a
+    // Each label is rendered exactly as previewed via buildRotatedCanvas — the
+    // design rotated by the chosen print rotation into the physical page. The
     // 90°/270° turn swaps the page dimensions (portrait <-> landscape), which
-    // is also what makes the browser accept the exact page size instead of
-    // falling back to Letter (the "prints several labels / webpage chrome"
-    // symptom). Default 90° preserves the previous behavior.
-    var rot = ((state.printRotation || 0) % 360 + 360) % 360;
-    var Wd = state.labelWidthIn, Hd = state.labelHeightIn;
-    var swap = (rot === 90 || rot === 270);
-    var physW = swap ? Hd : Wd;
-    var physH = swap ? Wd : Hd;
-
-    var css = '@page { size: ' + physW + 'in ' + physH + 'in; margin: 0; }' +
+    // also makes the browser accept the exact page size instead of falling back
+    // to Letter (the "prints several labels / webpage chrome" symptom).
+    var firstOut = buildRotatedCanvas({});
+    var css = '@page { size: ' + firstOut.physW + 'in ' + firstOut.physH + 'in; margin: 0; }' +
       'html,body { margin:0; padding:0; background:white; }' +
       'img { display:block; }' +
       '.lp { page-break-after:always; margin:0; padding:0; }' +
       '.lp:last-child { page-break-after:auto; }';
 
-    var SCALE = 4;
     var bodyHTML = '';
     state.rows.forEach(function (row) {
       var values = {};
       state.fields.forEach(function (f) { values[f.name] = row.values[f.name] || ''; });
-      var designCanvas = renderLabelToCanvas(state.objects, Wd, Hd, values);
-
-      var dataUrl;
-      if (rot === 0) {
-        dataUrl = designCanvas.toDataURL('image/png');
-      } else {
-        var finalCanvas = document.createElement('canvas');
-        finalCanvas.width  = Math.round(physW * 96 * SCALE);
-        finalCanvas.height = Math.round(physH * 96 * SCALE);
-        var fctx = finalCanvas.getContext('2d');
-        fctx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
-        fctx.rotate(rot * Math.PI / 180);
-        fctx.drawImage(designCanvas, -designCanvas.width / 2, -designCanvas.height / 2);
-        dataUrl = finalCanvas.toDataURL('image/png');
-      }
-
-      bodyHTML += '<div class="lp"><img src="' + dataUrl +
-        '" style="width:' + physW + 'in;height:' + physH + 'in;"></div>';
+      var out = buildRotatedCanvas(values);
+      bodyHTML += '<div class="lp"><img src="' + out.canvas.toDataURL('image/png') +
+        '" style="width:' + out.physW + 'in;height:' + out.physH + 'in;"></div>';
     });
 
     printWin.document.write(
