@@ -75,7 +75,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>Plate Label Printer <span class="build">build 2026-07-08a</span></h1>
+    <h1>Plate Label Printer <span class="build">build 2026-07-08b</span></h1>
     <p>Pick the month, click your samples, print. Plate label, QR code &amp; date stamp are built in &mdash; no DYMO software needed.</p>
   </div>
 
@@ -102,8 +102,15 @@
     <div id="presetGrid"></div>
 
     <details class="manual">
-      <summary>Or build a custom ID</summary>
+      <summary>Or add free text / build a custom ID</summary>
       <div class="manual-inner">
+        <div class="row"><span class="lbl">Free text</span>
+          <input type="text" id="freeText" placeholder="type anything &mdash; goes on the label &amp; QR" style="flex:1;min-width:200px;">
+          <label>Qty <input type="number" id="freeQty" value="1" min="1" style="width:62px;"></label>
+          <button id="freeAddBtn" class="btn btn-primary btn-sm">Add</button>
+        </div>
+        <div style="border-top:1px solid #eee; margin:2px 0;"></div>
+        <div class="row" style="font-size:0.85em; color:#868e96;">&hellip;or build a structured sample ID:</div>
         <div class="row"><span class="lbl">Type</span><span id="typeBtns"></span></div>
         <div class="row"><span class="lbl">Number</span><input type="number" id="manNum" value="1" min="1" style="width:62px;"></div>
         <div class="row"><span class="lbl">Pathogen</span><span id="suffixBtns"></span></div>
@@ -3107,6 +3114,18 @@ var qrcode = function() {
       addBatchRow(id, qty);
       renderBatch();
     });
+    // Free-text label
+    var freeText = document.getElementById('freeText');
+    function addFree() {
+      var txt = freeText.value.trim();
+      if (!txt) return;
+      var qty = Math.max(1, parseInt(document.getElementById('freeQty').value, 10) || 1);
+      addBatchRow(txt, qty);
+      freeText.value = '';
+      renderBatch();
+    }
+    document.getElementById('freeAddBtn').addEventListener('click', addFree);
+    freeText.addEventListener('keydown', function (e) { if (e.key === 'Enter') addFree(); });
   }
   function highlight(wrap, val) {
     var bs = wrap.querySelectorAll('.pick');
