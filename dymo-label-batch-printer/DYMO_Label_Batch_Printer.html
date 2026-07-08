@@ -339,7 +339,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07j</span></h1>
+    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07k</span></h1>
     <p>Load a .label template &mdash; works on any computer with a DYMO printer.</p>
   </div>
 
@@ -398,6 +398,14 @@
           <button type="button" class="btn btn-sm rotate-opt" data-rot="180">180&deg;</button>
           <button type="button" class="btn btn-sm rotate-opt" data-rot="270">270&deg;</button>
         </div>
+      </div>
+      <div class="nudge-row" style="display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap;">
+        <span style="font-size:0.9em;color:#495057;">Fine-tune position on the label (mm) &mdash; preview updates live. Use this to line the print up with pre-printed label stock:</span>
+        <label style="font-size:0.85em;display:inline-flex;align-items:center;gap:4px;">Right +&thinsp;/&thinsp;Left &minus;
+          <input type="number" id="nudgeX" step="0.5" value="0" style="width:66px;padding:4px;">mm</label>
+        <label style="font-size:0.85em;display:inline-flex;align-items:center;gap:4px;">Down +&thinsp;/&thinsp;Up &minus;
+          <input type="number" id="nudgeY" step="0.5" value="0" style="width:66px;padding:4px;">mm</label>
+        <button type="button" class="btn btn-sm" id="nudgeReset">Reset</button>
       </div>
       <div class="actions">
         <button class="btn btn-primary" id="printBtn" disabled>Print 0 label(s)</button>
@@ -3214,14 +3222,25 @@ var qrcode = function() {
     var physW = swap ? Hd : Wd;
     var physH = swap ? Wd : Hd;
 
+    // Fine-position nudge in physical millimetres: +X = right, +Y = down on
+    // the printed label, applied after rotation. Lets the user align the print
+    // to pre-printed label stock (the tool's QR rendering can differ slightly
+    // from DYMO's, and this corrects that without touching the template).
+    var offX = ((state.nudgeXmm || 0) / 25.4) * 96 * SCALE;
+    var offY = ((state.nudgeYmm || 0) / 25.4) * 96 * SCALE;
+
     var designCanvas = renderLabelToCanvas(state.objects, Wd, Hd, values);
-    if (rot === 0) return { canvas: designCanvas, physW: physW, physH: physH };
+    if (rot === 0 && !offX && !offY) {
+      return { canvas: designCanvas, physW: physW, physH: physH };
+    }
 
     var finalCanvas = document.createElement('canvas');
     finalCanvas.width  = Math.round(physW * 96 * SCALE);
     finalCanvas.height = Math.round(physH * 96 * SCALE);
     var fctx = finalCanvas.getContext('2d');
-    fctx.translate(finalCanvas.width / 2, finalCanvas.height / 2);
+    fctx.fillStyle = '#ffffff';
+    fctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+    fctx.translate(finalCanvas.width / 2 + offX, finalCanvas.height / 2 + offY);
     fctx.rotate(rot * Math.PI / 180);
     fctx.drawImage(designCanvas, -designCanvas.width / 2, -designCanvas.height / 2);
     return { canvas: finalCanvas, physW: physW, physH: physH };
@@ -3680,6 +3699,28 @@ var qrcode = function() {
         setPrintRotation(parseInt(this.getAttribute('data-rot'), 10));
       });
     }
+  })();
+
+  // Fine-position nudge (mm) — persists per browser, live preview.
+  var NUDGE_KEY = 'dymo_print_nudge';
+  function applyNudgeFromInputs() {
+    state.nudgeXmm = parseFloat(document.getElementById('nudgeX').value) || 0;
+    state.nudgeYmm = parseFloat(document.getElementById('nudgeY').value) || 0;
+    try { localStorage.setItem(NUDGE_KEY, JSON.stringify({ x: state.nudgeXmm, y: state.nudgeYmm })); } catch (e) {}
+    updatePreview();
+  }
+  (function initNudge() {
+    var saved = { x: 0, y: 0 };
+    try { saved = JSON.parse(localStorage.getItem(NUDGE_KEY)) || saved; } catch (e) {}
+    state.nudgeXmm = saved.x || 0;
+    state.nudgeYmm = saved.y || 0;
+    var nx = document.getElementById('nudgeX'), ny = document.getElementById('nudgeY');
+    nx.value = state.nudgeXmm; ny.value = state.nudgeYmm;
+    nx.addEventListener('input', applyNudgeFromInputs);
+    ny.addEventListener('input', applyNudgeFromInputs);
+    document.getElementById('nudgeReset').addEventListener('click', function () {
+      nx.value = 0; ny.value = 0; applyNudgeFromInputs();
+    });
   })();
 
   // DYMO Connect (advanced)
