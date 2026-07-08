@@ -4,93 +4,166 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Plate Label Printer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27><rect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%230d9488%27/><g fill=%27none%27 stroke=%27%23fff%27 stroke-width=%272.4%27><rect x=%276%27 y=%276%27 width=%277%27 height=%277%27 rx=%271%27/><rect x=%2719%27 y=%276%27 width=%277%27 height=%277%27 rx=%271%27/><rect x=%276%27 y=%2719%27 width=%277%27 height=%277%27 rx=%271%27/></g><g fill=%27%23fff%27><rect x=%2718%27 y=%2718%27 width=%273%27 height=%273%27/><rect x=%2723%27 y=%2718%27 width=%273%27 height=%273%27/><rect x=%2718%27 y=%2723%27 width=%273%27 height=%273%27/><rect x=%2723%27 y=%2723%27 width=%273%27 height=%273%27/></g></svg>">
+<meta name="theme-color" content="#0d9488">
+<meta name="color-scheme" content="light dark">
 <style>
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; padding: 0 0 60px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    color: #2c3e50; background: #f4f6f9; line-height: 1.4;
+  :root{
+    --bg:#eef2f6; --surface:#ffffff; --surface-2:#f8fafc;
+    --text:#0f172a; --muted:#64748b; --faint:#94a3b8;
+    --border:#e2e8f0; --border-strong:#cbd5e1;
+    --accent:#0d9488; --accent-hover:#0f766e; --accent-soft:#f0fdfa; --on-accent:#ffffff;
+    --danger:#e11d48; --danger-soft:#fff1f2;
+    --shadow:0 1px 2px rgba(15,23,42,.04),0 2px 6px rgba(15,23,42,.06);
+    --ring:0 0 0 3px rgba(13,148,136,.22);
+    --radius:14px;
   }
-  .container { max-width: 960px; margin: 0 auto; padding: 20px; }
-  .header { text-align: center; margin-bottom: 18px; }
-  .header h1 { margin: 0 0 4px; font-size: 1.7em; }
-  .header p { margin: 0; color: #6c757d; font-size: 0.95em; }
-  .build { font-size: 0.5em; font-weight: normal; color: #adb5bd; vertical-align: middle; }
-  .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); padding: 18px 20px; margin-bottom: 16px; }
-  .card h2 { margin: 0 0 14px; font-size: 1.12em; display: flex; align-items: center; gap: 8px; }
-  .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; font-size: 0.8em; font-weight: 700; }
-  .muted { color: #868e96; font-size: 0.86em; }
-  select, input[type="number"], input[type="text"] { font-family: inherit; font-size: 14px; padding: 7px 9px; border: 1px solid #ced4da; border-radius: 7px; background: #fff; }
-  .btn { border: none; border-radius: 8px; font-weight: 600; font-size: 13.5px; cursor: pointer; min-height: 40px; padding: 10px 18px; font-family: inherit; transition: all .15s; }
-  .btn-primary { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(102,126,234,.35); }
-  .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
-  .btn-sm { padding: 6px 13px; min-height: 32px; font-size: 13px; background: #e9ecef; color: #2c3e50; }
-  .btn-sm:hover { background: #dee2e6; }
-  .btn-xs { padding: 3px 8px; min-height: 24px; font-size: 11.5px; background: #e9ecef; color: #495057; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; }
-  .btn-xs:hover { background: #dee2e6; }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0b1120; --surface:#121a2b; --surface-2:#0f1826;
+      --text:#e5ecf5; --muted:#9aa8bd; --faint:#6b7a91;
+      --border:#26344b; --border-strong:#374865;
+      --accent:#2dd4bf; --accent-hover:#5eead4; --accent-soft:rgba(45,212,191,.13); --on-accent:#04231f;
+      --danger:#fb7185; --danger-soft:rgba(251,113,133,.14);
+      --shadow:0 1px 2px rgba(0,0,0,.35),0 2px 8px rgba(0,0,0,.32);
+      --ring:0 0 0 3px rgba(45,212,191,.30);
+    }
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0 0 64px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text); background:var(--bg); line-height:1.45;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  }
+  .container{max-width:940px; margin:0 auto; padding:26px 20px;}
 
-  .base-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-  .base-row label { font-size: 0.9em; display: inline-flex; align-items: center; gap: 6px; }
-  .base-preview { margin-left: auto; font-size: 1.05em; }
-  .base-preview strong { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; background: #f1f3f5; padding: 3px 9px; border-radius: 6px; letter-spacing: .5px; }
+  /* Header */
+  .header{display:flex; align-items:center; gap:15px; padding:4px 2px 20px; margin-bottom:22px; border-bottom:1px solid var(--border);}
+  .brand-mark{flex:none; width:46px; height:46px; border-radius:12px; background:var(--accent); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);}
+  .brand-mark svg{width:26px; height:26px; display:block;}
+  .header-text{display:flex; flex-direction:column; gap:1px; min-width:0;}
+  .eyebrow{font-size:11px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent);}
+  .header h1{margin:0; font-size:1.5rem; font-weight:700; letter-spacing:-.015em; line-height:1.15;}
+  .header .sub{margin:3px 0 0; color:var(--muted); font-size:.92rem;}
+  .build{margin-left:auto; align-self:flex-start; font-size:11px; font-weight:500; color:var(--faint); white-space:nowrap; font-variant-numeric:tabular-nums;}
 
-  .preset-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
-  .preset-tools label { font-size: 0.88em; display: inline-flex; align-items: center; gap: 5px; }
-  .preset-group { margin-bottom: 12px; }
-  .preset-group-h { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  .preset-group-h .tag { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; font-size: 0.9em; color: #495057; background: #eef0f3; padding: 2px 8px; border-radius: 5px; }
-  .preset-cells { display: flex; flex-wrap: wrap; gap: 6px; }
-  .preset-cell { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; padding: 6px 10px; border: 1px solid #ced4da; border-radius: 7px; background: #fff; color: #343a40; cursor: pointer; transition: all .1s; }
-  .preset-cell:hover { border-color: #adb5bd; background: #f8f9fa; }
-  .preset-cell.sel { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border-color: transparent; }
+  /* Cards */
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 22px; margin-bottom:16px;}
+  .card h2{margin:0 0 16px; font-size:1.02rem; font-weight:650; display:flex; align-items:center; gap:10px; letter-spacing:-.005em;}
+  .step-badge{display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:7px; background:var(--accent-soft); color:var(--accent); font-size:.78rem; font-weight:700;}
+  .muted{color:var(--muted); font-size:.86rem;}
 
-  details.manual { margin-top: 8px; border-top: 1px solid #eee; padding-top: 10px; }
-  details.manual summary { cursor: pointer; font-weight: 600; font-size: 0.92em; color: #495057; }
-  .manual-inner { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-  .manual-inner .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .manual-inner .lbl { min-width: 78px; font-size: 0.88em; color: #495057; }
-  .pick { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; padding: 6px 11px; border: 1px solid #ced4da; border-radius: 7px; background: #fff; cursor: pointer; }
-  .pick.sel { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; border-color: transparent; }
-  #manPreview { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.05em; }
+  /* Form controls */
+  select, input[type="number"], input[type="text"]{
+    font-family:inherit; font-size:14px; padding:8px 10px; color:var(--text);
+    border:1px solid var(--border-strong); border-radius:9px; background:var(--surface);
+    transition:border-color .12s, box-shadow .12s;
+  }
+  select:focus, input:focus{outline:none; border-color:var(--accent); box-shadow:var(--ring);}
+  input[type="checkbox"]{width:16px; height:16px; accent-color:var(--accent);}
 
-  table.batch { width: 100%; border-collapse: collapse; }
-  table.batch th, table.batch td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #f1f3f5; font-size: 0.92em; }
-  table.batch th { color: #868e96; font-weight: 600; font-size: 0.8em; text-transform: uppercase; letter-spacing: .4px; }
-  table.batch td.id { font-family: ui-monospace, Menlo, Consolas, monospace; }
-  .del-btn { border: none; background: #f1f3f5; color: #868e96; width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 15px; line-height: 1; }
-  .del-btn:hover { background: #ffe3e3; color: #e03131; }
+  /* Buttons */
+  .btn{border:1px solid transparent; border-radius:9px; font-weight:600; font-size:13.5px; cursor:pointer; min-height:40px; padding:10px 18px; font-family:inherit; transition:background .14s, box-shadow .14s, border-color .14s, transform .05s;}
+  .btn:active{transform:translateY(.5px);}
+  .btn:focus-visible{outline:none; box-shadow:var(--ring);}
+  .btn-primary{background:var(--accent); color:var(--on-accent);}
+  .btn-primary:hover{background:var(--accent-hover);}
+  .btn-primary:disabled{opacity:.45; cursor:not-allowed; background:var(--accent);}
+  .btn-sm{padding:6px 13px; min-height:32px; font-size:13px; background:var(--surface-2); color:var(--text); border-color:var(--border);}
+  .btn-sm:hover{border-color:var(--border-strong);}
+  .btn-xs{padding:3px 9px; min-height:24px; font-size:11.5px; background:var(--surface-2); color:var(--muted); border:1px solid var(--border); border-radius:7px; cursor:pointer; font-family:inherit;}
+  .btn-xs:hover{color:var(--text); border-color:var(--border-strong);}
 
-  .label-preview-wrap { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; min-height: 20px; }
-  .label-page { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-  .label-page canvas { border: 1px solid #ced4da; background: #fff; }
-  .label-page .qtytag { font-size: 0.78em; color: #868e96; }
-  .rotate-row, .nudge-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
-  .rotate-opt.active { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
-  .size-opt { padding: 6px 13px; min-height: 34px; font-size: 13px; background: #e9ecef; color: #2c3e50; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 600; }
-  .size-opt:hover { background: #dee2e6; }
-  .size-opt.active { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
-  .actions { margin-top: 6px; }
-  .print-hint { font-size: 0.85em; color: #6c757d; margin: 10px 0 0; }
-  .empty { color: #adb5bd; font-style: italic; font-size: 0.9em; }
+  /* Toggle pills: preset cells, picks, rotation, size */
+  .preset-cell, .pick, .rotate-opt, .size-opt{
+    font-size:12.5px; padding:6px 11px; border:1px solid var(--border-strong); border-radius:8px;
+    background:var(--surface); color:var(--text); cursor:pointer; font-family:inherit; transition:all .1s;
+  }
+  .preset-cell, .pick{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;}
+  .preset-cell:hover, .pick:hover, .rotate-opt:hover, .size-opt:hover{border-color:var(--accent); color:var(--accent);}
+  .preset-cell.sel, .pick.sel, .rotate-opt.active, .size-opt.active{background:var(--accent); color:var(--on-accent); border-color:var(--accent);}
+  .size-opt{padding:7px 14px; min-height:36px; font-size:13px; font-weight:600; border-radius:9px;}
+  .rotate-opt{min-height:34px;}
+
+  /* Base row */
+  .base-row{display:flex; align-items:center; gap:16px; flex-wrap:wrap;}
+  .base-row label{font-size:.9rem; display:inline-flex; align-items:center; gap:7px; color:var(--muted);}
+  .base-preview{margin-left:auto; font-size:1rem; color:var(--muted);}
+  .base-preview strong, #manPreview, .mono{font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .base-preview strong{color:var(--accent); background:var(--accent-soft); padding:4px 10px; border-radius:7px; letter-spacing:.03em; font-size:.95rem;}
+
+  /* Presets */
+  .preset-tools{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .preset-tools label{font-size:.88rem; display:inline-flex; align-items:center; gap:6px; color:var(--muted);}
+  .preset-group{margin-bottom:14px;}
+  .preset-group-h{display:flex; align-items:center; gap:10px; margin-bottom:7px;}
+  .preset-group-h .tag{font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:700; font-size:.82rem; color:var(--accent); background:var(--accent-soft); padding:2px 9px; border-radius:6px;}
+  .preset-cells{display:flex; flex-wrap:wrap; gap:6px;}
+
+  /* Manual details */
+  details.manual{margin-top:12px; border-top:1px solid var(--border); padding-top:14px;}
+  details.manual summary{cursor:pointer; font-weight:600; font-size:.92rem; color:var(--accent);}
+  .manual-inner{margin-top:14px; display:flex; flex-direction:column; gap:11px;}
+  .manual-inner .row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .manual-inner .lbl{min-width:78px; font-size:.86rem; color:var(--muted);}
+  #manPreview{font-size:1.02rem; color:var(--text);}
+
+  /* Batch table */
+  table.batch{width:100%; border-collapse:collapse;}
+  table.batch th, table.batch td{text-align:left; padding:9px 8px; border-bottom:1px solid var(--border); font-size:.92rem;}
+  table.batch tr:last-child td{border-bottom:none;}
+  table.batch th{color:var(--faint); font-weight:600; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;}
+  table.batch td.id{font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:500;}
+  .del-btn{border:none; background:transparent; color:var(--faint); width:28px; height:28px; border-radius:7px; cursor:pointer; font-size:16px; line-height:1; transition:all .1s;}
+  .del-btn:hover{background:var(--danger-soft); color:var(--danger);}
+
+  /* Preview + print controls */
+  .label-preview-wrap{display:flex; flex-wrap:wrap; gap:14px; margin-bottom:14px; min-height:20px;}
+  .label-page{display:flex; flex-direction:column; align-items:center; gap:4px;}
+  .label-page canvas{border:1px solid var(--border-strong); border-radius:4px; background:#fff; box-shadow:var(--shadow);}
+  .label-page .qtytag{font-size:.76rem; color:var(--muted); font-variant-numeric:tabular-nums;}
+  .rotate-row, .nudge-row, .size-row, .elem-row{display:flex; align-items:center; gap:10px; margin:0; flex-wrap:wrap; font-size:.9rem; color:var(--muted);}
+  .rotate-row, .nudge-row{margin:12px 0;}
+  .elem-row label{color:var(--text); display:inline-flex; align-items:center; gap:6px;}
+  .actions{margin-top:10px;}
+  .print-hint{font-size:.85rem; color:var(--muted); margin:12px 0 0; line-height:1.5;}
+  #paperSizeNote{background:var(--accent-soft); border:1px solid var(--accent); color:var(--text); border-radius:9px; padding:9px 12px;}
+  .empty{color:var(--faint); font-style:italic; font-size:.9rem;}
+
+  /* Print the page itself: show only the label previews */
+  @media print{
+    body{background:#fff; padding:0; color:#000;}
+    .header, .build{display:none;}
+    .card:not(#previewCard){display:none;}
+    #previewCard{border:none; box-shadow:none; padding:0; margin:0;}
+    #previewCard h2, .rotate-row, .nudge-row, .actions, .print-hint, #paperSizeNote, .qtytag{display:none;}
+    .label-page canvas{box-shadow:none; border-color:#999;}
+  }
+
 </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>Plate Label Printer <span class="build">build 2026-07-08c</span></h1>
-    <p>Pick the month, click your samples, print. Plate label, QR code &amp; date stamp are built in &mdash; no DYMO software needed.</p>
+    <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><g stroke="#fff" stroke-width="2.4"><rect x="6" y="6" width="7" height="7" rx="1"/><rect x="19" y="6" width="7" height="7" rx="1"/><rect x="6" y="19" width="7" height="7" rx="1"/></g><g fill="#fff"><rect x="18" y="18" width="3" height="3"/><rect x="23" y="18" width="3" height="3"/><rect x="18" y="23" width="3" height="3"/><rect x="23" y="23" width="3" height="3"/></g></svg></div>
+    <div class="header-text">
+      <span class="eyebrow">Lab Tools</span>
+      <h1>Plate Label Printer</h1>
+      <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
+    </div>
+    <span class="build">build 2026-07-08d</span>
   </div>
 
   <!-- Label size & contents -->
   <div class="card">
     <h2>Label size &amp; contents</h2>
     <div class="size-row" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <span style="font-size:0.9em;color:#495057;">Size:</span>
+      <span style="font-size:0.9em;color:var(--muted);">Size:</span>
       <span id="sizeBtns" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></span>
     </div>
     <div class="elem-row" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:12px;">
-      <span style="font-size:0.9em;color:#495057;">Show on label:</span>
+      <span style="font-size:0.9em;color:var(--muted);">Show on label:</span>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showText" checked> ID / text bar</label>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showQR" checked> QR code</label>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showDate" checked> Date/time stamp</label>
@@ -128,7 +201,7 @@
           <button id="freeAddBtn" class="btn btn-primary btn-sm">Add</button>
         </div>
         <div style="border-top:1px solid #eee; margin:2px 0;"></div>
-        <div class="row" style="font-size:0.85em; color:#868e96;">&hellip;or build a structured sample ID:</div>
+        <div class="row" style="font-size:0.85em; color:var(--muted);">&hellip;or build a structured sample ID:</div>
         <div class="row"><span class="lbl">Type</span><span id="typeBtns"></span></div>
         <div class="row"><span class="lbl">Number</span><input type="number" id="manNum" value="1" min="1" style="width:62px;"></div>
         <div class="row"><span class="lbl">Pathogen</span><span id="suffixBtns"></span></div>
@@ -149,11 +222,11 @@
   </div>
 
   <!-- Step 4: preview & print -->
-  <div class="card">
+  <div class="card" id="previewCard">
     <h2><span class="step-badge">4</span> Preview &amp; print</h2>
     <div id="labelPreview" class="label-preview-wrap"><p class="empty">Add samples to see a preview.</p></div>
     <div class="rotate-row">
-      <span style="font-size:0.9em;color:#495057;">Print rotation (preview updates live &mdash; pick the one that fits your labels):</span>
+      <span style="font-size:0.9em;color:var(--muted);">Print rotation (preview updates live &mdash; pick the one that fits your labels):</span>
       <div id="rotateBtns" style="display:inline-flex;gap:4px;">
         <button type="button" class="btn btn-sm rotate-opt" data-rot="0">0&deg;</button>
         <button type="button" class="btn btn-sm rotate-opt" data-rot="90">90&deg;</button>
@@ -162,7 +235,7 @@
       </div>
     </div>
     <div class="nudge-row">
-      <span style="font-size:0.9em;color:#495057;">Fine-tune position (mm):</span>
+      <span style="font-size:0.9em;color:var(--muted);">Fine-tune position (mm):</span>
       <label style="font-size:0.85em;display:inline-flex;align-items:center;gap:4px;">Right +&thinsp;/&thinsp;Left &minus;
         <input type="number" id="nudgeX" step="0.5" value="0" style="width:66px;">mm</label>
       <label style="font-size:0.85em;display:inline-flex;align-items:center;gap:4px;">Down +&thinsp;/&thinsp;Up &minus;
@@ -170,7 +243,7 @@
       <button type="button" class="btn btn-sm" id="nudgeReset">Reset</button>
     </div>
     <div class="actions"><button class="btn btn-primary" id="printBtn" disabled>Print 0 labels</button></div>
-    <p id="paperSizeNote" class="print-hint" style="background:#fff3cd;border:1px solid #ffe08a;border-radius:6px;padding:8px 10px;"></p>
+    <p id="paperSizeNote" class="print-hint"></p>
     <p class="print-hint">In the print dialog: set <strong>Paper size</strong> to the label shown above (not Letter), Margins <strong>None</strong>, Scale <strong>100%</strong>, and turn <strong>Headers &amp; footers</strong> off.</p>
   </div>
 </div>
