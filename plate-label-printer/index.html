@@ -67,6 +67,9 @@
   .label-page .qtytag { font-size: 0.78em; color: #868e96; }
   .rotate-row, .nudge-row { display: flex; align-items: center; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
   .rotate-opt.active { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
+  .size-opt { padding: 6px 13px; min-height: 34px; font-size: 13px; background: #e9ecef; color: #2c3e50; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .size-opt:hover { background: #dee2e6; }
+  .size-opt.active { background: linear-gradient(135deg,#667eea,#764ba2); color: #fff; }
   .actions { margin-top: 6px; }
   .print-hint { font-size: 0.85em; color: #6c757d; margin: 10px 0 0; }
   .empty { color: #adb5bd; font-style: italic; font-size: 0.9em; }
@@ -75,8 +78,23 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>Plate Label Printer <span class="build">build 2026-07-08b</span></h1>
+    <h1>Plate Label Printer <span class="build">build 2026-07-08c</span></h1>
     <p>Pick the month, click your samples, print. Plate label, QR code &amp; date stamp are built in &mdash; no DYMO software needed.</p>
+  </div>
+
+  <!-- Label size & contents -->
+  <div class="card">
+    <h2>Label size &amp; contents</h2>
+    <div class="size-row" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="font-size:0.9em;color:#495057;">Size:</span>
+      <span id="sizeBtns" style="display:inline-flex;gap:6px;flex-wrap:wrap;"></span>
+    </div>
+    <div class="elem-row" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:12px;">
+      <span style="font-size:0.9em;color:#495057;">Show on label:</span>
+      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showText" checked> ID / text bar</label>
+      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showQR" checked> QR code</label>
+      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showDate" checked> Date/time stamp</label>
+    </div>
   </div>
 
   <!-- Step 1: base -->
@@ -3258,75 +3276,213 @@ var qrcode = function() {
     setTimeout(function () { printWin.print(); }, 300);
   }
 
-  // ── Print rotation (persisted) ──────────────────────────────────────────────
-  var ROT_KEY = 'plate_print_rotation';
+  // ── Label sizes & layout generator ──────────────────────────────────────────
+  var SIZES = [
+    { key: 'p345',   label: '3/4 × 2-1/2 in', w: 2.5,   h: 0.75, paper: '30345 3/4 in x 2-1/2 in' },
+    { key: 'w2x075', label: '2 × 3/4 in',     w: 2.0,   h: 0.75, paper: '2 in x 3/4 in' },
+    { key: 's347',   label: '1 × 1-1/2 in',   w: 1.5,   h: 1.0,  paper: '30347 1 in x 1-1/2 in' },
+    { key: 's336',   label: '1 × 2-1/8 in',   w: 2.125, h: 1.0,  paper: '30336 1 in x 2-1/8 in' },
+    { key: 'sq1',    label: '1 × 1 in',       w: 1.0,   h: 1.0,  paper: '30332 1 in x 1 in' }
+  ];
+  var currentSize = SIZES[0];
+  var elemOpts = { text: true, qr: true, date: true };
+
+  function mkText(x, y, w, h, pt) {
+    return { type: 'text', name: 'TEXT', isVariable: true, defaultText: '',
+      bounds: { x: x, y: y, w: w, h: h },
+      font: { family: 'Arial', sizePt: pt || Math.max(6, Math.min(h * 72 * 0.72, 22)), bold: true, italic: false },
+      align: 'center', valign: 'middle',
+      foreColor: 'rgb(255,255,255)', backColor: 'rgb(0,0,0)', rotation: 0 };
+  }
+  function mkDate(x, y, w, h, pt) {
+    return { type: 'datetime', name: 'DATE-TIME', isVariable: false, defaultText: '',
+      bounds: { x: x, y: y, w: w, h: h },
+      font: { family: 'Arial', sizePt: pt || Math.max(5, Math.min(h * 72 * 0.7, 11)), bold: false, italic: false },
+      align: 'center', valign: 'middle',
+      dateFormat: 'MonthDayLongYear', includeTime: true, use24Hour: false, rotation: 0 };
+  }
+  function mkQR(x, y, s) {
+    return { type: 'barcode', name: 'BARCODE', isVariable: false, defaultText: '',
+      bounds: { x: x, y: y, w: s, h: s }, barcodeType: 'QRCode', linkedObjectName: 'TEXT',
+      rotation: 0, font: { family: 'Arial', sizePt: 8, bold: false, italic: false },
+      align: 'center', valign: 'middle' };
+  }
+  // Point size for an nChars string to fill widthIn (Arial bold ~0.60em advance).
+  function fitPt(widthIn, nChars, cap) {
+    return Math.max(5, Math.min((widthIn * 72) / (nChars * 0.60), cap || 22));
+  }
+
+  // Auto-layout: an ID text bar + QR + date sized to fit a W×H label. Elongated
+  // labels put the QR on the right with the ID bar + date stacked on the left;
+  // near-square labels stack QR over ID over date. The ID bar hugs the fitted
+  // text (so it never becomes a big empty black box). Any element can be omitted.
+  var NID = 13;   // nominal ID length used to size the ID font
+  function buildLayout(W, H, opts) {
+    var m = 0.05, objs = [];
+    var wide = W > H * 1.9;
+    var qrOn = opts.qr, textOn = opts.text, dateOn = opts.date;
+    var avail = H - 2 * m;   // usable height
+
+    if (wide) {
+      var qSide = qrOn ? Math.min(avail, W * 0.42) : 0;
+      var colX = m, colW = W - (qrOn ? qSide + m : 0) - 2 * m;
+      if (colW < 0.2) colW = 0.2;
+      var idPt  = fitPt(colW, NID, H * 72 * 0.6);
+      var datePt = dateOn ? fitPt(colW, 20, 10) : 0;
+      var dateH  = dateOn ? datePt / 72 * 1.6 : 0;
+      var gapTD  = (textOn && dateOn) ? m : 0;
+      var barH   = textOn ? Math.min(idPt / 72 * 1.7, avail - dateH - gapTD) : 0;
+      var stackH = barH + gapTD + dateH;
+      var topY = Math.max(m, m + (avail - stackH) / 2);
+      if (textOn) { objs.push(mkText(colX, topY, colW, barH, idPt)); topY += barH + gapTD; }
+      if (dateOn) { objs.push(mkDate(colX, topY, colW, dateH, datePt)); }
+      if (qrOn)   objs.push(mkQR(W - m - qSide, (H - qSide) / 2, qSide));
+    } else {
+      var fullW = W - 2 * m;
+      var idPt2  = fitPt(fullW, NID, 20);
+      var barH2  = textOn ? Math.min(idPt2 / 72 * 1.7, H * 0.34) : 0;
+      var datePt2 = dateOn ? fitPt(fullW, 20, 10) : 0;
+      var dateH2  = dateOn ? datePt2 / 72 * 1.6 : 0;
+      var gapTD2  = (textOn && dateOn) ? m * 0.6 : 0;
+      var belowH  = barH2 + gapTD2 + dateH2;             // content under the QR
+      var gapQR   = (qrOn && (textOn || dateOn)) ? m : 0;
+      var qSideS  = 0;
+      if (qrOn) {
+        var wantQR = Math.min(fullW, avail * 0.9);
+        qSideS = Math.max(0.2, Math.min(wantQR, avail - belowH - gapQR));
+      }
+      var stackH2 = (qrOn ? qSideS + gapQR : 0) + belowH;
+      var y = Math.max(m, m + (avail - stackH2) / 2);
+      if (qrOn)   { objs.push(mkQR((W - qSideS) / 2, y, qSideS)); y += qSideS + gapQR; }
+      if (textOn) { objs.push(mkText(m, y, fullW, barH2, idPt2)); y += barH2 + gapTD2; }
+      if (dateOn) { objs.push(mkDate(m, y, fullW, dateH2, datePt2)); }
+    }
+    return objs;
+  }
+
+  function applyLabel() {
+    // The flagship 3/4×2-1/2 plate keeps its exact DYMO template when all three
+    // elements are shown (it's already in production); everything else is auto-laid-out.
+    if (currentSize.key === 'p345' && elemOpts.text && elemOpts.qr && elemOpts.date) {
+      var parsed = parseLabelXml(PLATE_XML);
+      state.objects = parsed.objects;
+      state.labelWidthIn = parsed.labelWidthIn;
+      state.labelHeightIn = parsed.labelHeightIn;
+    } else {
+      state.objects = buildLayout(currentSize.w, currentSize.h, elemOpts);
+      state.labelWidthIn = currentSize.w;
+      state.labelHeightIn = currentSize.h;
+    }
+    state.isLandscape = true;
+    state.paperName = currentSize.paper;
+    document.getElementById('paperSizeNote').innerHTML =
+      'Set the print dialog <strong>Paper size</strong> to: <strong>' + escHtml(currentSize.paper) + '</strong>';
+    loadSizeCalibration();
+    updatePreview();
+  }
+
+  function renderSizeButtons() {
+    var wrap = document.getElementById('sizeBtns');
+    wrap.innerHTML = '';
+    SIZES.forEach(function (s) {
+      var b = document.createElement('button');
+      b.className = 'size-opt' + (s.key === currentSize.key ? ' active' : '');
+      b.textContent = s.label;
+      b.addEventListener('click', function () {
+        currentSize = s;
+        try { localStorage.setItem('plate_size', s.key); } catch (e) {}
+        renderSizeButtons();
+        applyLabel();
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  // ── Print rotation + nudge (persisted PER label size) ───────────────────────
+  function rotKey()   { return 'plate_print_rotation_' + currentSize.key; }
+  function nudgeKey()  { return 'plate_print_nudge_' + currentSize.key; }
+
   function setPrintRotation(deg) {
     state.printRotation = deg;
-    try { localStorage.setItem(ROT_KEY, String(deg)); } catch (e) {}
+    try { localStorage.setItem(rotKey(), String(deg)); } catch (e) {}
     var btns = document.querySelectorAll('.rotate-opt');
     for (var i = 0; i < btns.length; i++) {
       btns[i].classList.toggle('active', parseInt(btns[i].getAttribute('data-rot'), 10) === deg);
     }
     updatePreview();
   }
-
-  // ── Fine-position nudge (mm, persisted) ─────────────────────────────────────
-  var NUDGE_KEY = 'plate_print_nudge';
   function applyNudgeFromInputs() {
     state.nudgeXmm = parseFloat(document.getElementById('nudgeX').value) || 0;
     state.nudgeYmm = parseFloat(document.getElementById('nudgeY').value) || 0;
-    try { localStorage.setItem(NUDGE_KEY, JSON.stringify({ x: state.nudgeXmm, y: state.nudgeYmm })); } catch (e) {}
+    try { localStorage.setItem(nudgeKey(), JSON.stringify({ x: state.nudgeXmm, y: state.nudgeYmm })); } catch (e) {}
     updatePreview();
+  }
+  // Load this size's saved rotation + nudge into state and the controls.
+  function loadSizeCalibration() {
+    var savedRot = NaN;
+    try { savedRot = parseInt(localStorage.getItem(rotKey()), 10); } catch (e) {}
+    state.printRotation = isNaN(savedRot) ? 90 : savedRot;
+    var rbtns = document.querySelectorAll('.rotate-opt');
+    for (var i = 0; i < rbtns.length; i++) {
+      rbtns[i].classList.toggle('active', parseInt(rbtns[i].getAttribute('data-rot'), 10) === state.printRotation);
+    }
+    var saved = { x: 0, y: 0 };
+    try { saved = JSON.parse(localStorage.getItem(nudgeKey())) || saved; } catch (e) {}
+    state.nudgeXmm = saved.x || 0; state.nudgeYmm = saved.y || 0;
+    var nx = document.getElementById('nudgeX'), ny = document.getElementById('nudgeY');
+    if (nx) nx.value = state.nudgeXmm;
+    if (ny) ny.value = state.nudgeYmm;
   }
 
   // ── Init ────────────────────────────────────────────────────────────────────
   (function init() {
-    var parsed = parseLabelXml(PLATE_XML);
-    state.objects       = parsed.objects;
-    state.labelWidthIn  = parsed.labelWidthIn;
-    state.labelHeightIn = parsed.labelHeightIn;
-    state.isLandscape   = parsed.isLandscape;
-    state.paperName     = parsed.paperName;
-
-    var note = document.getElementById('paperSizeNote');
-    note.innerHTML = parsed.paperName
-      ? 'Set the print dialog <strong>Paper size</strong> to: <strong>' + escHtml(parsed.paperName) + '</strong>'
-      : '';
+    // Restore last-used size
+    try {
+      var savedSize = localStorage.getItem('plate_size');
+      if (savedSize) {
+        for (var s = 0; s < SIZES.length; s++) if (SIZES[s].key === savedSize) currentSize = SIZES[s];
+      }
+    } catch (e) {}
 
     initBaseControls();
     initManualPickers();
     renderPresetGrid();
     updateManPreview();
     refreshBase();
+    renderSizeButtons();
 
     document.getElementById('addSelectedBtn').addEventListener('click', addSelectedPresets);
     document.getElementById('clearSelBtn').addEventListener('click', function () { selection = {}; refreshPresetSelection(); });
     document.getElementById('clearBatchBtn').addEventListener('click', function () { state.rows = []; renderBatch(); });
     document.getElementById('printBtn').addEventListener('click', printAll);
 
-    // rotation
-    var savedRot = NaN;
-    try { savedRot = parseInt(localStorage.getItem(ROT_KEY), 10); } catch (e) {}
-    setPrintRotation(isNaN(savedRot) ? 90 : savedRot);
+    // element toggles
+    ['showText', 'showQR', 'showDate'].forEach(function (id) {
+      document.getElementById(id).addEventListener('change', function () {
+        elemOpts.text = document.getElementById('showText').checked;
+        elemOpts.qr   = document.getElementById('showQR').checked;
+        elemOpts.date = document.getElementById('showDate').checked;
+        applyLabel();
+      });
+    });
+
+    // rotation button clicks (once)
     var rbtns = document.querySelectorAll('.rotate-opt');
     for (var i = 0; i < rbtns.length; i++) {
       rbtns[i].addEventListener('click', function () {
         setPrintRotation(parseInt(this.getAttribute('data-rot'), 10));
       });
     }
-
-    // nudge
-    var savedNudge = { x: 0, y: 0 };
-    try { savedNudge = JSON.parse(localStorage.getItem(NUDGE_KEY)) || savedNudge; } catch (e) {}
-    state.nudgeXmm = savedNudge.x || 0; state.nudgeYmm = savedNudge.y || 0;
-    var nx = document.getElementById('nudgeX'), ny = document.getElementById('nudgeY');
-    nx.value = state.nudgeXmm; ny.value = state.nudgeYmm;
-    nx.addEventListener('input', applyNudgeFromInputs);
-    ny.addEventListener('input', applyNudgeFromInputs);
+    // nudge input handlers (once)
+    document.getElementById('nudgeX').addEventListener('input', applyNudgeFromInputs);
+    document.getElementById('nudgeY').addEventListener('input', applyNudgeFromInputs);
     document.getElementById('nudgeReset').addEventListener('click', function () {
-      nx.value = 0; ny.value = 0; applyNudgeFromInputs();
+      document.getElementById('nudgeX').value = 0;
+      document.getElementById('nudgeY').value = 0;
+      applyNudgeFromInputs();
     });
 
+    applyLabel();   // builds objects + loads this size's calibration + preview
     renderBatch();
   })();
 
