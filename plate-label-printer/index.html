@@ -131,9 +131,20 @@
   #paperSizeNote{background:var(--accent-soft); border:1px solid var(--accent); color:var(--text); border-radius:9px; padding:9px 12px;}
   .empty{color:var(--faint); font-style:italic; font-size:.9rem;}
 
+  /* Floating "add selected" bar */
+  .float-bar{position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:50;
+    display:flex; align-items:center; gap:12px; padding:9px 12px 9px 16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:13px;
+    box-shadow:0 10px 30px rgba(15,23,42,.22);}
+  .float-bar[hidden]{display:none;}
+  .float-count{font-size:.9rem; font-weight:650; color:var(--text); white-space:nowrap;}
+  .float-qty{font-size:.85rem; color:var(--muted); display:inline-flex; align-items:center; gap:5px; white-space:nowrap;}
+  .float-qty input{width:54px;}
+
   /* Print the page itself: show only the label previews */
   @media print{
     body{background:#fff; padding:0; color:#000;}
+    .float-bar{display:none !important;}
     .header, .build{display:none;}
     .card:not(#previewCard){display:none;}
     #previewCard{border:none; box-shadow:none; padding:0; margin:0;}
@@ -152,7 +163,7 @@
       <h1>Plate Label Printer</h1>
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
-    <span class="build">build 2026-07-08e</span>
+    <span class="build">build 2026-07-08f</span>
   </div>
 
   <!-- Label size & contents -->
@@ -246,6 +257,13 @@
     <p id="paperSizeNote" class="print-hint"></p>
     <p class="print-hint">In the print dialog: set <strong>Paper size</strong> to the label shown above (not Letter), Margins <strong>None</strong>, Scale <strong>100%</strong>, and turn <strong>Headers &amp; footers</strong> off.</p>
   </div>
+</div>
+
+<div id="floatBar" class="float-bar" hidden>
+  <span id="floatCount" class="float-count">0 selected</span>
+  <label class="float-qty">Qty <input type="number" id="floatQty" value="1" min="1"></label>
+  <button id="floatAdd" class="btn btn-primary btn-sm">Add to batch</button>
+  <button id="floatClear" class="btn btn-sm">Clear</button>
 </div>
 
 <script>
@@ -3153,6 +3171,9 @@ var qrcode = function() {
       if (on) n++;
     }
     document.getElementById('selCount').textContent = n ? n + ' selected' : '';
+    document.getElementById('floatCount').textContent = n + ' selected';
+    var bar = document.getElementById('floatBar');
+    if (n > 0) bar.removeAttribute('hidden'); else bar.setAttribute('hidden', '');
   }
 
   function addSelectedPresets() {
@@ -3527,6 +3548,13 @@ var qrcode = function() {
     document.getElementById('clearSelBtn').addEventListener('click', function () { selection = {}; refreshPresetSelection(); });
     document.getElementById('clearBatchBtn').addEventListener('click', function () { state.rows = []; renderBatch(); });
     document.getElementById('printBtn').addEventListener('click', printAll);
+
+    // Floating add-selected bar (mirrors the top controls; qty stays in sync)
+    document.getElementById('floatAdd').addEventListener('click', addSelectedPresets);
+    document.getElementById('floatClear').addEventListener('click', function () { selection = {}; refreshPresetSelection(); });
+    var pq = document.getElementById('presetQty'), fq = document.getElementById('floatQty');
+    pq.addEventListener('input', function () { fq.value = pq.value; });
+    fq.addEventListener('input', function () { pq.value = fq.value; });
 
     // element toggles
     ['showText', 'showQR', 'showDate'].forEach(function (id) {
