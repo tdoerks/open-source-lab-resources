@@ -140,11 +140,13 @@
   .float-count{font-size:.9rem; font-weight:650; color:var(--text); white-space:nowrap;}
   .float-qty{font-size:.85rem; color:var(--muted); display:inline-flex; align-items:center; gap:5px; white-space:nowrap;}
   .float-qty input{width:54px;}
+  .float-print{position:fixed; right:20px; bottom:20px; z-index:49; box-shadow:0 10px 30px rgba(13,148,136,.45);}
+  .float-print[hidden]{display:none;}
 
   /* Print the page itself: show only the label previews */
   @media print{
     body{background:#fff; padding:0; color:#000;}
-    .float-bar{display:none !important;}
+    .float-bar, .float-print{display:none !important;}
     .header, .build{display:none;}
     .card:not(#previewCard){display:none;}
     #previewCard{border:none; box-shadow:none; padding:0; margin:0;}
@@ -163,7 +165,7 @@
       <h1>Plate Label Printer</h1>
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
-    <span class="build">build 2026-07-09a</span>
+    <span class="build">build 2026-07-09b</span>
   </div>
 
   <!-- Label size & contents -->
@@ -266,6 +268,8 @@
   <button id="floatAdd" class="btn btn-primary btn-sm">Add to batch</button>
   <button id="floatClear" class="btn btn-sm">Clear</button>
 </div>
+
+<button id="floatPrint" class="btn btn-primary float-print" hidden>Print 0 labels</button>
 
 <script>
 //---------------------------------------------------------------------
@@ -3344,9 +3348,13 @@ var qrcode = function() {
 
   function updatePrintButton() {
     var n = totalLabels();
+    var txt = 'Print ' + n + ' label' + (n !== 1 ? 's' : '');
     var btn = document.getElementById('printBtn');
-    btn.textContent = 'Print ' + n + ' label' + (n !== 1 ? 's' : '');
+    btn.textContent = txt;
     btn.disabled = n === 0;
+    var fp = document.getElementById('floatPrint');
+    fp.textContent = txt;
+    if (n > 0) fp.removeAttribute('hidden'); else fp.setAttribute('hidden', '');
   }
 
   // ── Print ───────────────────────────────────────────────────────────────────
@@ -3557,6 +3565,7 @@ var qrcode = function() {
     document.getElementById('clearSelBtn').addEventListener('click', function () { selection = {}; refreshPresetSelection(); });
     document.getElementById('clearBatchBtn').addEventListener('click', function () { state.rows = []; renderBatch(); });
     document.getElementById('printBtn').addEventListener('click', printAll);
+    document.getElementById('floatPrint').addEventListener('click', printAll);
 
     // Floating add-selected bar (mirrors the top controls; qty stays in sync)
     document.getElementById('floatAdd').addEventListener('click', addSelectedPresets);
