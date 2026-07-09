@@ -163,7 +163,7 @@
       <h1>Plate Label Printer</h1>
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
-    <span class="build">build 2026-07-08f</span>
+    <span class="build">build 2026-07-09a</span>
   </div>
 
   <!-- Label size & contents -->
@@ -197,6 +197,7 @@
     <h2><span class="step-badge">2</span> Pick samples</h2>
     <div class="preset-tools">
       <label>Qty each <input type="number" id="presetQty" value="1" min="1" style="width:62px;"></label>
+      <button id="selectAllBtn" class="btn btn-sm">Select all samples</button>
       <button id="addSelectedBtn" class="btn btn-primary btn-sm">Add selected to batch</button>
       <button id="clearSelBtn" class="btn btn-sm">Clear selection</button>
       <span id="selCount" class="muted"></span>
@@ -3176,6 +3177,13 @@ var qrcode = function() {
     if (n > 0) bar.removeAttribute('hidden'); else bar.setAttribute('hidden', '');
   }
 
+  function selectAllPresets() {
+    PRESETS.forEach(function (g) {
+      g.items.forEach(function (it) { selection[g.suffix + '|' + it] = true; });
+    });
+    refreshPresetSelection();
+  }
+
   function addSelectedPresets() {
     var qty = Math.max(1, parseInt(document.getElementById('presetQty').value, 10) || 1);
     var base = getBase();
@@ -3544,6 +3552,7 @@ var qrcode = function() {
     refreshBase();
     renderSizeButtons();
 
+    document.getElementById('selectAllBtn').addEventListener('click', selectAllPresets);
     document.getElementById('addSelectedBtn').addEventListener('click', addSelectedPresets);
     document.getElementById('clearSelBtn').addEventListener('click', function () { selection = {}; refreshPresetSelection(); });
     document.getElementById('clearBatchBtn').addEventListener('click', function () { state.rows = []; renderBatch(); });
