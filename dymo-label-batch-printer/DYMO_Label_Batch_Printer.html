@@ -339,7 +339,7 @@
 <body>
 <div class="container">
   <div class="header">
-    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-07k</span></h1>
+    <h1>DYMO Label Batch Printer <span style="font-size:0.5em;font-weight:normal;color:#868e96;vertical-align:middle;">build 2026-07-13a</span></h1>
     <p>Load a .label template &mdash; works on any computer with a DYMO printer.</p>
   </div>
 
@@ -382,6 +382,7 @@
         <textarea id="csvArea" rows="3" placeholder="FieldName1,FieldName2&#10;value1,value2&#10;value3,value4"></textarea>
         <div class="actions">
           <button class="btn btn-secondary" id="importCsvBtn">Import CSV rows</button>
+          <button class="btn btn-secondary hidden" id="downloadCsvTplBtn" title="Download a pre-headed CSV you can fill in and paste back">Download CSV template</button>
         </div>
       </div>
     </div>
@@ -400,13 +401,19 @@
         </div>
       </div>
       <div class="nudge-row" style="display:flex;align-items:center;gap:10px;margin:10px 0;flex-wrap:wrap;">
-        <span style="font-size:0.9em;color:#495057;">Fine-tune position on the label (mm) &mdash; preview updates live. Use this to line the print up with pre-printed label stock:</span>
+        <span style="font-size:0.9em;color:#495057;">Whole-label shift (mm) &mdash; moves every field together. Use this to align the print to your label stock:</span>
         <label style="font-size:0.85em;display:inline-flex;align-items:center;gap:4px;">Right +&thinsp;/&thinsp;Left &minus;
           <input type="number" id="nudgeX" step="0.5" value="0" style="width:66px;padding:4px;">mm</label>
         <label style="font-size:0.85em;display:inline-flex;align-items:center;gap:4px;">Down +&thinsp;/&thinsp;Up &minus;
           <input type="number" id="nudgeY" step="0.5" value="0" style="width:66px;padding:4px;">mm</label>
         <button type="button" class="btn btn-sm" id="nudgeReset">Reset</button>
       </div>
+      <details id="fieldOffsetDetails" style="margin:10px 0;border:1px solid #dee2e6;border-radius:8px;overflow:hidden;">
+        <summary style="padding:10px 14px;cursor:pointer;background:#f8f9fa;font-weight:600;font-size:0.88em;color:#6c757d;user-select:none;">
+          Fine-tune individual field positions &mdash; move each field independently within the label
+        </summary>
+        <div id="fieldOffsetPanel" style="padding:14px;"></div>
+      </details>
       <div class="actions">
         <button class="btn btn-primary" id="printBtn" disabled>Print 0 label(s)</button>
       </div>
@@ -2750,7 +2757,8 @@ var qrcode = function() {
     labelHeightIn: 0,
     rows: [],
     printers: [],
-    selectedPrinter: null
+    selectedPrinter: null,
+    fieldOffsets: {}     // { objectName: { dx: 0, dy: 0 } } in mm — per-field fine-tune
   };
 
   // ── Utilities ──────────────────────────────────────────────────────────────
@@ -3110,7 +3118,7 @@ var qrcode = function() {
   }
 
   // Render label to a Canvas (used for printing — avoids all cross-document CSS issues)
-  function renderLabelToCanvas(objects, wIn, hIn, values) {
+  function renderLabelToCanvas(objects, wIn, hIn, values, fieldOffsets) {
     var SCALE = 4; // 4× for ~384 dpi print quality
     var W = Math.round(wIn * 96 * SCALE);
     var H = Math.round(hIn * 96 * SCALE);
@@ -3123,8 +3131,9 @@ var qrcode = function() {
     ctx.fillRect(0, 0, W, H);
 
     objects.forEach(function (obj) {
-      var x = Math.round(obj.bounds.x * 96 * SCALE);
-      var y = Math.round(obj.bounds.y * 96 * SCALE);
+      var off = (fieldOffsets && obj.name && fieldOffsets[obj.name]) || { dx: 0, dy: 0 };
+      var x = Math.round((obj.bounds.x + (off.dx || 0) / 25.4) * 96 * SCALE);
+      var y = Math.round((obj.bounds.y + (off.dy || 0) / 25.4) * 96 * SCALE);
       var w = Math.round(obj.bounds.w * 96 * SCALE);
       var h = Math.round(obj.bounds.h * 96 * SCALE);
 
@@ -3229,7 +3238,7 @@ var qrcode = function() {
     var offX = ((state.nudgeXmm || 0) / 25.4) * 96 * SCALE;
     var offY = ((state.nudgeYmm || 0) / 25.4) * 96 * SCALE;
 
-    var designCanvas = renderLabelToCanvas(state.objects, Wd, Hd, values);
+    var designCanvas = renderLabelToCanvas(state.objects, Wd, Hd, values, state.fieldOffsets);
     if (rot === 0 && !offX && !offY) {
       return { canvas: designCanvas, physW: physW, physH: physH };
     }
@@ -3324,6 +3333,7 @@ var qrcode = function() {
   function showSteps() {
     document.getElementById('stepData').classList.remove('hidden');
     document.getElementById('stepPrint').classList.remove('hidden');
+    document.getElementById('downloadCsvTplBtn').classList.remove('hidden');
   }
 
   // ── DYMO Connect (advanced / optional) ────────────────────────────────────
@@ -3515,9 +3525,13 @@ var qrcode = function() {
       );
     }
 
+    // Restore per-field offsets saved for this template
+    state.fieldOffsets = getStoredOffsets(name);
+
     saveTemplate(name, xml);
     renderSavedTemplates();
     renderBatchTable();
+    renderFieldOffsetPanel();
     updatePrintButton();
     showSteps();
   }
@@ -3723,6 +3737,97 @@ var qrcode = function() {
     });
   })();
 
+  // ── Per-field position offsets (mm) — persist per template name ──────────
+  var FIELD_OFFSETS_KEY = 'dymo_field_offsets_v1';
+
+  function getStoredOffsets(templateName) {
+    try {
+      var all = JSON.parse(localStorage.getItem(FIELD_OFFSETS_KEY)) || {};
+      return all[templateName] || {};
+    } catch (e) { return {}; }
+  }
+
+  function saveStoredOffsets(templateName, offsets) {
+    try {
+      var all = JSON.parse(localStorage.getItem(FIELD_OFFSETS_KEY)) || {};
+      all[templateName] = offsets;
+      localStorage.setItem(FIELD_OFFSETS_KEY, JSON.stringify(all));
+    } catch (e) {}
+  }
+
+  function applyFieldOffset(fieldName, axis, value) {
+    if (!state.fieldOffsets[fieldName]) state.fieldOffsets[fieldName] = { dx: 0, dy: 0 };
+    state.fieldOffsets[fieldName][axis === 'x' ? 'dx' : 'dy'] = parseFloat(value) || 0;
+    saveStoredOffsets(state.labelFilename, state.fieldOffsets);
+    updatePreview();
+  }
+
+  function resetFieldOffset(fieldName) {
+    if (state.fieldOffsets[fieldName]) {
+      state.fieldOffsets[fieldName] = { dx: 0, dy: 0 };
+    }
+    saveStoredOffsets(state.labelFilename, state.fieldOffsets);
+    renderFieldOffsetPanel();
+    updatePreview();
+  }
+
+  function renderFieldOffsetPanel() {
+    var panel = document.getElementById('fieldOffsetPanel');
+    if (!panel) return;
+    var namedObjects = state.objects.filter(function (o) { return o.name; });
+    if (namedObjects.length === 0) {
+      panel.innerHTML = '<p style="font-size:0.85em;color:#868e96;margin:0;">No named fields in this template.</p>';
+      return;
+    }
+
+    var html = '<div style="display:grid;grid-template-columns:max-content max-content max-content max-content;gap:6px 12px;align-items:center;">';
+    html += '<strong style="font-size:0.82em;color:#868e96;">Field</strong>';
+    html += '<strong style="font-size:0.82em;color:#868e96;">Right +/ Left − (mm)</strong>';
+    html += '<strong style="font-size:0.82em;color:#868e96;">Down +/ Up − (mm)</strong>';
+    html += '<span></span>';
+
+    namedObjects.forEach(function (obj) {
+      var off = state.fieldOffsets[obj.name] || { dx: 0, dy: 0 };
+      var badge = obj.type === 'barcode' ? ' <span style="font-size:0.75em;color:#764ba2;background:#ede9ff;padding:1px 6px;border-radius:10px;">QR</span>' :
+                  (obj.rotation ? ' <span style="font-size:0.75em;color:#0c5460;background:#d1ecf1;padding:1px 6px;border-radius:10px;">' + obj.rotation + '°</span>' : '');
+      html += '<span style="font-size:0.88em;font-weight:600;">' + escHtml(obj.name) + badge + '</span>';
+      html += '<input type="number" class="field-offset-input" data-field="' + escHtml(obj.name) + '" data-axis="x" step="0.25" value="' + (off.dx || 0) + '" style="width:70px;padding:4px;border:1px solid #dee2e6;border-radius:6px;font-size:0.9em;">';
+      html += '<input type="number" class="field-offset-input" data-field="' + escHtml(obj.name) + '" data-axis="y" step="0.25" value="' + (off.dy || 0) + '" style="width:70px;padding:4px;border:1px solid #dee2e6;border-radius:6px;font-size:0.9em;">';
+      html += '<button type="button" class="btn btn-sm field-offset-reset" data-field="' + escHtml(obj.name) + '" style="white-space:nowrap;">Reset</button>';
+    });
+    html += '</div>';
+    panel.innerHTML = html;
+
+    panel.querySelectorAll('.field-offset-input').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        applyFieldOffset(this.dataset.field, this.dataset.axis, this.value);
+      });
+    });
+    panel.querySelectorAll('.field-offset-reset').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        resetFieldOffset(this.dataset.field);
+      });
+    });
+  }
+
+  // ── CSV template download ─────────────────────────────────────────────────
+
+  function downloadCsvTemplate() {
+    if (!state.fields.length) return;
+    var headers = state.fields.map(function (f) { return f.label || f.name; });
+    var csv = headers.join(',') + '\n' + headers.map(function () { return ''; }).join(',') + '\n';
+    var blob = new Blob([csv], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var base = state.labelFilename.replace(/\.label$/i, '').replace(/\.[^.]+$/, '');
+    a.download = (base || 'label') + '_template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('downloadCsvTplBtn').addEventListener('click', downloadCsvTemplate);
+
   // DYMO Connect (advanced)
   document.getElementById('printerSelect').addEventListener('change', function () {
     state.selectedPrinter = this.value || null;
@@ -3739,14 +3844,17 @@ var qrcode = function() {
   // Bundled templates — seeded into localStorage on first visit (never overwrite user edits)
   var BUNDLED = [
     {
+      name: 'CI Pipette Label with QR (1).label',
+      xml: '<?xml version="1.0" encoding="utf-8"?>\n<DieCutLabel Version="8.0" Units="twips" MediaType="Default">\n\t<PaperOrientation>Landscape</PaperOrientation>\n\t<Id>Small30347</Id>\n\t<IsOutlined>false</IsOutlined>\n\t<PaperName>30347 1 in x 1-1/2 in</PaperName>\n\t<DrawCommands>\n\t\t<RoundRectangle X="0" Y="0" Width="1440" Height="2160" Rx="180" Ry="180" />\n\t</DrawCommands>\n\t<ObjectInfo>\n\t\t<BarcodeObject>\n\t\t\t<Name>BARCODE</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="255" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName>Serial Number</LinkedObjectName>\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>False</IsVariable>\n\t\t\t<GroupID>-1</GroupID>\n\t\t\t<IsOutlined>False</IsOutlined>\n\t\t\t<Text>221531504</Text>\n\t\t\t<Type>QRCode</Type>\n\t\t\t<Size>Small</Size>\n\t\t\t<TextPosition>None</TextPosition>\n\t\t\t<TextFont Family="Helvetica" Size="10" Bold="False" Italic="False" Underline="False" Strikeout="False" />\n\t\t\t<CheckSumFont Family="Helvetica" Size="10" Bold="False" Italic="False" Underline="False" Strikeout="False" />\n\t\t\t<TextEmbedding>None</TextEmbedding>\n\t\t\t<ECLevel>0</ECLevel>\n\t\t\t<HorizontalAlignment>Right</HorizontalAlignment>\n\t\t\t<QuietZonesPadding Left="0" Top="0" Right="0" Bottom="0" />\n\t\t</BarcodeObject>\n\t\t<Bounds X="1513" Y="798" Width="560" Height="560" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>Serial Number</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<GroupID>-1</GroupID>\n\t\t\t<IsOutlined>False</IsOutlined>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<VerticalAlignment>Middle</VerticalAlignment>\n\t\t\t<TextFitMode>ShrinkToFit</TextFitMode>\n\t\t\t<UseFullFontHeight>True</UseFullFontHeight>\n\t\t\t<Verticalized>False</Verticalized>\n\t\t\t<StyledText><Element><String xml:space="preserve">221531504</String><Attributes><Font Family="Tahoma" Size="9" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="326" Y="443.5825" Width="1733.243" Height="233" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>Cal date</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<GroupID>-1</GroupID>\n\t\t\t<IsOutlined>False</IsOutlined>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<VerticalAlignment>Middle</VerticalAlignment>\n\t\t\t<TextFitMode>ShrinkToFit</TextFitMode>\n\t\t\t<UseFullFontHeight>True</UseFullFontHeight>\n\t\t\t<Verticalized>False</Verticalized>\n\t\t\t<StyledText><Element><String xml:space="preserve">Aug 2024</String><Attributes><Font Family="Tahoma" Size="9" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="384.206033094444" Y="862.5861" Width="949.238097475926" Height="203.4" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>Due date</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<GroupID>-1</GroupID>\n\t\t\t<IsOutlined>False</IsOutlined>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<VerticalAlignment>Bottom</VerticalAlignment>\n\t\t\t<TextFitMode>ShrinkToFit</TextFitMode>\n\t\t\t<UseFullFontHeight>True</UseFullFontHeight>\n\t\t\t<Verticalized>False</Verticalized>\n\t\t\t<StyledText><Element><String xml:space="preserve">Aug 2025</String><Attributes><Font Family="Tahoma" Size="9" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="369.281409224074" Y="1145.907" Width="1065.96287089444" Height="201.77186057963" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>Tech</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation90</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<GroupID>-1</GroupID>\n\t\t\t<IsOutlined>False</IsOutlined>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<VerticalAlignment>Middle</VerticalAlignment>\n\t\t\t<TextFitMode>ShrinkToFit</TextFitMode>\n\t\t\t<UseFullFontHeight>True</UseFullFontHeight>\n\t\t\t<Verticalized>False</Verticalized>\n\t\t\t<StyledText><Element><String xml:space="preserve">TSD</String><Attributes><Font Family="Tahoma" Size="9" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="0" Green="0" Blue="0" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="1458.191" Y="920.5737" Width="237" Height="320.4" />\n\t</ObjectInfo>\n</DieCutLabel>'
+    },
+    {
       name: 'PLATE LABEL WITH QR AND DATE .74x2..label',
       xml: '<?xml version="1.0" encoding="utf-8"?>\n<DieCutLabel Version="8.0" Units="twips" MediaType="Durable">\n\t<PaperOrientation>Landscape</PaperOrientation>\n\t<PaperName>30345 3/4 in x 2-1/2 in</PaperName>\n\t<DrawCommands><RoundRectangle X="0" Y="0" Width="1080" Height="3600" Rx="180" Ry="180" /></DrawCommands>\n\t<ObjectInfo>\n\t\t<TextObject>\n\t\t\t<Name>TEXT</Name>\n\t\t\t<ForeColor Alpha="255" Red="255" Green="255" Blue="255" />\n\t\t\t<BackColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>True</IsVariable>\n\t\t\t<HorizontalAlignment>Center</HorizontalAlignment>\n\t\t\t<VerticalAlignment>Middle</VerticalAlignment>\n\t\t\t<TextFitMode>AlwaysFit</TextFitMode>\n\t\t\t<StyledText><Element><String xml:space="preserve">PLATE-ID</String><Attributes><Font Family="Arial" Size="12" Bold="True" Italic="False" Underline="False" Strikeout="False" /><ForeColor Alpha="255" Red="255" Green="255" Blue="255" HueScale="100" /></Attributes></Element></StyledText>\n\t\t</TextObject>\n\t\t<Bounds X="326" Y="168" Width="2595" Height="452" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<BarcodeObject>\n\t\t\t<Name>BARCODE</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName>TEXT</LinkedObjectName>\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsMirrored>False</IsMirrored>\n\t\t\t<IsVariable>False</IsVariable>\n\t\t\t<Text>PLATE-ID</Text>\n\t\t\t<Type>QRCode</Type>\n\t\t\t<Size>Medium</Size>\n\t\t\t<TextPosition>None</TextPosition>\n\t\t\t<TextFont Family="Arial" Size="8" Bold="False" Italic="False" Underline="False" Strikeout="False" />\n\t\t\t<HorizontalAlignment>Center</HorizontalAlignment>\n\t\t\t<QuietZonesPadding Left="0" Top="0" Right="0" Bottom="0" />\n\t\t</BarcodeObject>\n\t\t<Bounds X="2964" Y="57" Width="549" Height="651" />\n\t</ObjectInfo>\n\t<ObjectInfo>\n\t\t<DateTimeObject>\n\t\t\t<Name>DATE-TIME</Name>\n\t\t\t<ForeColor Alpha="255" Red="0" Green="0" Blue="0" />\n\t\t\t<BackColor Alpha="0" Red="255" Green="255" Blue="255" />\n\t\t\t<LinkedObjectName />\n\t\t\t<Rotation>Rotation0</Rotation>\n\t\t\t<IsVariable>False</IsVariable>\n\t\t\t<HorizontalAlignment>Left</HorizontalAlignment>\n\t\t\t<DateTimeFormat>MonthDayLongYear</DateTimeFormat>\n\t\t\t<Font Family="Arial" Size="12" Bold="False" Italic="False" Underline="False" Strikeout="False" />\n\t\t\t<IncludeTime>True</IncludeTime>\n\t\t\t<Use24HourFormat>False</Use24HourFormat>\n\t\t</DateTimeObject>\n\t\t<Bounds X="776" Y="674" Width="1797" Height="285" />\n\t</ObjectInfo>\n</DieCutLabel>'
     }
   ];
 
-  // Templates to actively strip out of localStorage on load, even if a user
-  // already has them saved — used to retire a bundled demo template.
-  var RETIRED_TEMPLATE_NAMES = ['CI Pipette Label with QR (1).label'];
+  // Templates to actively strip out of localStorage on load — used to retire old bundled versions.
+  var RETIRED_TEMPLATE_NAMES = [];
 
   (function seedBundled() {
     // Only add bundled templates the user doesn't already have saved —
