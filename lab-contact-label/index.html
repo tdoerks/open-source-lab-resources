@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratory Contact Label Generator</title>
+<meta name="description" content="Generate freezer, refrigerator, and laboratory storage contact labels with QR and NFC support. Print, PNG, SVG and PDF export. Runs entirely in your browser.">
+<!--
+  Laboratory Contact Label Generator
+  Open Source Lab Resources — https://github.com/tdoerks/open-source-lab-resources
+
+  Single-file, dependency-light utility. The ONLY external dependency is a QR
+  code generation library loaded from a CDN (qrcode-generator). Everything else
+  — the label itself, all icons, and every export format — is generated locally.
+
+  Architecture note: the live preview IS an inline <svg>. Because the label is
+  authored as vector SVG, all export formats derive from a single source of
+  truth with no HTML->canvas rasterizer:
+    - SVG  : serialize the live <svg>
+    - PNG  : draw the SVG into a <canvas>, then canvas.toBlob()
+    - PDF  : encode the canvas as JPEG and embed it in a hand-built PDF (DCTDecode)
+    - Print: hand the same <svg> to the browser's print pipeline
+-->
+<!-- QR code generation library (only external dependency). Exposes global qrcode(). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  /* ---------------------------------------------------------------------------
+     Design tokens. Kansas State CVM-inspired: deep purple, high-contrast neutrals.
+     Light and dark UI themes are handled via [data-theme] on <html>.
+     NOTE: theme affects the APPLICATION CHROME only. The label always renders in
+     a print-safe, high-contrast palette so printed output is consistent.
+  --------------------------------------------------------------------------- */
+  :root {
+    --ksu-purple: #512888;
+    --ksu-purple-dark: #3d1e66;
+    --ksu-purple-light: #6b3aad;
+    --alert-red: #b3141c;
+    --alert-red-dark: #8c0f16;
+
+    --bg: #eef0f4;
+    --surface: #ffffff;
+    --surface-2: #f6f7f9;
+    --border: #d3d8e0;
+    --text: #1a1d24;
+    --text-muted: #5a6472;
+    --field-bg: #ffffff;
+    --field-border: #b9c0cc;
+    --focus: #512888;
+    --shadow: 0 1px 3px rgba(16,24,40,.08), 0 4px 16px rgba(16,24,40,.08);
+    --accent: var(--ksu-purple);
+    --accent-contrast: #ffffff;
+  }
+  [data-theme="dark"] {
+    --bg: #0f1218;
+    --surface: #1a1f29;
+    --surface-2: #212836;
+    --border: #333c4d;
+    --text: #eef1f6;
+    --text-muted: #a4adbd;
+    --field-bg: #10141c;
+    --field-border: #3a4456;
+    --focus: #a582e0;
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.4);
+    --accent: #8b5fd6;
+    --accent-contrast: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- App header ---------------------------------------------------------- */
+  .app-header {
+    background: linear-gradient(135deg, var(--ksu-purple), var(--ksu-purple-dark));
+    color: #fff;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.18);
+  }
+  .app-header .brand-icon {
+    width: 38px; height: 38px; flex: 0 0 auto;
+    background: rgba(255,255,255,.14);
+    border-radius: 9px;
+    display: grid; place-items: center;
+  }
+  .app-header h1 { font-size: 1.28rem; margin: 0; font-weight: 700; letter-spacing: .2px; }
+  .app-header p { margin: 2px 0 0; font-size: .82rem; opacity: .85; }
+  .app-header .spacer { flex: 1; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  /* ---- Layout -------------------------------------------------------------- */
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 460px) 1fr;
+    gap: 22px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 22px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+  }
+  .panel-title {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700; font-size: .95rem;
+  }
+  .panel-title .count { color: var(--text-muted); font-weight: 500; font-size: .8rem; }
+
+  /* ---- Form ---------------------------------------------------------------- */
+  form { padding: 8px 18px 18px; }
+  fieldset {
+    border: none; margin: 0; padding: 14px 0 4px;
+    border-top: 1px solid var(--border);
+  }
+  fieldset:first-of-type { border-top: none; }
+  legend {
+    font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .8px; color: var(--accent); padding: 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .field { margin: 10px 0; }
+  .field.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+  .hint { font-weight: 400; color: var(--text-muted); font-size: .74rem; }
+  input, select, textarea {
+    width: 100%;
+    font: inherit; font-size: .9rem;
+    padding: 9px 11px;
+    color: var(--text);
+    background: var(--field-bg);
+    border: 1px solid var(--field-border);
+    border-radius: 8px;
+    transition: border-color .12s, box-shadow .12s;
+  }
+  input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible {
+    outline: none;
+    border-color: var(--focus);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 30%, transparent);
+  }
+  /* Visible focus ring fallback for browsers without color-mix */
+  @supports not (color: color-mix(in srgb, red, blue)) {
+    input:focus, select:focus, textarea:focus, button:focus-visible {
+      box-shadow: 0 0 0 3px rgba(81,40,136,.35);
+    }
+  }
+
+  /* ---- Buttons ------------------------------------------------------------- */
+  .btn {
+    font: inherit; font-size: .85rem; font-weight: 600;
+    padding: 9px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--field-border);
+    background: var(--surface-2); color: var(--text);
+    display: inline-flex; align-items: center; gap: 7px;
+    transition: background .12s, border-color .12s, transform .06s;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn.danger { color: var(--alert-red); border-color: color-mix(in srgb, var(--alert-red) 45%, var(--field-border)); }
+  .btn.ghost-light { background: rgba(255,255,255,.14); color:#fff; border-color: rgba(255,255,255,.3); }
+  .btn.ghost-light:hover { background: rgba(255,255,255,.24); }
+  .btn.small { padding: 6px 10px; font-size: .78rem; }
+  .btn svg { width: 16px; height: 16px; flex: 0 0 auto; }
+
+  .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .btn-grid .btn { justify-content: center; }
+
+  .template-bar { display: flex; flex-wrap: wrap; gap: 7px; padding: 12px 0 2px; }
+  .chip {
+    font-size: .78rem; font-weight: 600; padding: 6px 11px; border-radius: 999px;
+    border: 1px solid var(--field-border); background: var(--surface-2); color: var(--text);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+
+  /* ---- Preview panel ------------------------------------------------------- */
+  .preview-wrap { padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .label-stage {
+    background: repeating-conic-gradient(#e9ecf2 0% 25%, #f5f6f9 0% 50%) 50% / 22px 22px;
+    padding: 22px; border-radius: 12px; border: 1px solid var(--border);
+    width: 100%; display: flex; justify-content: center;
+  }
+  [data-theme="dark"] .label-stage {
+    background: repeating-conic-gradient(#232a37 0% 25%, #1b212c 0% 50%) 50% / 22px 22px;
+  }
+  #labelSvg { width: 340px; max-width: 100%; height: auto; box-shadow: 0 6px 24px rgba(0,0,0,.22); border-radius: 6px; }
+
+  .nfc-row {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .nfc-row .nfc-ico { color: var(--accent); flex: 0 0 auto; }
+  .nfc-row .nfc-text { flex: 1; min-width: 0; }
+  .nfc-row .nfc-text small { color: var(--text-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .6px; }
+  .nfc-row .nfc-url {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .82rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .export-bar { width: 100%; }
+  .export-bar h3 { margin: 4px 0 8px; font-size: .82rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; }
+
+  .size-control { display: flex; align-items: center; gap: 10px; width: 100%; font-size: .82rem; color: var(--text-muted); }
+  .size-control select { width: auto; padding: 6px 8px; }
+
+  .toast {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1a1d24; color: #fff; padding: 11px 18px; border-radius: 9px;
+    font-size: .85rem; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,.3);
+    opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .visually-hidden {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: .82rem; }
+  .switch input { width: auto; }
+
+  .saved-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+  .saved-item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; font-size: .84rem;
+  }
+  .saved-item .name { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .saved-item button { background: none; border: none; cursor: pointer; color: var(--accent); font: inherit; font-size: .8rem; font-weight: 600; padding: 2px 6px; }
+  .saved-item button.del { color: var(--alert-red); }
+  .empty-note { color: var(--text-muted); font-size: .8rem; font-style: italic; padding: 4px 2px; }
+
+  footer.app-footer { text-align: center; color: var(--text-muted); font-size: .8rem; padding: 8px 20px 30px; }
+  footer.app-footer a { color: var(--accent); }
+
+  /* ---------------------------------------------------------------------------
+     Print: hide the app, show only the label at physical size.
+     The print container is populated on demand in printLabel().
+  --------------------------------------------------------------------------- */
+  #printArea { display: none; }
+  @media print {
+    @page { margin: 8mm; }
+    body { background: #fff; }
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block; text-align: center; }
+    #printArea svg { width: 4in; height: auto; }
+  }
+</style>
+</head>
+<body>
+  <header class="app-header">
+    <span class="brand-icon" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v6.5L5 18a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-8.5V3"/><path d="M7.5 14h9"/></svg>
+    </span>
+    <div>
+      <h1>Laboratory Contact Label Generator</h1>
+      <p>Freezer, refrigerator &amp; storage contact signage — QR + NFC ready</p>
+    </div>
+    <span class="spacer"></span>
+    <div class="header-actions">
+      <button class="btn ghost-light small" id="themeToggle" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+        <span id="themeToggleLabel">Dark mode</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ============================ LEFT: FORM ============================ -->
+    <section class="panel" aria-label="Label details">
+      <div class="panel-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h10"/></svg>
+        Label Details
+      </div>
+      <form id="labelForm" autocomplete="off">
+        <!-- Templates -->
+        <fieldset>
+          <legend>Templates</legend>
+          <div class="hint" style="margin:4px 0 2px">Start from a preset — it sets the heading, equipment type and defaults.</div>
+          <div class="template-bar" id="templateBar" role="group" aria-label="Label templates"></div>
+        </fieldset>
+
+        <!-- Facility -->
+        <fieldset>
+          <legend>Facility</legend>
+          <div class="field">
+            <label for="org">Organization</label>
+            <input id="org" name="org" type="text" placeholder="Kansas State University">
+          </div>
+          <div class="field">
+            <label for="dept">Department</label>
+            <input id="dept" name="dept" type="text" placeholder="College of Veterinary Medicine">
+          </div>
+          <div class="field row2">
+            <div>
+              <label for="freezerId">Freezer / Unit ID</label>
+              <input id="freezerId" name="freezerId" type="text" placeholder="FRZ-A14">
+            </div>
+            <div>
+              <label for="roomNumber">Room Number</label>
+              <input id="roomNumber" name="roomNumber" type="text" placeholder="Trotter 218">
+            </div>
+          </div>
+          <div class="field">
+            <label for="equipmentType">Equipment Type</label>
+            <input id="equipmentType" name="equipmentType" type="text" list="equipList" placeholder="-80°C Ultra-Low Freezer">
+            <datalist id="equipList">
+              <option value="-80°C Ultra-Low Freezer"></option>
+              <option value="-20°C Freezer"></option>
+              <option value="4°C Refrigerator"></option>
+              <option value="Liquid Nitrogen Dewar (-196°C)"></option>
+              <option value="Cryogenic Storage Tank"></option>
+              <option value="-150°C Cryo Freezer"></option>
+            </datalist>
+          </div>
+        </fieldset>
+
+        <!-- PI -->
+        <fieldset>
+          <legend>Principal Investigator</legend>
+          <div class="field">
+            <label for="piName">Name</label>
+            <input id="piName" name="piName" type="text" placeholder="Dr. Jane Smith">
+          </div>
+          <div class="field row2">
+            <div>
+              <label for="piEmail">Email</label>
+              <input id="piEmail" name="piEmail" type="email" placeholder="jsmith@k-state.edu">
+            </div>
+            <div>
+              <label for="piPhone">Mobile Phone</label>
+              <input id="piPhone" name="piPhone" type="tel" placeholder="(785) 555-0142">
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Lab Manager -->
+        <fieldset>
+          <legend>Lab Manager</legend>
+          <div class="field">
+            <label for="lmName">Name</label>
+            <input id="lmName" name="lmName" type="text" placeholder="Alex Rivera">
+          </div>
+          <div class="field row2">
+            <div>
+              <label for="lmEmail">Email</label>
+              <input id="lmEmail" name="lmEmail" type="email" placeholder="arivera@k-state.edu">
+            </div>
+            <div>
+              <label for="lmPhone">Mobile Phone</label>
+              <input id="lmPhone" name="lmPhone" type="tel" placeholder="(785) 555-0188">
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Emergency -->
+        <fieldset>
+          <legend>Phones &amp; Emergency</legend>
+          <div class="field row2">
+            <div>
+              <label for="officePhone">Office Phone</label>
+              <input id="officePhone" name="officePhone" type="tel" placeholder="(785) 555-0100">
+            </div>
+            <div>
+              <label for="afterHours">After-Hours Emergency</label>
+              <input id="afterHours" name="afterHours" type="tel" placeholder="(785) 555-9111">
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- QR -->
+        <fieldset>
+          <legend>QR &amp; NFC Destination</legend>
+          <div class="field">
+            <label for="qrUrl">Destination URL <span class="hint">— encoded in the QR code and programmed to the NFC tag</span></label>
+            <input id="qrUrl" name="qrUrl" type="url" placeholder="https://labs.k-state.edu/smith/freezer-a14">
+          </div>
+        </fieldset>
+
+        <!-- Storage / reset -->
+        <fieldset>
+          <legend>Saved Labels</legend>
+          <div class="btn-grid">
+            <button type="button" class="btn" id="saveBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              Save to browser
+            </button>
+            <button type="button" class="btn danger" id="resetBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+              Reset form
+            </button>
+          </div>
+          <div class="saved-list" id="savedList" aria-live="polite"></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <!-- ============================ RIGHT: PREVIEW ============================ -->
+    <section class="panel" aria-label="Label preview and export">
+      <div class="panel-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        Live Preview
+        <span class="spacer" style="flex:1"></span>
+        <label class="switch" title="Force black & white for maximum print contrast">
+          <input type="checkbox" id="hcToggle">
+          <span>High-contrast print</span>
+        </label>
+      </div>
+      <div class="preview-wrap">
+        <div class="label-stage">
+          <!-- The live label. Populated by render(). role=img with a dynamic description. -->
+          <svg id="labelSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 620" role="img" aria-label="Contact label preview"></svg>
+        </div>
+
+        <!-- NFC quick-copy row (app chrome; mirrors the on-label NFC section) -->
+        <div class="nfc-row">
+          <span class="nfc-ico" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8a10 10 0 0 1 0 8M9 6a15 15 0 0 1 0 12"/><circle cx="12.5" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M15 6a15 15 0 0 1 0 12M19 8a10 10 0 0 1 0 8"/></svg>
+          </span>
+          <div class="nfc-text">
+            <small>NFC / QR destination</small>
+            <div class="nfc-url" id="nfcUrlText">No URL entered</div>
+          </div>
+          <button class="btn small" id="copyBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+            Copy
+          </button>
+        </div>
+
+        <div class="export-bar">
+          <h3>Export &amp; Print</h3>
+          <div class="btn-grid">
+            <button class="btn primary" id="printBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7"/></svg>
+              Print label
+            </button>
+            <button class="btn" id="pngBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+              Download PNG
+            </button>
+            <button class="btn" id="svgBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+              Download SVG
+            </button>
+            <button class="btn" id="pdfBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+              Download PDF
+            </button>
+          </div>
+          <div class="size-control" style="margin-top:12px">
+            <label for="pxScale" style="margin:0">Raster export size</label>
+            <select id="pxScale">
+              <option value="2">Standard (800×1240)</option>
+              <option value="3" selected>High (1200×1860)</option>
+              <option value="4">Ultra (1600×2480)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    Part of <a href="https://github.com/tdoerks/open-source-lab-resources" target="_blank" rel="noopener">Open Source Lab Resources</a>.
+    Runs entirely in your browser — no data leaves this device.
+  </footer>
+
+  <!-- Print target (populated on demand) -->
+  <div id="printArea" aria-hidden="true"></div>
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===========================================================================
+   Laboratory Contact Label Generator — application logic
+   Organized into small modules attached to a single namespace `App`.
+   =========================================================================== */
+(function () {
+  "use strict";
+
+  /* -------------------------------------------------------------------------
+     MODULE: Icons — inline SVG path definitions on a 24×24 grid.
+     Each returns a <path>/<g> string; drawn into the label via Svg.icon().
+     ------------------------------------------------------------------------- */
+  var Icons = {
+    flask:  '<path d="M9 3h6M10 3v6.5L5 18a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-8.5V3M7.5 14h9"/>',
+    user:   '<circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/>',
+    mail:   '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>',
+    phone:  '<path d="M5 4h4l1.6 4.2-2 1.6a12 12 0 0 0 5.6 5.6l1.6-2 4.2 1.6V19a2 2 0 0 1-2 2A16 16 0 0 1 4 6a2 2 0 0 1 2-2z"/>',
+    mobile: '<rect x="7" y="2.5" width="10" height="19" rx="2.4"/><path d="M11 18.5h2"/>',
+    office: '<path d="M4 21V4a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v17M15 8h4a1 1 0 0 1 1 1v12"/><path d="M2.5 21h19M7.5 7h2M7.5 11h2M7.5 15h2"/>',
+    warn:   '<path d="M12 3l9.5 16.5H2.5L12 3z"/><path d="M12 10v4.5M12 17.4v.1"/>',
+    clock:  '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>',
+    snow:   '<path d="M12 2v20M4 6l16 12M20 6L4 18M12 5.5l2.5-2.5M12 5.5L9.5 3M12 18.5l2.5 2.5M12 18.5L9.5 21M4.8 6.3l.2 3.4M4.8 6.3l3.4-.2M19.2 17.7l-.2-3.4M19.2 17.7l-3.4.2M19.2 6.3l-3.4-.2M19.2 6.3l.2 3.4M4.8 17.7l3.4.2M4.8 17.7l-.2-3.4"/>',
+    nfc:    '<path d="M5 8a10 10 0 0 1 0 8M9 6a15 15 0 0 1 0 12"/><circle cx="12.5" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M15 6a15 15 0 0 1 0 12M19 8a10 10 0 0 1 0 8"/>',
+    pin:    '<path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/>'
+  };
+
+  /* -------------------------------------------------------------------------
+     MODULE: Templates — presets that seed the heading, equipment type,
+     accent behavior and default hazard note.
+     ------------------------------------------------------------------------- */
+  var Templates = {
+    freezer: {
+      label: "Freezer Contact", icon: "snow",
+      heading: "FREEZER CONTACT INFORMATION",
+      equipmentType: "-80°C Ultra-Low Freezer",
+      badge: "-80°C"
+    },
+    fridge: {
+      label: "Refrigerator", icon: "snow",
+      heading: "REFRIGERATOR CONTACT INFORMATION",
+      equipmentType: "4°C Refrigerator",
+      badge: "4°C"
+    },
+    ln2: {
+      label: "Liquid Nitrogen", icon: "warn",
+      heading: "LIQUID NITROGEN STORAGE",
+      equipmentType: "Liquid Nitrogen Dewar (-196°C)",
+      badge: "-196°C", hazard: "CRYOGENIC HAZARD — ASPHYXIATION RISK"
+    },
+    molecular: {
+      label: "Molecular Samples", icon: "flask",
+      heading: "MOLECULAR SAMPLE STORAGE",
+      equipmentType: "-80°C Ultra-Low Freezer",
+      badge: "-80°C"
+    },
+    dna: {
+      label: "DNA / RNA Storage", icon: "flask",
+      heading: "DNA / RNA STORAGE",
+      equipmentType: "-20°C Freezer",
+      badge: "-20°C"
+    }
+  };
+  var TEMPLATE_ORDER = ["freezer", "fridge", "ln2", "molecular", "dna"];
+
+  /* -------------------------------------------------------------------------
+     MODULE: State — the form model + a couple of view flags. Single source
+     of truth passed to Svg.render().
+     ------------------------------------------------------------------------- */
+  var FIELDS = ["org","dept","freezerId","roomNumber","equipmentType",
+                "piName","piEmail","piPhone","lmName","lmEmail","lmPhone",
+                "officePhone","afterHours","qrUrl"];
+
+  var State = {
+    data: {},
+    heading: Templates.freezer.heading,
+    badge: Templates.freezer.badge,
+    hazard: "",
+    icon: "snow",
+    activeTemplate: "freezer",
+    highContrast: false
+  };
+
+  /* -------------------------------------------------------------------------
+     MODULE: Svg — pure functions that build the label as an SVG string.
+     ------------------------------------------------------------------------- */
+  var Svg = (function () {
+    var W = 400, H = 620;
+
+    function esc(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    // Rough width estimate for a bold-ish sans font, in user units. The factor
+    // is intentionally generous so long values shrink/clip before the border.
+    function textWidth(str, size) { return String(str).length * size * 0.6; }
+
+    // Pick a font size so `str` fits `maxW`, between min and max.
+    function fitSize(str, maxW, max, min) {
+      if (!str) return max;
+      var s = max;
+      while (s > min && textWidth(str, s) > maxW) s -= 0.5;
+      return s;
+    }
+
+    // Truncate with ellipsis if it still overflows at the given size.
+    function clip(str, maxW, size) {
+      str = String(str);
+      if (textWidth(str, size) <= maxW) return str;
+      var n = str.length;
+      while (n > 1 && textWidth(str.slice(0, n) + "…", size) > maxW) n--;
+      return str.slice(0, n) + "…";
+    }
+
+    function text(x, y, str, opts) {
+      opts = opts || {};
+      return '<text x="' + x + '" y="' + y + '"' +
+        ' font-family="Helvetica, Arial, sans-serif"' +
+        ' font-size="' + (opts.size || 14) + '"' +
+        ' font-weight="' + (opts.weight || 400) + '"' +
+        ' fill="' + (opts.fill || "#111") + '"' +
+        (opts.anchor ? ' text-anchor="' + opts.anchor + '"' : '') +
+        (opts.spacing ? ' letter-spacing="' + opts.spacing + '"' : '') +
+        '>' + esc(str) + '</text>';
+    }
+
+    // Draw an icon (24×24 path set) at x,y scaled to `size`, given stroke color.
+    function icon(name, x, y, size, color, sw) {
+      var s = size / 24;
+      return '<g transform="translate(' + x + ',' + y + ') scale(' + s + ')"' +
+        ' fill="none" stroke="' + color + '" stroke-width="' + (sw || 1.8) +
+        '" stroke-linecap="round" stroke-linejoin="round">' + Icons[name] + '</g>';
+    }
+
+    // Build the QR code as SVG rects from the qrcode-generator module matrix.
+    function qr(str, x, y, size, dark, light) {
+      var out = '<rect x="' + x + '" y="' + y + '" width="' + size + '" height="' + size +
+                '" fill="' + light + '"/>';
+      if (!str) {
+        out += text(x + size / 2, y + size / 2 + 4, "QR", {size: 16, weight: 700, fill: "#bbb", anchor: "middle"});
+        return out;
+      }
+      var qrObj;
+      try {
+        qrObj = window.qrcode(0, "M");     // type 0 = auto-size, error correction M
+        qrObj.addData(str);
+        qrObj.make();
+      } catch (e) {
+        return out + text(x + size / 2, y + size / 2 + 4, "URL too long", {size: 9, fill: "#b3141c", anchor: "middle"});
+      }
+      var n = qrObj.getModuleCount();
+      var pad = size * 0.08;              // quiet zone
+      var cell = (size - pad * 2) / n;
+      var rects = "";
+      for (var r = 0; r < n; r++) {
+        for (var c = 0; c < n; c++) {
+          if (qrObj.isDark(r, c)) {
+            var rx = (x + pad + c * cell).toFixed(2);
+            var ry = (y + pad + r * cell).toFixed(2);
+            rects += '<rect x="' + rx + '" y="' + ry + '" width="' + cell.toFixed(2) +
+                     '" height="' + cell.toFixed(2) + '"/>';
+          }
+        }
+      }
+      return out + '<g fill="' + dark + '" shape-rendering="crispEdges">' + rects + '</g>';
+    }
+
+    // A contact row: icon + value, with fallback dash for empty values.
+    function contactRow(x, y, w, iconName, value, pal) {
+      var val = value && String(value).trim() ? value : "—";
+      var budget = w - 34;                 // room from the icon to the right border
+      var size = fitSize(val, budget, 14.5, 9.5);
+      return icon(iconName, x, y - 12, 15, pal.text, 1.6) +
+             text(x + 22, y, clip(val, budget, size), {size: size, weight: 600, fill: pal.text});
+    }
+
+    // Section title bar.
+    function sectionBar(x, y, w, label, pal) {
+      return '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="18" fill="' + pal.barBg + '"/>' +
+             text(x + 8, y + 13, label, {size: 10, weight: 700, fill: pal.barText, spacing: 1});
+    }
+
+    /* Main entry: produce the full <svg> markup (inner content) for the label. */
+    function render(state) {
+      var d = state.data;
+      // Palette: normal (K-State purple) vs. high-contrast (pure B/W).
+      var pal = state.highContrast ? {
+        purple: "#000", purpleText: "#fff",
+        red: "#000", redText: "#fff",
+        text: "#000", muted: "#000",
+        barBg: "#000", barText: "#fff",
+        border: "#000", panel: "#fff", qrDark: "#000", qrLight: "#fff"
+      } : {
+        purple: "#512888", purpleText: "#fff",
+        red: "#b3141c", redText: "#fff",
+        text: "#16181d", muted: "#5a6472",
+        barBg: "#512888", barText: "#fff",
+        border: "#512888", panel: "#f4f2f8", qrDark: "#16181d", qrLight: "#fff"
+      };
+
+      var M = 14, innerW = W - M * 2;
+      var s = "";
+
+      // Card background + border
+      s += '<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#fff"/>';
+      s += '<rect x="3" y="3" width="' + (W - 6) + '" height="' + (H - 6) +
+           '" fill="none" stroke="' + pal.border + '" stroke-width="3" rx="10"/>';
+
+      // ---- Header band ----
+      s += '<rect x="3" y="3" width="' + (W - 6) + '" height="78" fill="' + pal.purple + '" rx="8"/>';
+      s += '<rect x="3" y="60" width="' + (W - 6) + '" height="21" fill="' + pal.purple + '"/>';
+      s += icon(state.icon, 16, 20, 30, pal.purpleText, 1.7);
+      var headSize = fitSize(state.heading, innerW - 60, 18, 12);
+      s += text(W / 2 + 14, 34, state.heading, {size: headSize, weight: 700, fill: pal.purpleText, anchor: "middle", spacing: .5});
+      var sub = [d.org, d.dept].filter(Boolean).join("  •  ") || "Organization • Department";
+      s += text(W / 2 + 14, 52, clip(sub, innerW - 40, 11), {size: 11, weight: 500, fill: pal.purpleText, anchor: "middle"});
+      // Temperature/hazard badge
+      if (state.badge) {
+        var bw = textWidth(state.badge, 11) + 16;
+        s += '<rect x="' + (W - M - bw) + '" y="64" width="' + bw + '" height="16" rx="8" fill="' + pal.purpleText + '"/>';
+        s += text(W - M - bw / 2, 76, state.badge, {size: 11, weight: 700, fill: pal.purple, anchor: "middle"});
+      }
+
+      var y = 96;
+
+      // ---- Freezer / Unit ID block ----
+      s += text(M + 2, y, "UNIT ID", {size: 10, weight: 700, fill: pal.muted, spacing: 1});
+      var idVal = d.freezerId && d.freezerId.trim() ? d.freezerId : "—";
+      var idSize = fitSize(idVal, innerW - 8, 40, 20);
+      s += text(M + 2, y + 34, idVal, {size: idSize, weight: 700, fill: pal.purple});
+      var meta = [];
+      if (d.roomNumber) meta.push("Room " + d.roomNumber);
+      if (d.equipmentType) meta.push(d.equipmentType);
+      s += text(M + 2, y + 52, clip(meta.join("   |   "), innerW - 4, 11.5), {size: 11.5, weight: 500, fill: pal.text});
+      y += 66;
+      s += '<line x1="' + M + '" y1="' + y + '" x2="' + (W - M) + '" y2="' + y + '" stroke="' + pal.border + '" stroke-width="1" opacity="0.35"/>';
+      y += 8;
+
+      // ---- PI contact ----
+      s += sectionBar(M, y, innerW, "PRINCIPAL INVESTIGATOR", pal); y += 34;
+      s += contactRow(M + 2, y, innerW, "user", d.piName, pal); y += 26;
+      s += contactRow(M + 2, y, innerW, "mail", d.piEmail, pal); y += 26;
+      s += contactRow(M + 2, y, innerW, "mobile", d.piPhone, pal); y += 24;
+
+      // ---- Lab manager contact ----
+      s += sectionBar(M, y, innerW, "LAB MANAGER", pal); y += 34;
+      s += contactRow(M + 2, y, innerW, "user", d.lmName, pal); y += 26;
+      s += contactRow(M + 2, y, innerW, "mail", d.lmEmail, pal); y += 26;
+      s += contactRow(M + 2, y, innerW, "mobile", d.lmPhone, pal); y += 24;
+
+      // ---- Office phone (compact single row) ----
+      s += '<rect x="' + M + '" y="' + y + '" width="' + innerW + '" height="30" rx="6" fill="' + pal.panel + '"/>';
+      s += icon("office", M + 8, y + 6, 18, pal.purple, 1.7);
+      s += text(M + 32, y + 14, "OFFICE PHONE", {size: 9, weight: 700, fill: pal.muted, spacing: .6});
+      s += text(M + 32, y + 26, (d.officePhone && d.officePhone.trim()) ? d.officePhone : "—", {size: 14, weight: 700, fill: pal.text});
+      y += 40;
+
+      // ---- After-hours emergency (red alert) ----
+      s += '<rect x="' + M + '" y="' + y + '" width="' + innerW + '" height="44" rx="7" fill="' + pal.red + '"/>';
+      s += icon("warn", M + 10, y + 10, 26, pal.redText, 1.9);
+      s += text(M + 46, y + 18, "AFTER-HOURS EMERGENCY", {size: 10, weight: 700, fill: pal.redText, spacing: .6});
+      var ah = (d.afterHours && d.afterHours.trim()) ? d.afterHours : "—";
+      s += text(M + 46, y + 36, ah, {size: 18, weight: 700, fill: pal.redText});
+      y += 54;
+
+      // ---- Bottom: QR (left) + NFC (right) ----
+      var qy = y + 6;
+      var qrSize = 96;
+      // QR
+      s += qr(d.qrUrl, M, qy, qrSize, pal.qrDark, pal.qrLight);
+      s += '<rect x="' + M + '" y="' + qy + '" width="' + qrSize + '" height="' + qrSize + '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
+      s += text(M + qrSize / 2, qy + qrSize + 14, "SCAN TO ACCESS", {size: 9, weight: 700, fill: pal.muted, anchor: "middle", spacing: .6});
+
+      // NFC panel
+      var nx = M + qrSize + 14, nw = W - M - nx;
+      s += '<rect x="' + nx + '" y="' + qy + '" width="' + nw + '" height="' + qrSize + '" rx="7" fill="' + pal.panel + '" stroke="' + pal.border + '" stroke-width="1"/>';
+      s += icon("nfc", nx + 10, qy + 10, 22, pal.purple, 1.8);
+      s += text(nx + 40, qy + 20, "NFC TAG", {size: 12, weight: 700, fill: pal.purple, spacing: .5});
+      s += text(nx + 40, qy + 33, "TAP TO OPEN", {size: 8.5, weight: 600, fill: pal.muted, spacing: .5});
+      s += '<line x1="' + (nx + 8) + '" y1="' + (qy + 42) + '" x2="' + (nx + nw - 8) + '" y2="' + (qy + 42) + '" stroke="' + pal.border + '" stroke-width="1" opacity="0.4"/>';
+      s += text(nx + 8, qy + 56, "PROGRAMMED URL", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
+      // URL wrapped over up to 3 monospace-ish lines
+      var url = d.qrUrl && d.qrUrl.trim() ? d.qrUrl : "Not set";
+      var urlLines = wrap(url, nw - 16, 9.2, 3);
+      for (var i = 0; i < urlLines.length; i++) {
+        s += '<text x="' + (nx + 8) + '" y="' + (qy + 69 + i * 11) + '" font-family="Menlo, Consolas, monospace" font-size="9.2" fill="' + pal.text + '">' + esc(urlLines[i]) + '</text>';
+      }
+
+      return s;
+    }
+
+    // Wrap a string to N lines that fit maxW at the given size (ellipsis last line).
+    function wrap(str, maxW, size, maxLines) {
+      var lines = [], cur = "";
+      for (var i = 0; i < str.length; i++) {
+        if (textWidth(cur + str[i], size) > maxW) {
+          lines.push(cur); cur = str[i];
+          if (lines.length === maxLines - 1) break;
+        } else { cur += str[i]; }
+      }
+      var rest = str.slice(lines.join("").length);
+      if (textWidth(rest, size) > maxW) {
+        var n = rest.length;
+        while (n > 1 && textWidth(rest.slice(0, n) + "…", size) > maxW) n--;
+        rest = rest.slice(0, n) + "…";
+      }
+      lines.push(rest);
+      return lines;
+    }
+
+    return { render: render, W: W, H: H };
+  })();
+
+  /* -------------------------------------------------------------------------
+     MODULE: Export — PNG / SVG / PDF / Print. All derive from the live <svg>.
+     ------------------------------------------------------------------------- */
+  var Export = {
+    // Produce a standalone, namespaced SVG string sized to physical inches.
+    svgString: function () {
+      var svg = document.getElementById("labelSvg").cloneNode(true);
+      svg.removeAttribute("role");
+      svg.removeAttribute("aria-label");
+      svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      svg.setAttribute("width", "4in");
+      svg.setAttribute("height", "6.2in");
+      return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg);
+    },
+
+    download: function (blob, name) {
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    },
+
+    downloadSvg: function () {
+      this.download(new Blob([this.svgString()], { type: "image/svg+xml" }), Export.filename("svg"));
+    },
+
+    // Rasterize the SVG onto a canvas at the requested scale; hand to callback.
+    toCanvas: function (cb) {
+      var scale = parseInt(document.getElementById("pxScale").value, 10) || 3;
+      var w = Svg.W * scale, h = Svg.H * scale;
+      var img = new Image();
+      var svg64 = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(this.svgString())));
+      img.onload = function () {
+        var canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        cb(canvas);
+      };
+      img.onerror = function () { UI.toast("Could not render image", true); };
+      img.src = svg64;
+    },
+
+    downloadPng: function () {
+      this.toCanvas(function (canvas) {
+        canvas.toBlob(function (blob) { Export.download(blob, Export.filename("png")); }, "image/png");
+      });
+    },
+
+    // Build a minimal single-page PDF embedding the label as a JPEG (DCTDecode).
+    // No library required — JPEG bytes embed directly in a PDF image XObject.
+    downloadPdf: function () {
+      this.toCanvas(function (canvas) {
+        var jpegDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+        var jpeg = atob(jpegDataUrl.split(",")[1]);   // binary string, latin1
+        var ptW = 4 * 72, ptH = 6.2 * 72;             // page = physical label size
+
+        var objects = [];
+        objects.push("<< /Type /Catalog /Pages 2 0 R >>");
+        objects.push("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+        objects.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + ptW + " " + ptH +
+          "] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>");
+        var content = "q " + ptW + " 0 0 " + ptH + " 0 0 cm /Im0 Do Q";
+        objects.push("<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream");
+        objects.push("<< /Type /XObject /Subtype /Image /Width " + canvas.width +
+          " /Height " + canvas.height + " /ColorSpace /DeviceRGB /BitsPerComponent 8" +
+          " /Filter /DCTDecode /Length " + jpeg.length + " >>\nstream\n" + jpeg + "\nendstream");
+
+        // Assemble with a cross-reference table.
+        var pdf = "%PDF-1.4\n%\xFF\xFF\xFF\xFF\n";
+        var offsets = [];
+        for (var i = 0; i < objects.length; i++) {
+          offsets.push(pdf.length);
+          pdf += (i + 1) + " 0 obj\n" + objects[i] + "\nendobj\n";
+        }
+        var xrefPos = pdf.length;
+        pdf += "xref\n0 " + (objects.length + 1) + "\n0000000000 65535 f \n";
+        for (var j = 0; j < offsets.length; j++) {
+          pdf += ("0000000000" + offsets[j]).slice(-10) + " 00000 n \n";
+        }
+        pdf += "trailer\n<< /Size " + (objects.length + 1) + " /Root 1 0 R >>\n" +
+               "startxref\n" + xrefPos + "\n%%EOF";
+
+        // Convert latin1 string -> bytes so JPEG data survives intact.
+        var bytes = new Uint8Array(pdf.length);
+        for (var k = 0; k < pdf.length; k++) bytes[k] = pdf.charCodeAt(k) & 0xff;
+        Export.download(new Blob([bytes], { type: "application/pdf" }), Export.filename("pdf"));
+      });
+    },
+
+    print: function () {
+      var area = document.getElementById("printArea");
+      area.innerHTML = this.svgString().replace(/^<\?xml.*?\?>\n/, "");
+      window.print();
+    },
+
+    filename: function (ext) {
+      var id = (State.data.freezerId || "label").replace(/[^a-z0-9\-_]+/gi, "_");
+      return "contact-label_" + id + "." + ext;
+    }
+  };
+
+  /* -------------------------------------------------------------------------
+     MODULE: Storage — localStorage for autosave, theme, and named templates.
+     ------------------------------------------------------------------------- */
+  var Storage = {
+    K_FORM: "labContactLabel.form",
+    K_THEME: "labContactLabel.theme",
+    K_SAVED: "labContactLabel.saved",
+
+    get: function (k, fallback) {
+      try { var v = localStorage.getItem(k); return v == null ? fallback : JSON.parse(v); }
+      catch (e) { return fallback; }
+    },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+
+    saveNamed: function (name, payload) {
+      var all = this.get(this.K_SAVED, {});
+      all[name] = payload; this.set(this.K_SAVED, all);
+    },
+    remove: function (name) {
+      var all = this.get(this.K_SAVED, {});
+      delete all[name]; this.set(this.K_SAVED, all);
+    },
+    all: function () { return this.get(this.K_SAVED, {}); }
+  };
+
+  /* -------------------------------------------------------------------------
+     MODULE: UI — wiring, rendering, toasts.
+     ------------------------------------------------------------------------- */
+  var UI = {
+    render: function () {
+      var svg = document.getElementById("labelSvg");
+      svg.innerHTML = Svg.render(State);
+      svg.setAttribute("aria-label",
+        State.heading + " label for unit " + (State.data.freezerId || "unspecified") +
+        (State.data.piName ? ", principal investigator " + State.data.piName : ""));
+      // Mirror URL into the NFC quick-copy row
+      var url = State.data.qrUrl && State.data.qrUrl.trim() ? State.data.qrUrl : "No URL entered";
+      document.getElementById("nfcUrlText").textContent = url;
+    },
+
+    readForm: function () {
+      FIELDS.forEach(function (f) {
+        var el = document.getElementById(f);
+        if (el) State.data[f] = el.value;
+      });
+    },
+
+    writeForm: function (data) {
+      FIELDS.forEach(function (f) {
+        var el = document.getElementById(f);
+        if (el) el.value = (data && data[f] != null) ? data[f] : "";
+      });
+    },
+
+    applyTemplate: function (key) {
+      var t = Templates[key];
+      if (!t) return;
+      State.activeTemplate = key;
+      State.heading = t.heading;
+      State.badge = t.badge || "";
+      State.icon = t.icon;
+      State.hazard = t.hazard || "";
+      var eq = document.getElementById("equipmentType");
+      if (eq && !eq.value.trim()) eq.value = t.equipmentType;   // don't clobber user text
+      else if (eq && this._lastTemplateEquip === eq.value) eq.value = t.equipmentType;
+      this._lastTemplateEquip = t.equipmentType;
+      // reflect pressed state
+      document.querySelectorAll("#templateBar .chip").forEach(function (c) {
+        c.setAttribute("aria-pressed", c.dataset.key === key ? "true" : "false");
+      });
+      this.readForm();
+      this.render();
+      this.persist();
+    },
+
+    persist: function () {
+      Storage.set(Storage.K_FORM, {
+        data: State.data, heading: State.heading, badge: State.badge,
+        icon: State.icon, activeTemplate: State.activeTemplate, hazard: State.hazard
+      });
+    },
+
+    onInput: function () { this.readForm(); this.render(); this.persist(); },
+
+    toast: function (msg, isError) {
+      var t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.background = isError ? "#b3141c" : "#1a1d24";
+      t.classList.add("show");
+      clearTimeout(this._toastT);
+      this._toastT = setTimeout(function () { t.classList.remove("show"); }, 2200);
+    },
+
+    refreshSaved: function () {
+      var wrap = document.getElementById("savedList");
+      var all = Storage.all();
+      var names = Object.keys(all);
+      wrap.innerHTML = "";
+      if (!names.length) {
+        wrap.innerHTML = '<div class="empty-note">No saved labels yet.</div>';
+        return;
+      }
+      names.forEach(function (name) {
+        var row = document.createElement("div");
+        row.className = "saved-item";
+        var span = document.createElement("span");
+        span.className = "name"; span.textContent = name;
+        var load = document.createElement("button");
+        load.textContent = "Load"; load.type = "button";
+        load.onclick = function () { UI.loadNamed(name); };
+        var del = document.createElement("button");
+        del.textContent = "Delete"; del.type = "button"; del.className = "del";
+        del.onclick = function () { Storage.remove(name); UI.refreshSaved(); UI.toast("Deleted “" + name + "”"); };
+        row.appendChild(span); row.appendChild(load); row.appendChild(del);
+        wrap.appendChild(row);
+      });
+    },
+
+    loadNamed: function (name) {
+      var payload = Storage.all()[name];
+      if (!payload) return;
+      this.writeForm(payload.data);
+      State.heading = payload.heading || State.heading;
+      State.badge = payload.badge || "";
+      State.icon = payload.icon || "snow";
+      State.hazard = payload.hazard || "";
+      State.activeTemplate = payload.activeTemplate || "";
+      document.querySelectorAll("#templateBar .chip").forEach(function (c) {
+        c.setAttribute("aria-pressed", c.dataset.key === State.activeTemplate ? "true" : "false");
+      });
+      this.readForm();
+      this.render();
+      this.toast("Loaded “" + name + "”");
+    },
+
+    setTheme: function (mode) {
+      document.documentElement.setAttribute("data-theme", mode);
+      Storage.set(Storage.K_THEME, mode);
+      var pressed = mode === "dark";
+      var btn = document.getElementById("themeToggle");
+      btn.setAttribute("aria-pressed", String(pressed));
+      document.getElementById("themeToggleLabel").textContent = pressed ? "Light mode" : "Dark mode";
+    },
+
+    init: function () {
+      // Build template chips
+      var bar = document.getElementById("templateBar");
+      TEMPLATE_ORDER.forEach(function (key) {
+        var t = Templates[key];
+        var chip = document.createElement("button");
+        chip.type = "button"; chip.className = "chip"; chip.dataset.key = key;
+        chip.setAttribute("aria-pressed", "false");
+        chip.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + Icons[t.icon] + '</svg>' + t.label;
+        chip.onclick = function () { UI.applyTemplate(key); UI.toast("Applied: " + t.label); };
+        bar.appendChild(chip);
+      });
+
+      // Restore theme
+      var savedTheme = Storage.get(Storage.K_THEME, null);
+      if (!savedTheme && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) savedTheme = "dark";
+      this.setTheme(savedTheme || "light");
+
+      // Restore last form (autosave) or seed with first template
+      var saved = Storage.get(Storage.K_FORM, null);
+      if (saved && saved.data) {
+        this.writeForm(saved.data);
+        State.heading = saved.heading || State.heading;
+        State.badge = saved.badge != null ? saved.badge : State.badge;
+        State.icon = saved.icon || State.icon;
+        State.hazard = saved.hazard || "";
+        State.activeTemplate = saved.activeTemplate || "freezer";
+      } else {
+        State.activeTemplate = "freezer";
+      }
+      // mark active chip
+      document.querySelectorAll("#templateBar .chip").forEach(function (c) {
+        c.setAttribute("aria-pressed", c.dataset.key === State.activeTemplate ? "true" : "false");
+      });
+      this._lastTemplateEquip = (Templates[State.activeTemplate] || {}).equipmentType;
+
+      this.readForm();
+      this.render();
+      this.refreshSaved();
+
+      // Form input events
+      FIELDS.forEach(function (f) {
+        var el = document.getElementById(f);
+        if (el) el.addEventListener("input", function () { UI.onInput(); });
+      });
+
+      // Buttons
+      document.getElementById("themeToggle").onclick = function () {
+        var cur = document.documentElement.getAttribute("data-theme");
+        UI.setTheme(cur === "dark" ? "light" : "dark");
+      };
+      document.getElementById("hcToggle").onchange = function (e) {
+        State.highContrast = e.target.checked; UI.render();
+      };
+      document.getElementById("copyBtn").onclick = function () {
+        var url = State.data.qrUrl && State.data.qrUrl.trim();
+        if (!url) { UI.toast("Enter a destination URL first", true); return; }
+        UI.copy(url);
+      };
+      document.getElementById("printBtn").onclick = function () { Export.print(); };
+      document.getElementById("pngBtn").onclick = function () { Export.downloadPng(); UI.toast("PNG downloaded"); };
+      document.getElementById("svgBtn").onclick = function () { Export.downloadSvg(); UI.toast("SVG downloaded"); };
+      document.getElementById("pdfBtn").onclick = function () { Export.downloadPdf(); UI.toast("PDF downloaded"); };
+
+      document.getElementById("saveBtn").onclick = function () {
+        var def = State.data.freezerId || Templates[State.activeTemplate] && Templates[State.activeTemplate].label || "Label";
+        var name = window.prompt("Save this label as:", def);
+        if (!name) return;
+        UI.readForm();
+        Storage.saveNamed(name.trim(), {
+          data: State.data, heading: State.heading, badge: State.badge,
+          icon: State.icon, hazard: State.hazard, activeTemplate: State.activeTemplate
+        });
+        UI.refreshSaved();
+        UI.toast("Saved “" + name.trim() + "”");
+      };
+      document.getElementById("resetBtn").onclick = function () {
+        if (!window.confirm("Clear all fields? Saved labels are not affected.")) return;
+        UI.writeForm({});
+        UI.applyTemplate("freezer");
+        document.getElementById("equipmentType").value = Templates.freezer.equipmentType;
+        UI.readForm(); UI.render(); UI.persist();
+        UI.toast("Form reset");
+      };
+    },
+
+    copy: function (text) {
+      var done = function () { UI.toast("URL copied to clipboard"); };
+      var fail = function () {
+        // Fallback for non-secure contexts
+        try {
+          var ta = document.createElement("textarea");
+          ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          document.execCommand("copy"); ta.remove(); done();
+        } catch (e) { UI.toast("Copy failed — select and copy manually", true); }
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fail);
+      } else { fail(); }
+    }
+  };
+
+  // Boot
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { UI.init(); });
+  } else { UI.init(); }
+
+  // Expose for debugging/testing
+  window.App = { State: State, Svg: Svg, Export: Export, Templates: Templates };
+})();
+</script>
+</body>
+</html>

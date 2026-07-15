@@ -110,6 +110,18 @@ Batch-print DYMO labels from a saved template merged with a list of entries:
   - JSON template export/import (self-contained, includes the image)
   - Print-ready, one label per physical page
 
+#### ❄️ [Laboratory Contact Label Generator](./lab-contact-label/)
+Generate freezer, refrigerator, and storage contact labels for lab equipment:
+- **Live preview** - the label builds as you type; what you see is what prints
+- **Templates** - Freezer, Refrigerator, Liquid Nitrogen, Molecular Samples, DNA/RNA
+- **Features:**
+  - Dynamic QR code encoding your destination URL
+  - NFC section with the programmed URL and copy-to-clipboard
+  - PI, Lab Manager, office, and after-hours emergency contacts
+  - Export to PNG, SVG, and PDF, plus direct printing
+  - Dark mode and a high-contrast print mode
+  - Save/load labels in the browser; nothing leaves your device
+
 ---
 
 ## 🚀 Quick Start
