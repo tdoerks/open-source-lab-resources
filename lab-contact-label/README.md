@@ -93,6 +93,13 @@ build — GitHub Pages serves the HTML as-is.
 
 - The QR code encodes the **Destination URL** you enter in the form (the same URL
   used for NFC).
+- **Leave the Destination URL blank** and the QR/NFC automatically become a
+  **one-tap emergency call**: they encode a `tel:` link so that scanning the code
+  (or tapping the NFC tag) opens the phone dialer pre-filled with the emergency
+  number, ready to call. The number is chosen in priority order — **after-hours
+  emergency → PI mobile → lab manager mobile → office phone** — so the code is
+  never blank as long as one phone number is filled in. The label shows which
+  number it dials, and the caption reads **"Scan to call."**
 - It is generated **entirely in your browser** using the
   [qrcode-generator](https://cdnjs.com/libraries/qrcode-generator) library, then
   drawn as vector rectangles inside the label's SVG. Because it is vector, it
