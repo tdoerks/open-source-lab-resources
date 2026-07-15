@@ -394,7 +394,7 @@
           <div class="field">
             <label for="qrUrl">Destination URL <span class="hint">— encoded in the QR code and programmed to the NFC tag</span></label>
             <input id="qrUrl" name="qrUrl" type="url" placeholder="https://labs.k-state.edu/smith/freezer-a14">
-            <div class="hint" style="margin-top:5px">Leave blank to auto-generate a QR/NFC <strong>contact card</strong> from the details above (saves all phones &amp; emails, with the after-hours number preferred for one-tap calling).</div>
+            <div class="hint" style="margin-top:5px">Leave blank and the QR/NFC becomes a <strong>one-tap call</strong> to the after-hours emergency number (falls back to PI mobile, lab manager, then office).</div>
           </div>
         </fieldset>
 
@@ -576,62 +576,48 @@
 
   /* -------------------------------------------------------------------------
      MODULE: Payload — decides what the QR code and NFC tag encode.
-     If a Destination URL is provided, that wins. Otherwise we auto-generate a
-     vCard from the contact fields so the QR is never blank: scanning it saves a
-     contact card carrying every phone/email, with the after-hours emergency
-     number marked as the preferred number for one-tap calling.
+     If a Destination URL is provided, that wins. Otherwise the QR/NFC becomes a
+     `tel:` link so that scanning (or tapping the tag) opens the phone dialer
+     pre-filled with the emergency number — one tap to call. The number is chosen
+     in priority order: after-hours emergency, then PI mobile, lab manager mobile,
+     and finally the office phone.
      ------------------------------------------------------------------------- */
   var Payload = (function () {
     var v = function (s) { return (s == null ? "" : String(s)).trim(); };
-    // Escape a value for a vCard property per RFC 6350 (\, ; , newline).
-    function vesc(s) {
-      return v(s).replace(/\\/g, "\\\\").replace(/\n/g, "\\n")
-                 .replace(/,/g, "\\,").replace(/;/g, "\\;");
+
+    // First available number, in emergency-priority order, with a human label.
+    function pickPhone(d) {
+      var order = [
+        ["afterHours",  "After-hours emergency"],
+        ["piPhone",     "PI mobile"],
+        ["lmPhone",     "Lab manager mobile"],
+        ["officePhone", "Office phone"]
+      ];
+      for (var i = 0; i < order.length; i++) {
+        if (v(d[order[i][0]])) return { number: v(d[order[i][0]]), label: order[i][1] };
+      }
+      return null;
     }
 
-    function hasContacts(d) {
-      return [d.piName, d.piPhone, d.piEmail, d.lmName, d.lmPhone, d.lmEmail,
-              d.officePhone, d.afterHours].some(function (x) { return v(x); });
+    // RFC 3966 tel: URI. Keep a leading + and digits only; drop spaces/()-. .
+    function telHref(num) {
+      var cleaned = v(num).replace(/[^\d+]/g, "").replace(/(?!^)\+/g, "");
+      return cleaned ? "tel:" + cleaned : "";
     }
 
-    // Build a deliberately COMPACT vCard. Keeping the payload short keeps the QR
-    // to a low version (fewer modules) so it stays scannable when printed ~1" on
-    // a frosty freezer door. Emails are carried as structured EMAIL properties
-    // but kept out of the (duplicative) NOTE; names live in the NOTE so a scanned
-    // card still shows who each number belongs to.
-    function buildVCard(d) {
-      if (!hasContacts(d)) return "";
-      var fn = (v(d.freezerId) ? v(d.freezerId) + " " : "") + "Lab Contacts";
-      var lines = ["BEGIN:VCARD", "VERSION:3.0", "N:" + vesc(fn) + ";;;;", "FN:" + vesc(fn)];
-      if (v(d.org)) lines.push("ORG:" + vesc(d.org));   // department omitted to save space
-      // Phones — after-hours emergency first and marked preferred for tap-to-call.
-      if (v(d.afterHours))  lines.push("TEL;TYPE=MAIN;PREF=1:" + vesc(d.afterHours));
-      if (v(d.piPhone))     lines.push("TEL;TYPE=CELL:" + vesc(d.piPhone));
-      if (v(d.lmPhone))     lines.push("TEL;TYPE=CELL:" + vesc(d.lmPhone));
-      if (v(d.officePhone)) lines.push("TEL;TYPE=WORK:" + vesc(d.officePhone));
-      if (v(d.piEmail))     lines.push("EMAIL:" + vesc(d.piEmail));
-      if (v(d.lmEmail))     lines.push("EMAIL:" + vesc(d.lmEmail));
-      // Concise human-readable rundown (one line; NOTE is reliably shown by scanners).
-      var note = [];
-      if (v(d.afterHours)) note.push("Emergency " + v(d.afterHours));
-      if (v(d.piName) || v(d.piPhone))
-        note.push("PI " + [v(d.piName), v(d.piPhone)].filter(Boolean).join(" "));
-      if (v(d.lmName) || v(d.lmPhone))
-        note.push("Mgr " + [v(d.lmName), v(d.lmPhone)].filter(Boolean).join(" "));
-      if (note.length) lines.push("NOTE:" + vesc(note.join(" / ")));
-      lines.push("END:VCARD");
-      return lines.join("\n");
-    }
-
-    // Resolve what the QR/NFC should carry: {value, kind: 'url'|'vcard'|'empty'}.
+    // Resolve what the QR/NFC should carry.
+    //   { value, kind: 'url'|'tel'|'empty', display, contactLabel }
     function resolve(d) {
-      if (v(d.qrUrl)) return { value: v(d.qrUrl), kind: "url" };
-      var vc = buildVCard(d);
-      if (vc) return { value: vc, kind: "vcard" };
-      return { value: "", kind: "empty" };
+      if (v(d.qrUrl)) return { value: v(d.qrUrl), kind: "url", display: v(d.qrUrl) };
+      var ph = pickPhone(d);
+      if (ph) {
+        var href = telHref(ph.number);
+        if (href) return { value: href, kind: "tel", display: ph.number, contactLabel: ph.label };
+      }
+      return { value: "", kind: "empty", display: "" };
     }
 
-    return { resolve: resolve, buildVCard: buildVCard };
+    return { resolve: resolve, telHref: telHref };
   })();
 
   /* -------------------------------------------------------------------------
@@ -820,16 +806,18 @@
       y += 54;
 
       // ---- Bottom: QR (left) + NFC (right) ----
-      // The QR/NFC encode a URL if given, else an auto-generated contact vCard.
+      // The QR/NFC encode a URL if given, else a `tel:` link that dials the
+      // emergency number when scanned or tapped.
       var pay = Payload.resolve(d);
-      var isVcard = pay.kind === "vcard";
+      var isTel = pay.kind === "tel";
       var qy = y + 6;
       var qrSize = 104;
-      // QR — denser vCards use error-correction 'L' to keep modules scannable.
-      s += qr(pay.value, M, qy, qrSize, pal.qrDark, pal.qrLight, isVcard ? "L" : "M");
+      // tel: and URL payloads are short, so error-correction 'M' keeps a crisp,
+      // low-density (very scannable) code.
+      s += qr(pay.value, M, qy, qrSize, pal.qrDark, pal.qrLight, "M");
       s += '<rect x="' + M + '" y="' + qy + '" width="' + qrSize + '" height="' + qrSize + '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
       s += text(M + qrSize / 2, qy + qrSize + 14,
-                isVcard ? "SCAN TO SAVE CONTACTS" : "SCAN TO ACCESS",
+                isTel ? "SCAN TO CALL" : "SCAN TO ACCESS",
                 {size: 9, weight: 700, fill: pal.muted, anchor: "middle", spacing: .6});
 
       // NFC panel
@@ -837,7 +825,7 @@
       s += '<rect x="' + nx + '" y="' + qy + '" width="' + nw + '" height="' + qrSize + '" rx="7" fill="' + pal.panel + '" stroke="' + pal.border + '" stroke-width="1"/>';
       s += icon("nfc", nx + 10, qy + 10, 22, pal.purple, 1.8);
       s += text(nx + 40, qy + 20, "NFC TAG", {size: 12, weight: 700, fill: pal.purple, spacing: .5});
-      s += text(nx + 40, qy + 33, isVcard ? "TAP TO SAVE" : "TAP TO OPEN", {size: 8.5, weight: 600, fill: pal.muted, spacing: .5});
+      s += text(nx + 40, qy + 33, isTel ? "TAP TO CALL" : "TAP TO OPEN", {size: 8.5, weight: 600, fill: pal.muted, spacing: .5});
       s += '<line x1="' + (nx + 8) + '" y1="' + (qy + 42) + '" x2="' + (nx + nw - 8) + '" y2="' + (qy + 42) + '" stroke="' + pal.border + '" stroke-width="1" opacity="0.4"/>';
 
       if (pay.kind === "url") {
@@ -846,14 +834,13 @@
         for (var i = 0; i < urlLines.length; i++) {
           s += '<text x="' + (nx + 8) + '" y="' + (qy + 69 + i * 11) + '" font-family="Menlo, Consolas, monospace" font-size="9.2" fill="' + pal.text + '">' + esc(urlLines[i]) + '</text>';
         }
-      } else if (isVcard) {
-        // Show a friendly summary instead of the raw vCard text.
-        s += text(nx + 8, qy + 56, "ENCODED CONTACT CARD", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
-        s += text(nx + 8, qy + 69, clip("Emergency contact vCard", nw - 16, 9.5), {size: 9.5, weight: 600, fill: pal.text});
-        var emLine = d.afterHours && d.afterHours.trim() ? ("Emergency " + d.afterHours) : "From contacts below";
-        s += text(nx + 8, qy + 81, clip(emLine, nw - 16, 9.5), {size: 9.5, weight: 600, fill: pal.text});
+      } else if (isTel) {
+        // Show which number it dials.
+        s += text(nx + 8, qy + 56, "DIALS ON SCAN / TAP", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
+        s += text(nx + 8, qy + 71, clip(pay.display, nw - 16, 14), {size: fitSize(pay.display, nw - 16, 14, 10), weight: 700, fill: pal.text});
+        s += text(nx + 8, qy + 84, clip(pay.contactLabel, nw - 16, 8.5), {size: 8.5, weight: 600, fill: pal.muted, spacing: .3});
       } else {
-        s += text(nx + 8, qy + 60, "Add a URL or contacts", {size: 9.5, weight: 600, fill: pal.muted});
+        s += text(nx + 8, qy + 60, "Add a URL or phone", {size: 9.5, weight: 600, fill: pal.muted});
       }
 
       return s;
@@ -1029,12 +1016,12 @@
       if (State.payload.kind === "url") {
         label.textContent = "NFC / QR destination";
         row.textContent = State.payload.value;
-      } else if (State.payload.kind === "vcard") {
-        label.textContent = "Auto-generated from contacts";
-        row.textContent = "Emergency contact card (vCard) — copies for scanning / NFC";
+      } else if (State.payload.kind === "tel") {
+        label.textContent = "Auto: scan / tap to call";
+        row.textContent = State.payload.display + "  (" + State.payload.contactLabel + ")";
       } else {
         label.textContent = "NFC / QR destination";
-        row.textContent = "No URL or contacts entered yet";
+        row.textContent = "No URL or phone number entered yet";
       }
     },
 
@@ -1198,8 +1185,10 @@
       };
       document.getElementById("copyBtn").onclick = function () {
         var p = State.payload;
-        if (!p || p.kind === "empty") { UI.toast("Enter a URL or contact details first", true); return; }
-        UI.copy(p.value, p.kind === "vcard" ? "Contact card (vCard) copied" : "URL copied to clipboard");
+        if (!p || p.kind === "empty") { UI.toast("Enter a URL or phone number first", true); return; }
+        // For a tel: payload, copy the plain number (handier to paste anywhere).
+        if (p.kind === "tel") UI.copy(p.display, "Emergency number copied");
+        else UI.copy(p.value, "URL copied to clipboard");
       };
       document.getElementById("printBtn").onclick = function () { Export.print(); };
       document.getElementById("pngBtn").onclick = function () { Export.downloadPng(); UI.toast("PNG downloaded"); };
