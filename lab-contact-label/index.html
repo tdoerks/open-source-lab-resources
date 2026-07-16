@@ -436,7 +436,7 @@
         <!-- NFC quick-copy row (app chrome; mirrors the on-label NFC section) -->
         <div class="nfc-row">
           <span class="nfc-ico" aria-hidden="true">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8a10 10 0 0 1 0 8M9 6a15 15 0 0 1 0 12"/><circle cx="12.5" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M15 6a15 15 0 0 1 0 12M19 8a10 10 0 0 1 0 8"/></svg>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><path d="M8.18 9.03 A4 4 0 0 1 8.18 14.97"/><path d="M10.52 6.43 A7.5 7.5 0 0 1 10.52 17.57"/><path d="M12.86 3.83 A11 11 0 0 1 12.86 20.17"/></svg>
           </span>
           <div class="nfc-text">
             <small id="nfcRowLabel">NFC / QR destination</small>
@@ -513,7 +513,12 @@
     warn:   '<path d="M12 3l9.5 16.5H2.5L12 3z"/><path d="M12 10v4.5M12 17.4v.1"/>',
     clock:  '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>',
     snow:   '<path d="M12 2v20M4 6l16 12M20 6L4 18M12 5.5l2.5-2.5M12 5.5L9.5 3M12 18.5l2.5 2.5M12 18.5L9.5 21M4.8 6.3l.2 3.4M4.8 6.3l3.4-.2M19.2 17.7l-.2-3.4M19.2 17.7l-3.4.2M19.2 6.3l-3.4-.2M19.2 6.3l.2 3.4M4.8 17.7l3.4.2M4.8 17.7l-.2-3.4"/>',
-    nfc:    '<path d="M5 8a10 10 0 0 1 0 8M9 6a15 15 0 0 1 0 12"/><circle cx="12.5" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M15 6a15 15 0 0 1 0 12M19 8a10 10 0 0 1 0 8"/>',
+    // Contactless/NFC symbol: a contact point with concentric waves radiating
+    // to the right (the internationally recognized "tap here" mark).
+    nfc:    '<circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none"/>' +
+            '<path d="M8.18 9.03 A4 4 0 0 1 8.18 14.97"/>' +
+            '<path d="M10.52 6.43 A7.5 7.5 0 0 1 10.52 17.57"/>' +
+            '<path d="M12.86 3.83 A11 11 0 0 1 12.86 20.17"/>',
     pin:    '<path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/>'
   };
 
