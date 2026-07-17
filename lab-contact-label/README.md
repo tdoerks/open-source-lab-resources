@@ -24,6 +24,11 @@ footer. Built to be readable at arm's length on the door of a −80 °C freezer.
 - **QR code** generated dynamically from your destination URL.
 - **NFC section** displaying the programmed URL, with a **copy-to-clipboard**
   button for tag-writing apps.
+- **Per-contact photo + mini QR** — each of the PI and Lab Manager blocks has an
+  optional headshot (a dashed "shadow" silhouette shows when none is uploaded)
+  and a small QR that encodes that person's vCard, so scanning it lets you
+  **call or email that specific person**. Photos are downscaled in-browser and
+  stored locally; they never leave your device.
 - **Exports** — Print, Download PNG, Download SVG, Download PDF.
 - **Dark mode** for the editor (the label itself always prints in a high-contrast,
   print-safe palette).
