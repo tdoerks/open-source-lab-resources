@@ -184,6 +184,10 @@
   .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
   .btn-grid .btn { justify-content: center; }
 
+  .photo-input { display: flex; align-items: center; gap: 10px; }
+  .photo-input input[type="file"] { font-size: .8rem; }
+  .photo-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 1px solid var(--field-border); flex: 0 0 auto; }
+
   .template-bar { display: flex; flex-wrap: wrap; gap: 7px; padding: 12px 0 2px; }
   .chip {
     font-size: .78rem; font-weight: 600; padding: 6px 11px; border-radius: 999px;
@@ -352,6 +356,14 @@
               <input id="piPhone" name="piPhone" type="tel" placeholder="(785) 555-0142">
             </div>
           </div>
+          <div class="field">
+            <label for="piPhoto">Photo <span class="hint">— optional; shows a shadow placeholder if empty</span></label>
+            <div class="photo-input">
+              <img class="photo-thumb" id="piPhotoThumb" alt="" hidden>
+              <input id="piPhoto" type="file" accept="image/*">
+              <button type="button" class="btn small" data-clearphoto="piPhoto" hidden>Remove</button>
+            </div>
+          </div>
         </fieldset>
 
         <!-- Lab Manager -->
@@ -369,6 +381,14 @@
             <div>
               <label for="lmPhone">Mobile Phone</label>
               <input id="lmPhone" name="lmPhone" type="tel" placeholder="(785) 555-0188">
+            </div>
+          </div>
+          <div class="field">
+            <label for="lmPhoto">Photo <span class="hint">— optional; shows a shadow placeholder if empty</span></label>
+            <div class="photo-input">
+              <img class="photo-thumb" id="lmPhotoThumb" alt="" hidden>
+              <input id="lmPhoto" type="file" accept="image/*">
+              <button type="button" class="btn small" data-clearphoto="lmPhoto" hidden>Remove</button>
             </div>
           </div>
         </fieldset>
@@ -610,7 +630,7 @@
       return cleaned ? "tel:" + cleaned : "";
     }
 
-    // Resolve what the QR/NFC should carry.
+    // Resolve what the main (bottom) QR/NFC should carry.
     //   { value, kind: 'url'|'tel'|'empty', display, contactLabel }
     function resolve(d) {
       if (v(d.qrUrl)) return { value: v(d.qrUrl), kind: "url", display: v(d.qrUrl) };
@@ -622,7 +642,20 @@
       return { value: "", kind: "empty", display: "" };
     }
 
-    return { resolve: resolve, telHref: telHref };
+    // Compact single-person vCard for the per-contact mini QR. Scanning it lets
+    // you save/call/email that one person. Kept short so it stays scannable small.
+    function personCard(name, phone, email) {
+      name = v(name); phone = v(phone); email = v(email);
+      if (!phone && !email) return "";           // nothing actionable to encode
+      var fn = name || "Lab contact";
+      var L = ["BEGIN:VCARD", "VERSION:3.0", "N:" + fn + ";;;;", "FN:" + fn];
+      if (phone) L.push("TEL;TYPE=CELL:" + phone);
+      if (email) L.push("EMAIL:" + email);
+      L.push("END:VCARD");
+      return L.join("\n");
+    }
+
+    return { resolve: resolve, telHref: telHref, personCard: personCard };
   })();
 
   /* -------------------------------------------------------------------------
@@ -727,6 +760,42 @@
              text(x + 8, y + 13, label, {size: 10, weight: 700, fill: pal.barText, spacing: 1});
     }
 
+    // A contact photo box, or a dashed silhouette placeholder ("shadow") when
+    // no photo has been uploaded. `cid` must be unique (used for the clip path).
+    function avatar(x, y, size, url, pal, cid) {
+      var r = 6;
+      if (url) {
+        return '<clipPath id="' + cid + '"><rect x="' + x + '" y="' + y + '" width="' + size +
+                 '" height="' + size + '" rx="' + r + '"/></clipPath>' +
+               '<image href="' + url + '" x="' + x + '" y="' + y + '" width="' + size + '" height="' + size +
+                 '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/>' +
+               '<rect x="' + x + '" y="' + y + '" width="' + size + '" height="' + size +
+                 '" rx="' + r + '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
+      }
+      var cx = x + size / 2, headCy = y + size * 0.4, headR = size * 0.17;
+      var sx = cx - size * 0.3, sy = y + size * 0.9;
+      return '<rect x="' + x + '" y="' + y + '" width="' + size + '" height="' + size +
+               '" rx="' + r + '" fill="' + pal.panel + '" stroke="' + pal.border +
+               '" stroke-width="1" stroke-dasharray="3 2"/>' +
+             '<circle cx="' + cx.toFixed(1) + '" cy="' + headCy.toFixed(1) + '" r="' + headR.toFixed(1) +
+               '" fill="' + pal.border + '" opacity="0.3"/>' +
+             '<path d="M' + sx.toFixed(1) + ' ' + sy.toFixed(1) + ' a' + (size * 0.3).toFixed(1) + ' ' +
+               (size * 0.3).toFixed(1) + ' 0 0 1 ' + (size * 0.6).toFixed(1) + ' 0 z" fill="' + pal.border + '" opacity="0.3"/>';
+    }
+
+    // The right-hand cluster for a PI/Lab-Manager block: photo + mini call/email
+    // QR, vertically centered against the three text rows starting at secTop.
+    function personCluster(secTop, photoUrl, name, phone, email, pal, cid) {
+      var photoW = 34, qrW = 60, gap = 5, left = W - 14 - photoW - gap - qrW; // right-aligned
+      var centerY = secTop + 56;
+      var out = avatar(left, centerY - photoW / 2, photoW, photoUrl, pal, cid);
+      var qx = left + photoW + gap, qy = centerY - qrW / 2;
+      out += qr(Payload.personCard(name, phone, email), qx, qy, qrW, pal.qrDark, pal.qrLight, "M");
+      out += '<rect x="' + qx + '" y="' + qy + '" width="' + qrW + '" height="' + qrW +
+             '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
+      return out;
+    }
+
     /* Main entry: produce the full <svg> markup (inner content) for the label. */
     function render(state) {
       var d = state.data;
@@ -783,17 +852,22 @@
       s += '<line x1="' + M + '" y1="' + y + '" x2="' + (W - M) + '" y2="' + y + '" stroke="' + pal.border + '" stroke-width="1" opacity="0.35"/>';
       y += 8;
 
-      // ---- PI contact ----
+      // ---- PI contact ---- (text rows narrowed to leave room for the cluster)
+      var rowW = 272;
+      var piTop = y;
       s += sectionBar(M, y, innerW, "PRINCIPAL INVESTIGATOR", pal); y += 34;
-      s += contactRow(M + 2, y, innerW, "user", d.piName, pal); y += 26;
-      s += contactRow(M + 2, y, innerW, "mail", d.piEmail, pal); y += 26;
-      s += contactRow(M + 2, y, innerW, "mobile", d.piPhone, pal); y += 24;
+      s += contactRow(M + 2, y, rowW, "user", d.piName, pal); y += 26;
+      s += contactRow(M + 2, y, rowW, "mail", d.piEmail, pal); y += 26;
+      s += contactRow(M + 2, y, rowW, "mobile", d.piPhone, pal); y += 24;
+      s += personCluster(piTop, d.piPhoto, d.piName, d.piPhone, d.piEmail, pal, "clip-pi");
 
       // ---- Lab manager contact ----
+      var lmTop = y;
       s += sectionBar(M, y, innerW, "LAB MANAGER", pal); y += 34;
-      s += contactRow(M + 2, y, innerW, "user", d.lmName, pal); y += 26;
-      s += contactRow(M + 2, y, innerW, "mail", d.lmEmail, pal); y += 26;
-      s += contactRow(M + 2, y, innerW, "mobile", d.lmPhone, pal); y += 24;
+      s += contactRow(M + 2, y, rowW, "user", d.lmName, pal); y += 26;
+      s += contactRow(M + 2, y, rowW, "mail", d.lmEmail, pal); y += 26;
+      s += contactRow(M + 2, y, rowW, "mobile", d.lmPhone, pal); y += 24;
+      s += personCluster(lmTop, d.lmPhoto, d.lmName, d.lmPhone, d.lmEmail, pal, "clip-lm");
 
       // ---- Office phone (compact single row) ----
       s += '<rect x="' + M + '" y="' + y + '" width="' + innerW + '" height="30" rx="6" fill="' + pal.panel + '"/>';
@@ -1042,6 +1116,51 @@
         var el = document.getElementById(f);
         if (el) el.value = (data && data[f] != null) ? data[f] : "";
       });
+      // Photos live in State.data but aren't plain text inputs.
+      ["piPhoto", "lmPhoto"].forEach(function (pf) {
+        State.data[pf] = (data && data[pf]) || "";
+        UI.syncPhotoUI(pf);
+      });
+    },
+
+    // Reflect a stored photo (data URL) into its thumbnail + Remove button.
+    syncPhotoUI: function (pf) {
+      var url = State.data[pf];
+      var thumb = document.getElementById(pf + "Thumb");
+      var btn = document.querySelector('[data-clearphoto="' + pf + '"]');
+      if (!thumb) return;
+      if (url) {
+        thumb.src = url; thumb.hidden = false; if (btn) btn.hidden = false;
+      } else {
+        thumb.removeAttribute("src"); thumb.hidden = true;
+        if (btn) btn.hidden = true;
+        var input = document.getElementById(pf); if (input) input.value = "";
+      }
+    },
+
+    // Read an uploaded image, downscale it (keeps localStorage + exports small),
+    // store it as a JPEG data URL, and re-render.
+    handlePhoto: function (pf, file) {
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onload = function () {
+          var max = 260, scale = Math.min(1, max / Math.max(img.width, img.height));
+          var cw = Math.max(1, Math.round(img.width * scale));
+          var ch = Math.max(1, Math.round(img.height * scale));
+          var c = document.createElement("canvas"); c.width = cw; c.height = ch;
+          c.getContext("2d").drawImage(img, 0, 0, cw, ch);
+          try {
+            State.data[pf] = c.toDataURL("image/jpeg", 0.82);
+          } catch (err) { UI.toast("Couldn't process that image", true); return; }
+          UI.syncPhotoUI(pf); UI.render(); UI.persist();
+          UI.toast("Photo added");
+        };
+        img.onerror = function () { UI.toast("Couldn't read that image", true); };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     },
 
     applyTemplate: function (key) {
@@ -1171,6 +1290,7 @@
       this._lastTemplateEquip = (Templates[State.activeTemplate] || {}).equipmentType;
 
       this.readForm();
+      ["piPhoto", "lmPhoto"].forEach(function (pf) { UI.syncPhotoUI(pf); });
       this.render();
       this.refreshSaved();
 
@@ -1178,6 +1298,18 @@
       FIELDS.forEach(function (f) {
         var el = document.getElementById(f);
         if (el) el.addEventListener("input", function () { UI.onInput(); });
+      });
+
+      // Photo upload + remove
+      ["piPhoto", "lmPhoto"].forEach(function (pf) {
+        var input = document.getElementById(pf);
+        if (input) input.addEventListener("change", function (e) { UI.handlePhoto(pf, e.target.files[0]); });
+      });
+      document.querySelectorAll("[data-clearphoto]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var pf = btn.getAttribute("data-clearphoto");
+          State.data[pf] = ""; UI.syncPhotoUI(pf); UI.render(); UI.persist();
+        });
       });
 
       // Buttons
@@ -1245,7 +1377,7 @@
   } else { UI.init(); }
 
   // Expose for debugging/testing
-  window.App = { State: State, Svg: Svg, Export: Export, Templates: Templates };
+  window.App = { State: State, Svg: Svg, Export: Export, Templates: Templates, Payload: Payload, UI: UI };
 })();
 </script>
 </body>
