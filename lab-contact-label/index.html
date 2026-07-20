@@ -783,14 +783,17 @@
                (size * 0.3).toFixed(1) + ' 0 0 1 ' + (size * 0.6).toFixed(1) + ' 0 z" fill="' + pal.border + '" opacity="0.3"/>';
     }
 
-    // The right-hand cluster for a PI/Lab-Manager block: photo + mini call/email
-    // QR, vertically centered against the three text rows starting at secTop.
+    // The right-hand cluster for a PI/Lab-Manager block: a headshot + a mini QR
+    // that DIALS that person (tel:), vertically centered against the three text
+    // rows starting at secTop. The tel: payload is tiny, so the QR has large,
+    // phone-scannable modules even at this size; email falls back to mailto:.
     function personCluster(secTop, photoUrl, name, phone, email, pal, cid) {
-      var photoW = 34, qrW = 60, gap = 5, left = W - 14 - photoW - gap - qrW; // right-aligned
+      var photoW = 58, qrW = 58, gap = 5, left = W - 14 - photoW - gap - qrW; // right-aligned
       var centerY = secTop + 56;
       var out = avatar(left, centerY - photoW / 2, photoW, photoUrl, pal, cid);
       var qx = left + photoW + gap, qy = centerY - qrW / 2;
-      out += qr(Payload.personCard(name, phone, email), qx, qy, qrW, pal.qrDark, pal.qrLight, "M");
+      var href = Payload.telHref(phone) || (email && email.trim() ? "mailto:" + email.trim() : "");
+      out += qr(href, qx, qy, qrW, pal.qrDark, pal.qrLight, "M");
       out += '<rect x="' + qx + '" y="' + qy + '" width="' + qrW + '" height="' + qrW +
              '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
       return out;
@@ -853,7 +856,7 @@
       y += 8;
 
       // ---- PI contact ---- (text rows narrowed to leave room for the cluster)
-      var rowW = 272;
+      var rowW = 255;
       var piTop = y;
       s += sectionBar(M, y, innerW, "PRINCIPAL INVESTIGATOR", pal); y += 34;
       s += contactRow(M + 2, y, rowW, "user", d.piName, pal); y += 26;
