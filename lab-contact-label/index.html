@@ -902,24 +902,37 @@
       // NFC panel
       var nx = M + qrSize + 14, nw = W - M - nx;
       s += '<rect x="' + nx + '" y="' + qy + '" width="' + nw + '" height="' + qrSize + '" rx="7" fill="' + pal.panel + '" stroke="' + pal.border + '" stroke-width="1"/>';
-      s += icon("nfc", nx + 10, qy + 10, 22, pal.purple, 1.8);
-      s += text(nx + 40, qy + 20, "NFC TAG", {size: 12, weight: 700, fill: pal.purple, spacing: .5});
-      s += text(nx + 40, qy + 33, isTel ? "TAP TO CALL" : "TAP TO OPEN", {size: 8.5, weight: 600, fill: pal.muted, spacing: .5});
-      s += '<line x1="' + (nx + 8) + '" y1="' + (qy + 42) + '" x2="' + (nx + nw - 8) + '" y2="' + (qy + 42) + '" stroke="' + pal.border + '" stroke-width="1" opacity="0.4"/>';
 
+      // Header, left: icon + title + what tapping does.
+      s += icon("nfc", nx + 10, qy + 11, 22, pal.purple, 1.8);
+      s += text(nx + 40, qy + 21, "NFC TAG", {size: 12, weight: 700, fill: pal.purple, spacing: .5});
+      s += text(nx + 40, qy + 34, isTel ? "Calls emergency" : (pay.kind === "url" ? "Opens saved link" : "Tap to open"),
+                {size: 8.5, weight: 600, fill: pal.muted, spacing: .2});
+
+      // Header, right: a "tap here" target — marks where to adhere the physical
+      // NFC tag and where users tap their phone.
+      var tcx = nx + nw - 28, tcy = qy + 22, tr = 17;
+      s += '<circle cx="' + tcx + '" cy="' + tcy + '" r="' + tr + '" fill="none" stroke="' + pal.purple +
+           '" stroke-width="1.3" stroke-dasharray="3 2.5" opacity="0.85"/>';
+      s += icon("mobile", tcx - 8, tcy - 9, 16, pal.purple, 1.5);
+      s += text(tcx, qy + 47, "TAP HERE", {size: 7, weight: 700, fill: pal.muted, anchor: "middle", spacing: .8});
+
+      // Divider.
+      s += '<line x1="' + (nx + 8) + '" y1="' + (qy + 52) + '" x2="' + (nx + nw - 8) + '" y2="' + (qy + 52) + '" stroke="' + pal.border + '" stroke-width="1" opacity="0.4"/>';
+
+      // Body, balanced in the lower half.
       if (pay.kind === "url") {
-        s += text(nx + 8, qy + 56, "PROGRAMMED URL", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
-        var urlLines = wrap(pay.value, nw - 16, 9.2, 3);
+        s += text(nx + 10, qy + 65, "PROGRAMMED URL", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
+        var urlLines = wrap(pay.value, nw - 20, 9.2, 3);
         for (var i = 0; i < urlLines.length; i++) {
-          s += '<text x="' + (nx + 8) + '" y="' + (qy + 69 + i * 11) + '" font-family="Menlo, Consolas, monospace" font-size="9.2" fill="' + pal.text + '">' + esc(urlLines[i]) + '</text>';
+          s += '<text x="' + (nx + 10) + '" y="' + (qy + 77 + i * 10) + '" font-family="Menlo, Consolas, monospace" font-size="9.2" fill="' + pal.text + '">' + esc(urlLines[i]) + '</text>';
         }
       } else if (isTel) {
-        // Show which number it dials.
-        s += text(nx + 8, qy + 56, "DIALS ON SCAN / TAP", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
-        s += text(nx + 8, qy + 71, clip(pay.display, nw - 16, 14), {size: fitSize(pay.display, nw - 16, 14, 10), weight: 700, fill: pal.text});
-        s += text(nx + 8, qy + 84, clip(pay.contactLabel, nw - 16, 8.5), {size: 8.5, weight: 600, fill: pal.muted, spacing: .3});
+        s += text(nx + 10, qy + 66, "DIALS ON SCAN / TAP", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
+        s += text(nx + 10, qy + 88, clip(pay.display, nw - 20, 17), {size: fitSize(pay.display, nw - 20, 17, 11), weight: 700, fill: pal.text});
+        s += text(nx + 10, qy + 100, clip(pay.contactLabel, nw - 20, 8.5), {size: 8.5, weight: 600, fill: pal.muted, spacing: .3});
       } else {
-        s += text(nx + 8, qy + 60, "Add a URL or phone", {size: 9.5, weight: 600, fill: pal.muted});
+        s += text(nx + nw / 2, qy + 82, "Add a URL or phone", {size: 9.5, weight: 600, fill: pal.muted, anchor: "middle"});
       }
 
       return s;
