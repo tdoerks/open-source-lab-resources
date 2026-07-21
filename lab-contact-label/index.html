@@ -837,7 +837,7 @@
     // rows starting at secTop. The tel: payload is tiny, so the QR has large,
     // phone-scannable modules even at this size; email falls back to mailto:.
     function personCluster(secTop, photo, name, phone, email, pal, cid) {
-      var photoW = 58, qrW = 58, gap = 5, left = W - 14 - photoW - gap - qrW; // right-aligned
+      var photoW = 66, qrW = 66, gap = 10, left = W - 14 - photoW - gap - qrW; // right-aligned
       var centerY = secTop + 56;
       var out = avatar(left, centerY - photoW / 2, photoW, photo, pal, cid);
       var qx = left + photoW + gap, qy = centerY - qrW / 2;
@@ -913,7 +913,7 @@
       y += 8;
 
       // ---- PI contact ---- (text rows narrowed to leave room for the cluster)
-      var rowW = 255;
+      var rowW = 232;
       var piTop = y;
       s += sectionBar(M, y, innerW, "PRINCIPAL INVESTIGATOR", pal); y += 34;
       s += contactRow(M + 2, y, rowW, "user", d.piName, pal); y += 26;
