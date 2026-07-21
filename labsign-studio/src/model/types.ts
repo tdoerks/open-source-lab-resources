@@ -87,7 +87,7 @@ export type ComponentType = ComponentInstance["type"];
 
 export interface EquipmentBinding {
   profileId: string;
-  values: Record<string, unknown>;
+  values: Record<string, string | number | boolean>;
 }
 
 export interface Sign {
