@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/cn";
 import { THEME_LIST } from "@/design/themes";
 import { useStudio } from "@/store";
+import { EquipmentPanel } from "./EquipmentPanel";
 
 type TabId = "templates" | "components" | "equipment" | "icons" | "themes" | "brand";
 
@@ -24,7 +25,7 @@ const TABS: { id: TabId; label: string; icon: LucideIcon }[] = [
 ];
 
 export function LeftRail() {
-  const [tab, setTab] = useState<TabId>("themes");
+  const [tab, setTab] = useState<TabId>("equipment");
 
   return (
     <div className="flex flex-shrink-0">
@@ -51,7 +52,13 @@ export function LeftRail() {
 
       {/* panel */}
       <aside className="w-64 overflow-y-auto border-r border-border bg-surface p-3">
-        {tab === "themes" ? <ThemesPanel /> : <Placeholder label={TABS.find((t) => t.id === tab)!.label} />}
+        {tab === "themes" ? (
+          <ThemesPanel />
+        ) : tab === "equipment" ? (
+          <EquipmentPanel />
+        ) : (
+          <Placeholder label={TABS.find((t) => t.id === tab)!.label} />
+        )}
       </aside>
     </div>
   );
