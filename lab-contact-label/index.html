@@ -1152,7 +1152,15 @@
 
     print: function () {
       var area = document.getElementById("printArea");
-      area.innerHTML = this.svgString().replace(/^<\?xml.*?\?>\n/, "");
+      // The print copy coexists in the DOM with the live preview, so its ids
+      // (clipPaths etc.) would collide — the copy's clip-path would resolve to
+      // the hidden preview's clipPath and not apply, printing photos unclipped.
+      // Suffix every id (and its url(#...) references) to keep the copy self-contained.
+      var uid = "pr" + Date.now();
+      area.innerHTML = this.svgString()
+        .replace(/^<\?xml.*?\?>\n/, "")
+        .replace(/id="([^"]+)"/g, 'id="$1-' + uid + '"')
+        .replace(/url\(#([^)]+)\)/g, 'url(#$1-' + uid + ')');
       window.print();
     },
 
