@@ -184,9 +184,25 @@
   .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
   .btn-grid .btn { justify-content: center; }
 
-  .photo-input { display: flex; align-items: center; gap: 10px; }
+  .photo-input { display: flex; align-items: flex-start; gap: 12px; }
   .photo-input input[type="file"] { font-size: .8rem; }
-  .photo-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; border: 1px solid var(--field-border); flex: 0 0 auto; }
+  .photo-fields { flex: 1; min-width: 0; }
+  .photo-frame {
+    width: 92px; height: 92px; border-radius: 10px; flex: 0 0 auto;
+    border: 1px solid var(--field-border); background-color: var(--surface-2);
+    background-repeat: no-repeat; cursor: grab; touch-action: none; overflow: hidden;
+    position: relative;
+  }
+  .photo-frame::after {
+    content: "drag to reposition"; position: absolute; left: 0; right: 0; bottom: 0;
+    font-size: .58rem; text-align: center; color: #fff; background: rgba(0,0,0,.45);
+    padding: 1px 0; opacity: 0; transition: opacity .12s;
+  }
+  .photo-frame:hover::after { opacity: 1; }
+  .photo-frame:active { cursor: grabbing; }
+  .ph-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .ph-zoomlbl { display: flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--text-muted); }
+  .ph-zoomlbl input[type="range"] { width: 96px; }
 
   .template-bar { display: flex; flex-wrap: wrap; gap: 7px; padding: 12px 0 2px; }
   .chip {
@@ -357,11 +373,17 @@
             </div>
           </div>
           <div class="field">
-            <label for="piPhoto">Photo <span class="hint">— optional; shows a shadow placeholder if empty</span></label>
+            <label for="piPhoto">Photo <span class="hint">— optional; drag the thumbnail to reposition, slider to zoom</span></label>
             <div class="photo-input">
-              <img class="photo-thumb" id="piPhotoThumb" alt="" hidden>
-              <input id="piPhoto" type="file" accept="image/*">
-              <button type="button" class="btn small" data-clearphoto="piPhoto" hidden>Remove</button>
+              <div class="photo-frame" id="piPhotoFrame" hidden></div>
+              <div class="photo-fields">
+                <input id="piPhoto" type="file" accept="image/*">
+                <div class="ph-controls" id="piPhotoCtl" hidden>
+                  <label class="ph-zoomlbl">Zoom <input type="range" id="piPhotoZoom" min="1" max="3" step="0.05" value="1"></label>
+                  <button type="button" class="btn small" data-resetframe="piPhoto">Reset</button>
+                  <button type="button" class="btn small" data-clearphoto="piPhoto">Remove</button>
+                </div>
+              </div>
             </div>
           </div>
         </fieldset>
@@ -384,11 +406,17 @@
             </div>
           </div>
           <div class="field">
-            <label for="lmPhoto">Photo <span class="hint">— optional; shows a shadow placeholder if empty</span></label>
+            <label for="lmPhoto">Photo <span class="hint">— optional; drag the thumbnail to reposition, slider to zoom</span></label>
             <div class="photo-input">
-              <img class="photo-thumb" id="lmPhotoThumb" alt="" hidden>
-              <input id="lmPhoto" type="file" accept="image/*">
-              <button type="button" class="btn small" data-clearphoto="lmPhoto" hidden>Remove</button>
+              <div class="photo-frame" id="lmPhotoFrame" hidden></div>
+              <div class="photo-fields">
+                <input id="lmPhoto" type="file" accept="image/*">
+                <div class="ph-controls" id="lmPhotoCtl" hidden>
+                  <label class="ph-zoomlbl">Zoom <input type="range" id="lmPhotoZoom" min="1" max="3" step="0.05" value="1"></label>
+                  <button type="button" class="btn small" data-resetframe="lmPhoto">Reset</button>
+                  <button type="button" class="btn small" data-clearphoto="lmPhoto">Remove</button>
+                </div>
+              </div>
             </div>
           </div>
         </fieldset>
@@ -659,6 +687,24 @@
   })();
 
   /* -------------------------------------------------------------------------
+     Photo framing geometry — shared by the SVG label and the form's reframe
+     widget so the preview and the label crop identically. Given a square box,
+     the image's natural w/h, and a frame {zoom, cx, cy} (focal point as a
+     fraction of the image), returns the drawn size + top-left offset, with the
+     focal point clamped so the image always fully covers the box.
+     ------------------------------------------------------------------------- */
+  function frameGeom(box, w, h, frame) {
+    w = w || 1; h = h || 1;
+    var zoom = Math.max(1, (frame && frame.zoom) || 1);
+    var cover = box / Math.min(w, h);
+    var dw = w * cover * zoom, dh = h * cover * zoom;
+    var halfX = box / (2 * dw), halfY = box / (2 * dh);
+    var cx = Math.min(1 - halfX, Math.max(halfX, (frame && frame.cx != null) ? frame.cx : 0.5));
+    var cy = Math.min(1 - halfY, Math.max(halfY, (frame && frame.cy != null) ? frame.cy : 0.4));
+    return { dw: dw, dh: dh, px: box / 2 - cx * dw, py: box / 2 - cy * dh, cx: cx, cy: cy };
+  }
+
+  /* -------------------------------------------------------------------------
      MODULE: Svg — pure functions that build the label as an SVG string.
      ------------------------------------------------------------------------- */
   var Svg = (function () {
@@ -761,14 +807,17 @@
     }
 
     // A contact photo box, or a dashed silhouette placeholder ("shadow") when
-    // no photo has been uploaded. `cid` must be unique (used for the clip path).
-    function avatar(x, y, size, url, pal, cid) {
+    // no photo has been uploaded. `photo` = {url, w, h, frame}. `cid` must be
+    // unique (used for the clip path).
+    function avatar(x, y, size, photo, pal, cid) {
       var r = 6;
-      if (url) {
+      if (photo && photo.url) {
+        var g = frameGeom(size, photo.w, photo.h, photo.frame);
         return '<clipPath id="' + cid + '"><rect x="' + x + '" y="' + y + '" width="' + size +
                  '" height="' + size + '" rx="' + r + '"/></clipPath>' +
-               '<image href="' + url + '" x="' + x + '" y="' + y + '" width="' + size + '" height="' + size +
-                 '" preserveAspectRatio="xMidYMid slice" clip-path="url(#' + cid + ')"/>' +
+               '<g clip-path="url(#' + cid + ')">' +
+               '<image href="' + photo.url + '" x="' + (x + g.px).toFixed(2) + '" y="' + (y + g.py).toFixed(2) +
+                 '" width="' + g.dw.toFixed(2) + '" height="' + g.dh.toFixed(2) + '" preserveAspectRatio="none"/></g>' +
                '<rect x="' + x + '" y="' + y + '" width="' + size + '" height="' + size +
                  '" rx="' + r + '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
       }
@@ -787,16 +836,24 @@
     // that DIALS that person (tel:), vertically centered against the three text
     // rows starting at secTop. The tel: payload is tiny, so the QR has large,
     // phone-scannable modules even at this size; email falls back to mailto:.
-    function personCluster(secTop, photoUrl, name, phone, email, pal, cid) {
+    function personCluster(secTop, photo, name, phone, email, pal, cid) {
       var photoW = 58, qrW = 58, gap = 5, left = W - 14 - photoW - gap - qrW; // right-aligned
       var centerY = secTop + 56;
-      var out = avatar(left, centerY - photoW / 2, photoW, photoUrl, pal, cid);
+      var out = avatar(left, centerY - photoW / 2, photoW, photo, pal, cid);
       var qx = left + photoW + gap, qy = centerY - qrW / 2;
       var href = Payload.telHref(phone) || (email && email.trim() ? "mailto:" + email.trim() : "");
       out += qr(href, qx, qy, qrW, pal.qrDark, pal.qrLight, "M");
       out += '<rect x="' + qx + '" y="' + qy + '" width="' + qrW + '" height="' + qrW +
              '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
       return out;
+    }
+
+    // Assemble a photo object for a contact prefix ("pi"/"lm") from the form data.
+    function photoObj(prefix, d) {
+      var url = d[prefix + "Photo"];
+      if (!url) return null;
+      var dim = d[prefix + "PhotoDim"] || {};
+      return { url: url, w: dim.w || 1, h: dim.h || 1, frame: d[prefix + "PhotoFr"] };
     }
 
     /* Main entry: produce the full <svg> markup (inner content) for the label. */
@@ -862,7 +919,7 @@
       s += contactRow(M + 2, y, rowW, "user", d.piName, pal); y += 26;
       s += contactRow(M + 2, y, rowW, "mail", d.piEmail, pal); y += 26;
       s += contactRow(M + 2, y, rowW, "mobile", d.piPhone, pal); y += 24;
-      s += personCluster(piTop, d.piPhoto, d.piName, d.piPhone, d.piEmail, pal, "clip-pi");
+      s += personCluster(piTop, photoObj("pi", d), d.piName, d.piPhone, d.piEmail, pal, "clip-pi");
 
       // ---- Lab manager contact ----
       var lmTop = y;
@@ -870,7 +927,7 @@
       s += contactRow(M + 2, y, rowW, "user", d.lmName, pal); y += 26;
       s += contactRow(M + 2, y, rowW, "mail", d.lmEmail, pal); y += 26;
       s += contactRow(M + 2, y, rowW, "mobile", d.lmPhone, pal); y += 24;
-      s += personCluster(lmTop, d.lmPhoto, d.lmName, d.lmPhone, d.lmEmail, pal, "clip-lm");
+      s += personCluster(lmTop, photoObj("lm", d), d.lmName, d.lmPhone, d.lmEmail, pal, "clip-lm");
 
       // ---- Office phone (compact single row) ----
       s += '<rect x="' + M + '" y="' + y + '" width="' + innerW + '" height="30" rx="6" fill="' + pal.panel + '"/>';
@@ -1119,51 +1176,100 @@
         var el = document.getElementById(f);
         if (el) el.value = (data && data[f] != null) ? data[f] : "";
       });
-      // Photos live in State.data but aren't plain text inputs.
+      // Photos (url + natural dims + frame) live in State.data but aren't text inputs.
       ["piPhoto", "lmPhoto"].forEach(function (pf) {
         State.data[pf] = (data && data[pf]) || "";
+        State.data[pf + "Dim"] = (data && data[pf + "Dim"]) || null;
+        State.data[pf + "Fr"] = (data && data[pf + "Fr"]) || null;
         UI.syncPhotoUI(pf);
       });
     },
 
-    // Reflect a stored photo (data URL) into its thumbnail + Remove button.
+    // Reflect the stored photo + frame into the draggable preview + controls.
     syncPhotoUI: function (pf) {
       var url = State.data[pf];
-      var thumb = document.getElementById(pf + "Thumb");
-      var btn = document.querySelector('[data-clearphoto="' + pf + '"]');
-      if (!thumb) return;
+      var frameEl = document.getElementById(pf + "Frame");
+      var ctl = document.getElementById(pf + "Ctl");
+      var zoom = document.getElementById(pf + "Zoom");
+      var input = document.getElementById(pf);
+      if (!frameEl) return;
       if (url) {
-        thumb.src = url; thumb.hidden = false; if (btn) btn.hidden = false;
+        var dim = State.data[pf + "Dim"] || { w: 1, h: 1 };
+        var fr = State.data[pf + "Fr"] || { zoom: 1, cx: 0.5, cy: 0.4 };
+        var g = frameGeom(92, dim.w, dim.h, fr);
+        frameEl.style.backgroundImage = 'url("' + url + '")';
+        frameEl.style.backgroundSize = g.dw.toFixed(1) + "px " + g.dh.toFixed(1) + "px";
+        frameEl.style.backgroundPosition = g.px.toFixed(1) + "px " + g.py.toFixed(1) + "px";
+        frameEl.hidden = false;
+        if (ctl) ctl.hidden = false;
+        if (zoom) zoom.value = fr.zoom;
       } else {
-        thumb.removeAttribute("src"); thumb.hidden = true;
-        if (btn) btn.hidden = true;
-        var input = document.getElementById(pf); if (input) input.value = "";
+        frameEl.hidden = true; frameEl.style.backgroundImage = "";
+        if (ctl) ctl.hidden = true;
+        if (input) input.value = "";
       }
     },
 
     // Read an uploaded image, downscale it (keeps localStorage + exports small),
-    // store it as a JPEG data URL, and re-render.
+    // store url + natural dims + a default frame, and re-render.
     handlePhoto: function (pf, file) {
       if (!file) return;
       var reader = new FileReader();
       reader.onload = function (e) {
         var img = new Image();
         img.onload = function () {
-          var max = 260, scale = Math.min(1, max / Math.max(img.width, img.height));
+          var max = 400, scale = Math.min(1, max / Math.max(img.width, img.height));
           var cw = Math.max(1, Math.round(img.width * scale));
           var ch = Math.max(1, Math.round(img.height * scale));
           var c = document.createElement("canvas"); c.width = cw; c.height = ch;
           c.getContext("2d").drawImage(img, 0, 0, cw, ch);
           try {
-            State.data[pf] = c.toDataURL("image/jpeg", 0.82);
+            State.data[pf] = c.toDataURL("image/jpeg", 0.85);
           } catch (err) { UI.toast("Couldn't process that image", true); return; }
+          State.data[pf + "Dim"] = { w: cw, h: ch };
+          State.data[pf + "Fr"] = { zoom: 1, cx: 0.5, cy: 0.4 };   // top-biased default
           UI.syncPhotoUI(pf); UI.render(); UI.persist();
-          UI.toast("Photo added");
+          UI.toast("Photo added — drag it to reposition");
         };
         img.onerror = function () { UI.toast("Couldn't read that image", true); };
         img.src = e.target.result;
       };
       reader.readAsDataURL(file);
+    },
+
+    // Wire drag-to-pan + zoom + reset for a photo's reframe widget.
+    wirePhotoFrame: function (pf) {
+      var el = document.getElementById(pf + "Frame");
+      if (!el) return;
+      var dragging = false, lastX = 0, lastY = 0;
+      el.addEventListener("pointerdown", function (e) {
+        if (!State.data[pf]) return;
+        dragging = true; lastX = e.clientX; lastY = e.clientY;
+        try { el.setPointerCapture(e.pointerId); } catch (x) {}
+      });
+      el.addEventListener("pointermove", function (e) {
+        if (!dragging) return;
+        var dim = State.data[pf + "Dim"] || { w: 1, h: 1 };
+        var fr = State.data[pf + "Fr"] || { zoom: 1, cx: 0.5, cy: 0.4 };
+        var g = frameGeom(92, dim.w, dim.h, fr);
+        fr.cx = g.cx - (e.clientX - lastX) / g.dw;
+        fr.cy = g.cy - (e.clientY - lastY) / g.dh;
+        lastX = e.clientX; lastY = e.clientY;
+        var g2 = frameGeom(92, dim.w, dim.h, fr);       // clamp back into range
+        fr.cx = g2.cx; fr.cy = g2.cy;
+        State.data[pf + "Fr"] = fr;
+        UI.syncPhotoUI(pf); UI.render();
+      });
+      var end = function () { if (dragging) { dragging = false; UI.persist(); } };
+      el.addEventListener("pointerup", end);
+      el.addEventListener("pointercancel", end);
+      var zoom = document.getElementById(pf + "Zoom");
+      if (zoom) zoom.addEventListener("input", function () {
+        var fr = State.data[pf + "Fr"] || { zoom: 1, cx: 0.5, cy: 0.4 };
+        fr.zoom = parseFloat(zoom.value) || 1;
+        State.data[pf + "Fr"] = fr;
+        UI.syncPhotoUI(pf); UI.render(); UI.persist();
+      });
     },
 
     applyTemplate: function (key) {
@@ -1303,15 +1409,24 @@
         if (el) el.addEventListener("input", function () { UI.onInput(); });
       });
 
-      // Photo upload + remove
+      // Photo upload + reframe (drag/zoom) + reset + remove
       ["piPhoto", "lmPhoto"].forEach(function (pf) {
         var input = document.getElementById(pf);
         if (input) input.addEventListener("change", function (e) { UI.handlePhoto(pf, e.target.files[0]); });
+        UI.wirePhotoFrame(pf);
+      });
+      document.querySelectorAll("[data-resetframe]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var pf = btn.getAttribute("data-resetframe");
+          State.data[pf + "Fr"] = { zoom: 1, cx: 0.5, cy: 0.4 };
+          UI.syncPhotoUI(pf); UI.render(); UI.persist();
+        });
       });
       document.querySelectorAll("[data-clearphoto]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var pf = btn.getAttribute("data-clearphoto");
-          State.data[pf] = ""; UI.syncPhotoUI(pf); UI.render(); UI.persist();
+          State.data[pf] = ""; State.data[pf + "Dim"] = null; State.data[pf + "Fr"] = null;
+          UI.syncPhotoUI(pf); UI.render(); UI.persist();
         });
       });
 
