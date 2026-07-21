@@ -12,6 +12,7 @@ import { cn } from "@/lib/cn";
 import { THEME_LIST } from "@/design/themes";
 import { useStudio } from "@/store";
 import { EquipmentPanel } from "./EquipmentPanel";
+import { ComponentsPanel } from "./ComponentsPanel";
 
 type TabId = "templates" | "components" | "equipment" | "icons" | "themes" | "brand";
 
@@ -56,6 +57,8 @@ export function LeftRail() {
           <ThemesPanel />
         ) : tab === "equipment" ? (
           <EquipmentPanel />
+        ) : tab === "components" ? (
+          <ComponentsPanel />
         ) : (
           <Placeholder label={TABS.find((t) => t.id === tab)!.label} />
         )}

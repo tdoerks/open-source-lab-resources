@@ -68,6 +68,10 @@ export interface NoteInstance extends BaseInstance {
   type: "note";
   props: { text: string; variant: "info" | "reminder" | "warning" };
 }
+export interface GridInstance extends BaseInstance {
+  type: "grid";
+  props: { label: string; rows: number; cols: number; note?: string };
+}
 export interface FooterInstance extends BaseInstance {
   type: "footer";
   props: { left?: string; right?: string };
@@ -79,6 +83,7 @@ export type ComponentInstance =
   | ShelfRowInstance
   | CardInstance
   | NoteInstance
+  | GridInstance
   | FooterInstance;
 
 export type ComponentType = ComponentInstance["type"];

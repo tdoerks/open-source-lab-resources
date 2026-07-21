@@ -1,9 +1,31 @@
 import { create } from "zustand";
+import { nanoid } from "nanoid";
 import type { ThemeId } from "@/design/themes";
-import type { ComponentInstance, Project, Sign } from "@/model/types";
+import type { ComponentInstance, ComponentType, Project, Sign } from "@/model/types";
 import { sampleProject } from "@/model/sample";
 import { getProfile } from "@/equipment/registry";
 import { defaultValues, type EquipmentValues } from "@/equipment/types";
+
+/** A fresh component instance with sensible defaults, for the Add palette. */
+function newInstance(type: ComponentType): ComponentInstance {
+  const id = nanoid(8);
+  switch (type) {
+    case "titleBlock":
+      return { id, type, props: { title: "Title", subtitle: "" } };
+    case "sectionHeader":
+      return { id, type, props: { text: "Section" } };
+    case "shelfRow":
+      return { id, type, props: { label: "Shelf", contents: "", tone: "accent" } };
+    case "card":
+      return { id, type, props: { title: "Card title", body: "" } };
+    case "note":
+      return { id, type, props: { text: "Note text", variant: "info" } };
+    case "grid":
+      return { id, type, props: { label: "Grid", rows: 9, cols: 9 } };
+    case "footer":
+      return { id, type, props: { left: "", right: "" } };
+  }
+}
 
 interface StudioState {
   project: Project;
@@ -20,6 +42,8 @@ interface StudioState {
   /** Shallow-merge props on a component instance in the active sign. */
   updateProps: (id: string, props: Record<string, unknown>) => void;
   removeComponent: (id: string) => void;
+  /** Append a fresh component of the given type and select it. */
+  addComponent: (type: ComponentType) => void;
   /** Apply an equipment profile: seed defaults and generate the sign's tree. */
   setEquipment: (profileId: string) => void;
   /** Change one guided-question value and regenerate the layout. */
@@ -87,6 +111,19 @@ export const useStudio = create<StudioState>((set, get) => {
           ),
         }),
       })),
+
+    addComponent: (type) => {
+      const inst = newInstance(type);
+      set((s) => ({
+        selectedId: inst.id,
+        project: touch({
+          ...s.project,
+          signs: s.project.signs.map((sg) =>
+            sg.id !== s.activeSignId ? sg : { ...sg, tree: [...sg.tree, inst] },
+          ),
+        }),
+      }));
+    },
 
     setEquipment: (profileId) =>
       set((s) => {

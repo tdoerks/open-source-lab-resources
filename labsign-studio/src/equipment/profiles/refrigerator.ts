@@ -29,7 +29,12 @@ export const refrigerator: EquipmentProfile = {
     tree.push({
       id: nanoid(8),
       type: "titleBlock",
-      props: { title: "Refrigerator", subtitle: room || undefined, badge: temp || undefined },
+      props: {
+        title: "Refrigerator",
+        subtitle: room || undefined,
+        badge: temp || undefined,
+        icon: { source: "lab", name: "fridge" },
+      },
     });
     tree.push({ id: nanoid(8), type: "sectionHeader", props: { text: "Shelf Contents" } });
 
