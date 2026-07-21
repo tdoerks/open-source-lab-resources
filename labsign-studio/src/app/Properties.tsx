@@ -1,6 +1,9 @@
-import { Trash2 } from "lucide-react";
+import { Trash2, Ban } from "lucide-react";
 import { useStudio } from "@/store";
 import type { ComponentInstance } from "@/model/types";
+import { ICON_SET } from "@/icons/registry";
+
+const ICON_TYPES = new Set<ComponentInstance["type"]>(["titleBlock", "sectionHeader", "shelfRow", "card"]);
 
 const TYPE_LABEL: Record<ComponentInstance["type"], string> = {
   titleBlock: "Title Block",
@@ -8,6 +11,7 @@ const TYPE_LABEL: Record<ComponentInstance["type"], string> = {
   shelfRow: "Shelf Row",
   card: "Card",
   note: "Note",
+  grid: "Grid",
   footer: "Footer",
 };
 
@@ -47,8 +51,24 @@ export function Properties() {
             </button>
           </div>
 
-          <div className="space-y-3">
+          {ICON_TYPES.has(inst.type) && <IconField instId={inst.id} current={(inst.props as { icon?: { name?: string } }).icon?.name} />}
+
+          <div className="mt-3 space-y-3">
             {Object.entries(inst.props).map(([key, value]) => {
+              if (key === "icon") return null;
+              if (typeof value === "number") {
+                return (
+                  <label key={key} className="block">
+                    <span className="mb-1 block text-xs font-semibold capitalize text-muted">{key}</span>
+                    <input
+                      type="number"
+                      value={value}
+                      onChange={(e) => updateProps(inst.id, { [key]: Number(e.target.value) || 0 })}
+                      className="w-full rounded-md border border-border bg-surface-2 px-2 py-1.5 text-sm outline-none focus:border-primary"
+                    />
+                  </label>
+                );
+              }
               if (typeof value !== "string") return null;
               const isEnum = key === "variant" || key === "tone";
               return (
@@ -91,6 +111,42 @@ function Row({ k, v }: { k: string; v: string }) {
     <div className="flex justify-between gap-3">
       <dt className="text-muted">{k}</dt>
       <dd className="truncate font-medium">{v}</dd>
+    </div>
+  );
+}
+
+function IconField({ instId, current }: { instId: string; current?: string }) {
+  const updateProps = useStudio((s) => s.updateProps);
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-semibold text-muted">Icon</span>
+      <div className="flex flex-wrap gap-1">
+        <button
+          onClick={() => updateProps(instId, { icon: undefined })}
+          title="No icon"
+          className={`grid h-8 w-8 place-items-center rounded-md border ${
+            !current ? "border-primary text-primary" : "border-border text-muted hover:border-muted"
+          }`}
+        >
+          <Ban size={15} />
+        </button>
+        {ICON_SET.map((ic) => {
+          const Comp = ic.Comp;
+          const active = current === ic.name;
+          return (
+            <button
+              key={ic.name}
+              title={ic.label}
+              onClick={() => updateProps(instId, { icon: { source: "lab", name: ic.name } })}
+              className={`grid h-8 w-8 place-items-center rounded-md border ${
+                active ? "border-primary text-primary" : "border-border text-ink hover:border-muted"
+              }`}
+            >
+              <Comp size={16} />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

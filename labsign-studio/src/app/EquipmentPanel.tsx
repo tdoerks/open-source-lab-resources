@@ -1,10 +1,20 @@
 import { useState } from "react";
-import { Refrigerator, Snowflake, ChevronLeft, type LucideIcon } from "lucide-react";
+import {
+  Refrigerator,
+  Snowflake,
+  Box,
+  Archive,
+  Thermometer,
+  Layers,
+  Grid3x3,
+  ChevronLeft,
+  type LucideIcon,
+} from "lucide-react";
 import { EQUIPMENT, getProfile } from "@/equipment/registry";
 import type { EquipmentParam } from "@/equipment/types";
 import { useStudio } from "@/store";
 
-const ICONS: Record<string, LucideIcon> = { Refrigerator, Snowflake };
+const ICONS: Record<string, LucideIcon> = { Refrigerator, Snowflake, Box, Archive, Thermometer, Layers, Grid3x3 };
 
 export function EquipmentPanel() {
   const equipment = useStudio((s) => s.project.signs.find((sg) => sg.id === s.activeSignId)!.equipment);
