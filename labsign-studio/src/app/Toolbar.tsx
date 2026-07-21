@@ -1,12 +1,31 @@
-import { FlaskConical, Moon, Sun, Download } from "lucide-react";
+import { useState } from "react";
+import { FlaskConical, Moon, Sun, Download, FileImage, FileCode, FileText, Check } from "lucide-react";
 import { useStudio } from "@/store";
+import { exportPng, exportSvg, exportPdf } from "@/export";
 
 export function Toolbar({ uiDark, onToggleUiDark }: { uiDark: boolean; onToggleUiDark: () => void }) {
   const sign = useStudio((s) => s.project.signs.find((sg) => sg.id === s.activeSignId)!);
   const renameSign = useStudio((s) => s.renameSign);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+
+  async function run(fmt: "png" | "svg" | "pdf") {
+    setBusy(fmt);
+    try {
+      if (fmt === "png") await exportPng(sign, 300);
+      else if (fmt === "svg") exportSvg(sign);
+      else await exportPdf(sign, 300);
+      setDone(fmt);
+      setTimeout(() => setDone(null), 1500);
+    } finally {
+      setBusy(null);
+      setMenuOpen(false);
+    }
+  }
 
   return (
-    <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-border bg-surface px-4">
+    <header className="relative z-20 flex h-14 flex-shrink-0 items-center gap-3 border-b border-border bg-surface px-4">
       <div className="flex items-center gap-2">
         <div className="grid h-8 w-8 place-items-center rounded-md bg-primary text-primary-ink">
           <FlaskConical size={18} />
@@ -34,9 +53,51 @@ export function Toolbar({ uiDark, onToggleUiDark }: { uiDark: boolean; onToggleU
         {uiDark ? <Sun size={17} /> : <Moon size={17} />}
       </button>
 
-      <button className="flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-ink hover:brightness-110">
-        <Download size={16} /> Export
-      </button>
+      <div className="relative">
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          className="flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-ink hover:brightness-110"
+        >
+          <Download size={16} /> Export
+        </button>
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+            <div className="absolute right-0 z-20 mt-1 w-52 overflow-hidden rounded-lg border border-border bg-surface shadow-raised">
+              <MenuItem icon={<FileImage size={16} />} label="PNG (300 DPI)" busy={busy === "png"} done={done === "png"} onClick={() => run("png")} />
+              <MenuItem icon={<FileCode size={16} />} label="SVG (vector)" busy={busy === "svg"} done={done === "svg"} onClick={() => run("svg")} />
+              <MenuItem icon={<FileText size={16} />} label="PDF (print)" busy={busy === "pdf"} done={done === "pdf"} onClick={() => run("pdf")} />
+              <div className="border-t border-border px-3 py-2 text-[11px] text-muted">{sign.size.label}</div>
+            </div>
+          </>
+        )}
+      </div>
     </header>
+  );
+}
+
+function MenuItem({
+  icon,
+  label,
+  busy,
+  done,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  busy: boolean;
+  done: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy}
+      className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm text-ink hover:bg-surface-2 disabled:opacity-60"
+    >
+      <span className="text-muted">{icon}</span>
+      <span className="flex-1">{label}</span>
+      {busy ? <span className="text-xs text-muted">…</span> : done ? <Check size={15} className="text-primary" /> : null}
+    </button>
   );
 }
