@@ -486,7 +486,7 @@
           <svg id="labelSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 620" role="img" aria-label="Contact label preview"></svg>
         </div>
         <div class="stage-tip">
-          <span>✋ Drag any section to nudge its position.</span>
+          <span>✋ Drag any section — or a photo, QR, or the NFC box — to nudge it.</span>
           <button type="button" class="btn small" id="resetLayoutBtn" hidden>Reset layout</button>
         </div>
 
@@ -841,19 +841,32 @@
                (size * 0.3).toFixed(1) + ' 0 0 1 ' + (size * 0.6).toFixed(1) + ' 0 z" fill="' + pal.border + '" opacity="0.3"/>';
     }
 
+    // Wrap `content` in a draggable <g> carrying its saved nudge offset. curLay
+    // is set at the start of each render() from state.data.blockLayout. These
+    // groups can nest (e.g. a photo block inside a section block) — the drag
+    // handler grabs the innermost, giving fine-grained control.
+    var curLay = {};
+    function blk(id, content) {
+      var o = curLay[id] || {}, dx = +o.dx || 0, dy = +o.dy || 0;
+      return '<g class="lblblock" data-block="' + id + '"' +
+             (dx || dy ? ' transform="translate(' + dx.toFixed(1) + ',' + dy.toFixed(1) + ')"' : '') +
+             '>' + content + '</g>';
+    }
+
     // The right-hand cluster for a PI/Lab-Manager block: a headshot + a mini QR
     // that DIALS that person (tel:), vertically centered against the three text
-    // rows starting at secTop. The tel: payload is tiny, so the QR has large,
-    // phone-scannable modules even at this size; email falls back to mailto:.
-    function personCluster(secTop, photo, name, phone, email, pal, cid) {
+    // rows starting at secTop. The photo and QR are each their own draggable
+    // block (key + "-photo" / "-qr"). Email falls back to mailto:.
+    function personCluster(secTop, photo, name, phone, email, pal, cid, key) {
       var photoW = 72, qrW = 72, gap = 10, left = W - 14 - photoW - gap - qrW; // right-aligned
       var centerY = secTop + 56;
-      var out = avatar(left, centerY - photoW / 2, photoW, photo, pal, cid);
+      var out = blk(key + "-photo", avatar(left, centerY - photoW / 2, photoW, photo, pal, cid));
       var qx = left + photoW + gap, qy = centerY - qrW / 2;
       var href = Payload.telHref(phone) || (email && email.trim() ? "mailto:" + email.trim() : "");
-      out += qr(href, qx, qy, qrW, pal.qrDark, pal.qrLight, "M");
-      out += '<rect x="' + qx + '" y="' + qy + '" width="' + qrW + '" height="' + qrW +
-             '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
+      var qrStr = qr(href, qx, qy, qrW, pal.qrDark, pal.qrLight, "M") +
+        '<rect x="' + qx + '" y="' + qy + '" width="' + qrW + '" height="' + qrW +
+        '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
+      out += blk(key + "-qr", qrStr);
       return out;
     }
 
@@ -906,15 +919,8 @@
         s += text(W - M - bw / 2, 76, state.badge, {size: 11, weight: 700, fill: pal.purple, anchor: "middle"});
       }
 
-      // Wrap a section in a draggable group carrying its saved nudge offset, so
-      // users can move blocks around in the live preview for spacing tweaks.
-      var lay = d.blockLayout || {};
-      function blk(id, content) {
-        var o = lay[id] || {}, dx = +o.dx || 0, dy = +o.dy || 0;
-        return '<g class="lblblock" data-block="' + id + '"' +
-               (dx || dy ? ' transform="translate(' + dx.toFixed(1) + ',' + dy.toFixed(1) + ')"' : '') +
-               '>' + content + '</g>';
-      }
+      // Section/element nudge offsets for this render (see blk()).
+      curLay = d.blockLayout || {};
 
       var y = 96;
 
@@ -941,7 +947,7 @@
       gPi += contactRow(M + 2, y, rowW, "user", d.piName, pal); y += 26;
       gPi += contactRow(M + 2, y, rowW, "mail", d.piEmail, pal); y += 26;
       gPi += contactRow(M + 2, y, rowW, "mobile", d.piPhone, pal); y += 24;
-      gPi += personCluster(piTop, photoObj("pi", d), d.piName, d.piPhone, d.piEmail, pal, "clip-pi");
+      gPi += personCluster(piTop, photoObj("pi", d), d.piName, d.piPhone, d.piEmail, pal, "clip-pi", "pi");
       s += blk('pi', gPi);
 
       // ---- Lab manager contact ----
@@ -951,7 +957,7 @@
       gLm += contactRow(M + 2, y, rowW, "user", d.lmName, pal); y += 26;
       gLm += contactRow(M + 2, y, rowW, "mail", d.lmEmail, pal); y += 26;
       gLm += contactRow(M + 2, y, rowW, "mobile", d.lmPhone, pal); y += 24;
-      gLm += personCluster(lmTop, photoObj("lm", d), d.lmName, d.lmPhone, d.lmEmail, pal, "clip-lm");
+      gLm += personCluster(lmTop, photoObj("lm", d), d.lmName, d.lmPhone, d.lmEmail, pal, "clip-lm", "lm");
       s += blk('lm', gLm);
 
       // ---- Office phone (compact single row) ----
@@ -980,51 +986,52 @@
       var isTel = pay.kind === "tel";
       var qy = y + 6;
       var qrSize = 104;
-      var gFoot = "";
+      // Big QR (its own draggable block).
       // tel: and URL payloads are short, so error-correction 'M' keeps a crisp,
       // low-density (very scannable) code.
-      gFoot += qr(pay.value, M, qy, qrSize, pal.qrDark, pal.qrLight, "M");
-      gFoot += '<rect x="' + M + '" y="' + qy + '" width="' + qrSize + '" height="' + qrSize + '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
-      gFoot += text(M + qrSize / 2, qy + qrSize + 14,
+      var qrPart = qr(pay.value, M, qy, qrSize, pal.qrDark, pal.qrLight, "M");
+      qrPart += '<rect x="' + M + '" y="' + qy + '" width="' + qrSize + '" height="' + qrSize + '" fill="none" stroke="' + pal.border + '" stroke-width="1"/>';
+      qrPart += text(M + qrSize / 2, qy + qrSize + 14,
                 isTel ? "SCAN TO CALL" : "SCAN TO ACCESS",
                 {size: 9, weight: 700, fill: pal.muted, anchor: "middle", spacing: .6});
 
-      // NFC panel
+      // NFC panel (its own draggable block).
       var nx = M + qrSize + 14, nw = W - M - nx;
-      gFoot += '<rect x="' + nx + '" y="' + qy + '" width="' + nw + '" height="' + qrSize + '" rx="7" fill="' + pal.panel + '" stroke="' + pal.border + '" stroke-width="1"/>';
+      var nfcPart = '<rect x="' + nx + '" y="' + qy + '" width="' + nw + '" height="' + qrSize + '" rx="7" fill="' + pal.panel + '" stroke="' + pal.border + '" stroke-width="1"/>';
 
       // Header, left: icon + title + what tapping does.
-      gFoot += icon("nfc", nx + 10, qy + 11, 22, pal.purple, 1.8);
-      gFoot += text(nx + 40, qy + 21, "NFC TAG", {size: 12, weight: 700, fill: pal.purple, spacing: .5});
-      gFoot += text(nx + 40, qy + 34, isTel ? "Calls emergency" : (pay.kind === "url" ? "Opens saved link" : "Tap to open"),
+      nfcPart += icon("nfc", nx + 10, qy + 11, 22, pal.purple, 1.8);
+      nfcPart += text(nx + 40, qy + 21, "NFC TAG", {size: 12, weight: 700, fill: pal.purple, spacing: .5});
+      nfcPart += text(nx + 40, qy + 34, isTel ? "Calls emergency" : (pay.kind === "url" ? "Opens saved link" : "Tap to open"),
                 {size: 8.5, weight: 600, fill: pal.muted, spacing: .2});
 
       // Header, right: a "tap here" target — marks where to adhere the physical
       // NFC tag and where users tap their phone.
       var tcx = nx + nw - 28, tcy = qy + 22, tr = 17;
-      gFoot += '<circle cx="' + tcx + '" cy="' + tcy + '" r="' + tr + '" fill="none" stroke="' + pal.purple +
+      nfcPart += '<circle cx="' + tcx + '" cy="' + tcy + '" r="' + tr + '" fill="none" stroke="' + pal.purple +
            '" stroke-width="1.3" stroke-dasharray="3 2.5" opacity="0.85"/>';
-      gFoot += icon("mobile", tcx - 8, tcy - 9, 16, pal.purple, 1.5);
-      gFoot += text(tcx, qy + 47, "TAP HERE", {size: 7, weight: 700, fill: pal.muted, anchor: "middle", spacing: .8});
+      nfcPart += icon("mobile", tcx - 8, tcy - 9, 16, pal.purple, 1.5);
+      nfcPart += text(tcx, qy + 47, "TAP HERE", {size: 7, weight: 700, fill: pal.muted, anchor: "middle", spacing: .8});
 
       // Divider.
-      gFoot += '<line x1="' + (nx + 8) + '" y1="' + (qy + 52) + '" x2="' + (nx + nw - 8) + '" y2="' + (qy + 52) + '" stroke="' + pal.border + '" stroke-width="1" opacity="0.4"/>';
+      nfcPart += '<line x1="' + (nx + 8) + '" y1="' + (qy + 52) + '" x2="' + (nx + nw - 8) + '" y2="' + (qy + 52) + '" stroke="' + pal.border + '" stroke-width="1" opacity="0.4"/>';
 
       // Body, balanced in the lower half.
       if (pay.kind === "url") {
-        gFoot += text(nx + 10, qy + 65, "PROGRAMMED URL", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
+        nfcPart += text(nx + 10, qy + 65, "PROGRAMMED URL", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
         var urlLines = wrap(pay.value, nw - 20, 9.2, 3);
         for (var i = 0; i < urlLines.length; i++) {
-          gFoot += '<text x="' + (nx + 10) + '" y="' + (qy + 77 + i * 10) + '" font-family="Menlo, Consolas, monospace" font-size="9.2" fill="' + pal.text + '">' + esc(urlLines[i]) + '</text>';
+          nfcPart += '<text x="' + (nx + 10) + '" y="' + (qy + 77 + i * 10) + '" font-family="Menlo, Consolas, monospace" font-size="9.2" fill="' + pal.text + '">' + esc(urlLines[i]) + '</text>';
         }
       } else if (isTel) {
-        gFoot += text(nx + 10, qy + 66, "DIALS ON SCAN / TAP", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
-        gFoot += text(nx + 10, qy + 88, clip(pay.display, nw - 20, 17), {size: fitSize(pay.display, nw - 20, 17, 11), weight: 700, fill: pal.text});
-        gFoot += text(nx + 10, qy + 100, clip(pay.contactLabel, nw - 20, 8.5), {size: 8.5, weight: 600, fill: pal.muted, spacing: .3});
+        nfcPart += text(nx + 10, qy + 66, "DIALS ON SCAN / TAP", {size: 8, weight: 700, fill: pal.muted, spacing: .6});
+        nfcPart += text(nx + 10, qy + 88, clip(pay.display, nw - 20, 17), {size: fitSize(pay.display, nw - 20, 17, 11), weight: 700, fill: pal.text});
+        nfcPart += text(nx + 10, qy + 100, clip(pay.contactLabel, nw - 20, 8.5), {size: 8.5, weight: 600, fill: pal.muted, spacing: .3});
       } else {
-        gFoot += text(nx + nw / 2, qy + 82, "Add a URL or phone", {size: 9.5, weight: 600, fill: pal.muted, anchor: "middle"});
+        nfcPart += text(nx + nw / 2, qy + 82, "Add a URL or phone", {size: 9.5, weight: 600, fill: pal.muted, anchor: "middle"});
       }
-      s += blk('footer', gFoot);
+      s += blk('footer-qr', qrPart);
+      s += blk('footer-nfc', nfcPart);
 
       return s;
     }
