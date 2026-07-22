@@ -6,6 +6,8 @@ import type { ComponentInstance, ComponentType, Project, Sign } from "@/model/ty
 import { sampleProject } from "@/model/sample";
 import { getProfile } from "@/equipment/registry";
 import { defaultValues, type EquipmentValues } from "@/equipment/types";
+import type { BrandKit } from "@/model/types";
+import type { Template } from "@/templates";
 
 /** A fresh component instance with sensible defaults, for the Add palette. */
 function newInstance(type: ComponentType): ComponentInstance {
@@ -51,6 +53,10 @@ interface StudioState {
   updateEquipmentValue: (key: string, value: string | number | boolean) => void;
   /** Replace the whole project (e.g. hydrate from storage). */
   loadProject: (project: Project) => void;
+  /** Merge changes into the project-wide brand kit. */
+  updateBrandKit: (patch: Partial<BrandKit>) => void;
+  /** Apply a template (equipment preset + theme) to the active sign. */
+  applyTemplate: (template: Template) => void;
 }
 
 function touch(p: Project): Project {
@@ -168,6 +174,28 @@ export const useStudio = create<StudioState>()(
       }),
 
     loadProject: (project) => set({ project, activeSignId: project.signs[0]?.id, selectedId: null }),
+
+    updateBrandKit: (patch) =>
+      set((s) => ({ project: touch({ ...s.project, brandKit: { ...s.project.brandKit, ...patch } }) })),
+
+    applyTemplate: (tpl) =>
+      set((s) => {
+        const profile = getProfile(tpl.equipmentId);
+        if (!profile) return {};
+        const values: EquipmentValues = { ...defaultValues(profile), ...tpl.values };
+        const tree = profile.generate(values);
+        return {
+          selectedId: null,
+          project: touch({
+            ...s.project,
+            signs: s.project.signs.map((sg) =>
+              sg.id === s.activeSignId
+                ? { ...sg, name: tpl.name, themeId: tpl.themeId, equipment: { profileId: profile.id, values }, tree }
+                : sg,
+            ),
+          }),
+        };
+      }),
       };
     },
     {

@@ -1,12 +1,14 @@
 import { THEMES } from "@/design/themes";
+import { resolveTheme } from "@/design/brand";
 import { SignSvg } from "@/render/SignSvg";
 import { useStudio } from "@/store";
 
 export function CanvasStage() {
   const sign = useStudio((s) => s.project.signs.find((sg) => sg.id === s.activeSignId)!);
+  const brand = useStudio((s) => s.project.brandKit);
   const selectedId = useStudio((s) => s.selectedId);
   const select = useStudio((s) => s.select);
-  const theme = THEMES[sign.themeId];
+  const theme = resolveTheme(THEMES[sign.themeId], brand);
 
   return (
     <main
