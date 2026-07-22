@@ -89,14 +89,25 @@ const renderers: { [K in ComponentInstance["type"]]: Renderer } = {
     if (inst.type !== "sectionHeader") throw 0;
     const { t, w } = ctx;
     const height = 28;
+    const ic = inst.props.icon;
     const node = t.bandedHeaders ? (
       <g>
         <rect x={0} y={0} width={w} height={22} rx={4} fill={t.colors.primary} opacity={0.92} />
-        <T x={SPACE.sm} y={16} role="heading" fill={t.colors.primaryInk} text={inst.props.text} family={t.fontFamily} />
+        {ic && (
+          <g transform="translate(8,4)">
+            <SignIcon icon={ic} size={14} color={t.colors.primaryInk} />
+          </g>
+        )}
+        <T x={ic ? SPACE.sm + 20 : SPACE.sm} y={16} role="heading" fill={t.colors.primaryInk} text={inst.props.text} family={t.fontFamily} />
       </g>
     ) : (
       <g>
-        <T x={0} y={14} role="heading" fill={t.colors.ink} text={inst.props.text} family={t.fontFamily} />
+        {ic && (
+          <g transform="translate(0,1)">
+            <SignIcon icon={ic} size={14} color={t.colors.ink} />
+          </g>
+        )}
+        <T x={ic ? 20 : 0} y={14} role="heading" fill={t.colors.ink} text={inst.props.text} family={t.fontFamily} />
         <line x1={0} y1={22} x2={w} y2={22} stroke={t.colors.border} strokeWidth={1.5} />
       </g>
     );
@@ -130,11 +141,18 @@ const renderers: { [K in ComponentInstance["type"]]: Renderer } = {
     if (inst.type !== "card") throw 0;
     const { t, w } = ctx;
     const height = 56;
+    const ic = inst.props.icon;
+    const tx = ic ? 44 : 14;
     const node = (
       <g>
         <rect x={0} y={0} width={w} height={50} rx={t.radius} fill={t.colors.surface} stroke={t.colors.border} strokeWidth={1} />
-        <T x={14} y={22} role="subtitle" fill={t.colors.ink} text={inst.props.title} family={t.fontFamily} />
-        {inst.props.body && <T x={14} y={40} role="body" fill={t.colors.muted} text={inst.props.body} family={t.fontFamily} />}
+        {ic && (
+          <g transform="translate(13,15)">
+            <SignIcon icon={ic} size={20} color={t.colors.primary} />
+          </g>
+        )}
+        <T x={tx} y={22} role="subtitle" fill={t.colors.ink} text={inst.props.title} family={t.fontFamily} />
+        {inst.props.body && <T x={tx} y={40} role="body" fill={t.colors.muted} text={inst.props.body} family={t.fontFamily} />}
       </g>
     );
     return { height, node };

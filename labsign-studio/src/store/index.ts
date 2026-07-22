@@ -1,4 +1,5 @@
-import { create } from "zustand";
+import { create, useStore } from "zustand";
+import { temporal, type TemporalState } from "zundo";
 import { nanoid } from "nanoid";
 import type { ThemeId } from "@/design/themes";
 import type { ComponentInstance, ComponentType, Project, Sign } from "@/model/types";
@@ -48,15 +49,19 @@ interface StudioState {
   setEquipment: (profileId: string) => void;
   /** Change one guided-question value and regenerate the layout. */
   updateEquipmentValue: (key: string, value: string | number | boolean) => void;
+  /** Replace the whole project (e.g. hydrate from storage). */
+  loadProject: (project: Project) => void;
 }
 
 function touch(p: Project): Project {
   return { ...p, updatedAt: Date.now() };
 }
 
-export const useStudio = create<StudioState>((set, get) => {
-  const project = sampleProject();
-  return {
+export const useStudio = create<StudioState>()(
+  temporal(
+    (set, get) => {
+      const project = sampleProject();
+      return {
     project,
     activeSignId: project.signs[0].id,
     selectedId: null,
@@ -161,5 +166,21 @@ export const useStudio = create<StudioState>((set, get) => {
           }),
         };
       }),
-  };
-});
+
+    loadProject: (project) => set({ project, activeSignId: project.signs[0]?.id, selectedId: null }),
+      };
+    },
+    {
+      limit: 100,
+      // Undo/redo tracks the document only (not selection / UI).
+      partialize: (s) => ({ project: s.project, activeSignId: s.activeSignId }),
+    },
+  ),
+);
+
+type TrackedState = Pick<StudioState, "project" | "activeSignId">;
+
+/** Subscribe to the undo/redo (temporal) store. */
+export function useTemporal<T>(selector: (s: TemporalState<TrackedState>) => T): T {
+  return useStore(useStudio.temporal, selector);
+}
