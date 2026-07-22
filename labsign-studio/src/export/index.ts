@@ -1,21 +1,20 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import { THEMES } from "@/design/themes";
+import type { Theme } from "@/design/themes";
 import type { Sign } from "@/model/types";
 import { SignSvg } from "@/render/SignSvg";
 
 const PT_PER_IN = 72;
 
 /** Serialize a sign to a standalone, non-interactive SVG string. */
-export function signToSvgString(sign: Sign): string {
-  const theme = THEMES[sign.themeId];
+export function signToSvgString(sign: Sign, theme: Theme): string {
   const markup = renderToStaticMarkup(createElement(SignSvg, { sign, theme, interactive: false }));
   return `<?xml version="1.0" encoding="UTF-8"?>\n${markup}`;
 }
 
 /** Rasterize a sign to a canvas at the given DPI (SVG units are points @72/in). */
-function signToCanvas(sign: Sign, dpi: number): Promise<HTMLCanvasElement> {
-  const svg = signToSvgString(sign);
+function signToCanvas(sign: Sign, theme: Theme, dpi: number): Promise<HTMLCanvasElement> {
+  const svg = signToSvgString(sign, theme);
   const W = sign.size.wIn * PT_PER_IN;
   const H = sign.size.hIn * PT_PER_IN;
   const scale = dpi / PT_PER_IN;
@@ -52,12 +51,12 @@ function download(blob: Blob, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function exportSvg(sign: Sign) {
-  download(new Blob([signToSvgString(sign)], { type: "image/svg+xml" }), fileName(sign, "svg"));
+export function exportSvg(sign: Sign, theme: Theme) {
+  download(new Blob([signToSvgString(sign, theme)], { type: "image/svg+xml" }), fileName(sign, "svg"));
 }
 
-export async function exportPng(sign: Sign, dpi = 300) {
-  const canvas = await signToCanvas(sign, dpi);
+export async function exportPng(sign: Sign, theme: Theme, dpi = 300) {
+  const canvas = await signToCanvas(sign, theme, dpi);
   await new Promise<void>((res) =>
     canvas.toBlob((blob) => {
       if (blob) download(blob, fileName(sign, "png"));
@@ -72,8 +71,8 @@ export async function exportPng(sign: Sign, dpi = 300) {
  * XObject, keeping the bundle lean. (jsPDF can replace this later for the
  * multi-page Facility Pack.)
  */
-export async function exportPdf(sign: Sign, dpi = 300) {
-  const canvas = await signToCanvas(sign, dpi);
+export async function exportPdf(sign: Sign, theme: Theme, dpi = 300) {
+  const canvas = await signToCanvas(sign, theme, dpi);
   const jpeg = atob(canvas.toDataURL("image/jpeg", 0.95).split(",")[1]); // binary string
   const ptW = sign.size.wIn * PT_PER_IN;
   const ptH = sign.size.hIn * PT_PER_IN;

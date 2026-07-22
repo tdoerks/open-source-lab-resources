@@ -31,6 +31,7 @@ export function sampleProject(): Project {
     id: nanoid(8),
     name: "Untitled project",
     module: "storage-maps",
+    brandKit: { org: "", dept: "" },
     signs: [sampleSign()],
     createdAt: now,
     updatedAt: now,

@@ -13,6 +13,8 @@ import { THEME_LIST } from "@/design/themes";
 import { useStudio } from "@/store";
 import { EquipmentPanel } from "./EquipmentPanel";
 import { ComponentsPanel } from "./ComponentsPanel";
+import { TemplatesPanel } from "./TemplatesPanel";
+import { BrandKitPanel } from "./BrandKitPanel";
 
 type TabId = "templates" | "components" | "equipment" | "icons" | "themes" | "brand";
 
@@ -59,6 +61,10 @@ export function LeftRail() {
           <EquipmentPanel />
         ) : tab === "components" ? (
           <ComponentsPanel />
+        ) : tab === "templates" ? (
+          <TemplatesPanel />
+        ) : tab === "brand" ? (
+          <BrandKitPanel />
         ) : (
           <Placeholder label={TABS.find((t) => t.id === tab)!.label} />
         )}

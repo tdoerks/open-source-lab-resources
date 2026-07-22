@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { FlaskConical, Moon, Sun, Download, FileImage, FileCode, FileText, Check, Undo2, Redo2 } from "lucide-react";
 import { useStudio, useTemporal } from "@/store";
+import { THEMES } from "@/design/themes";
+import { resolveTheme } from "@/design/brand";
 import { exportPng, exportSvg, exportPdf } from "@/export";
 
 export function Toolbar({ uiDark, onToggleUiDark }: { uiDark: boolean; onToggleUiDark: () => void }) {
   const sign = useStudio((s) => s.project.signs.find((sg) => sg.id === s.activeSignId)!);
+  const brand = useStudio((s) => s.project.brandKit);
   const renameSign = useStudio((s) => s.renameSign);
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -12,10 +15,11 @@ export function Toolbar({ uiDark, onToggleUiDark }: { uiDark: boolean; onToggleU
 
   async function run(fmt: "png" | "svg" | "pdf") {
     setBusy(fmt);
+    const theme = resolveTheme(THEMES[sign.themeId], brand);
     try {
-      if (fmt === "png") await exportPng(sign, 300);
-      else if (fmt === "svg") exportSvg(sign);
-      else await exportPdf(sign, 300);
+      if (fmt === "png") await exportPng(sign, theme, 300);
+      else if (fmt === "svg") exportSvg(sign, theme);
+      else await exportPdf(sign, theme, 300);
       setDone(fmt);
       setTimeout(() => setDone(null), 1500);
     } finally {

@@ -107,10 +107,20 @@ export interface Sign {
 
 export type ModuleId = "storage-maps";
 
+/** Lab-wide branding applied across every sign for a consistent look. */
+export interface BrandKit {
+  org: string;
+  dept: string;
+  /** Optional hex overrides for the theme's primary / accent color. */
+  primary?: string;
+  accent?: string;
+}
+
 export interface Project {
   id: string;
   name: string;
   module: ModuleId;
+  brandKit: BrandKit;
   signs: Sign[];
   createdAt: number;
   updatedAt: number;
