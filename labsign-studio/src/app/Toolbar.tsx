@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { FlaskConical, Moon, Sun, Download, FileImage, FileCode, FileText, Check } from "lucide-react";
-import { useStudio } from "@/store";
+import { FlaskConical, Moon, Sun, Download, FileImage, FileCode, FileText, Check, Undo2, Redo2 } from "lucide-react";
+import { useStudio, useTemporal } from "@/store";
 import { exportPng, exportSvg, exportPdf } from "@/export";
 
 export function Toolbar({ uiDark, onToggleUiDark }: { uiDark: boolean; onToggleUiDark: () => void }) {
@@ -34,6 +34,10 @@ export function Toolbar({ uiDark, onToggleUiDark }: { uiDark: boolean; onToggleU
           <div className="text-sm font-bold tracking-tight">LabSign Studio</div>
           <div className="text-[11px] text-muted">Storage Maps</div>
         </div>
+      </div>
+
+      <div className="mx-1 flex items-center">
+        <UndoRedo />
       </div>
 
       <div className="mx-2 h-6 w-px bg-border" />
@@ -73,6 +77,33 @@ export function Toolbar({ uiDark, onToggleUiDark }: { uiDark: boolean; onToggleU
         )}
       </div>
     </header>
+  );
+}
+
+function UndoRedo() {
+  const undo = useTemporal((s) => s.undo);
+  const redo = useTemporal((s) => s.redo);
+  const canUndo = useTemporal((s) => s.pastStates.length > 0);
+  const canRedo = useTemporal((s) => s.futureStates.length > 0);
+  return (
+    <>
+      <button
+        onClick={() => undo()}
+        disabled={!canUndo}
+        title="Undo (Ctrl+Z)"
+        className="grid h-9 w-9 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent"
+      >
+        <Undo2 size={17} />
+      </button>
+      <button
+        onClick={() => redo()}
+        disabled={!canRedo}
+        title="Redo (Ctrl+Shift+Z)"
+        className="grid h-9 w-9 place-items-center rounded-md text-muted hover:bg-surface-2 hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent"
+      >
+        <Redo2 size={17} />
+      </button>
+    </>
   );
 }
 
