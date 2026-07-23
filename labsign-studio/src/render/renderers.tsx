@@ -179,34 +179,56 @@ const renderers: { [K in ComponentInstance["type"]]: Renderer } = {
     const { t, w } = ctx;
     const cols = Math.max(1, inst.props.cols);
     const rows = Math.max(1, inst.props.rows);
-    const cell = Math.max(9, Math.min(22, Math.floor((w - 20) / cols)));
+    const filled = inst.props.cells ?? {};
+    const headW = 16; // row-label column
+    const colHdrH = 14; // column-number row
+    const gridLeft = headW;
+    const gridTop = 24 + colHdrH;
+    const cell = Math.max(10, Math.min(26, Math.floor((w - gridLeft - 4) / cols)));
     const gw = cols * cell;
     const gh = rows * cell;
-    const y0 = 22;
-    const height = y0 + gh + 8;
-    const cells: ReactElement[] = [];
+    const height = gridTop + gh + 8;
+    const rowLabel = (r: number) => (r < 26 ? String.fromCharCode(65 + r) : String(r + 1));
+    const nodes: ReactElement[] = [];
+
+    for (let c = 0; c < cols; c++) {
+      nodes.push(
+        <text key={`ch${c}`} x={gridLeft + c * cell + cell / 2} y={gridTop - 4} fontFamily={t.fontFamily}
+          fontSize={7.5} fontWeight={700} fill={t.colors.muted} textAnchor="middle">{c + 1}</text>,
+      );
+    }
+    for (let r = 0; r < rows; r++) {
+      nodes.push(
+        <text key={`rh${r}`} x={headW / 2} y={gridTop + r * cell + cell / 2 + 3} fontFamily={t.fontFamily}
+          fontSize={7.5} fontWeight={700} fill={t.colors.muted} textAnchor="middle">{rowLabel(r)}</text>,
+      );
+    }
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        cells.push(
-          <rect
-            key={`${r}-${c}`}
-            x={c * cell}
-            y={y0 + r * cell}
-            width={cell}
-            height={cell}
-            fill={(r + c) % 2 ? t.colors.surfaceAlt : t.colors.surface}
-            stroke={t.colors.border}
-            strokeWidth={0.75}
-          />,
+        const val = filled[`${r}-${c}`];
+        const x = gridLeft + c * cell;
+        const y = gridTop + r * cell;
+        nodes.push(
+          <rect key={`${r}-${c}`} x={x} y={y} width={cell} height={cell}
+            fill={val ? t.colors.accent : (r + c) % 2 ? t.colors.surfaceAlt : t.colors.surface}
+            fillOpacity={val ? 0.16 : 1} stroke={t.colors.border} strokeWidth={0.75} />,
         );
+        if (val) {
+          const fs = fit(val, cell - 3, Math.min(9, cell * 0.5), 5);
+          nodes.push(
+            <text key={`v${r}-${c}`} x={x + cell / 2} y={y + cell / 2 + fs / 3} fontFamily={t.fontFamily}
+              fontSize={fs} fontWeight={600} fill={t.colors.ink} textAnchor="middle">{val}</text>,
+          );
+        }
       }
     }
+
     const node = (
       <g>
         <T x={0} y={14} role="heading" fill={t.colors.ink} text={inst.props.label} family={t.fontFamily} />
-        {cells}
+        {nodes}
         {inst.props.note && (
-          <T x={gw + 14} y={y0 + 16} role="body" fill={t.colors.muted} text={inst.props.note} family={t.fontFamily} />
+          <T x={gridLeft + gw + 14} y={gridTop + 16} role="body" fill={t.colors.muted} text={inst.props.note} family={t.fontFamily} />
         )}
       </g>
     );

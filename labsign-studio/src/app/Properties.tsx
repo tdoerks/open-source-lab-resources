@@ -1,6 +1,6 @@
 import { Trash2, Ban } from "lucide-react";
 import { useStudio } from "@/store";
-import type { ComponentInstance } from "@/model/types";
+import type { ComponentInstance, GridInstance } from "@/model/types";
 import { ICON_SET } from "@/icons/registry";
 
 const ICON_TYPES = new Set<ComponentInstance["type"]>(["titleBlock", "sectionHeader", "shelfRow", "card"]);
@@ -100,9 +100,60 @@ export function Properties() {
               );
             })}
           </div>
+
+          {inst.type === "grid" && <GridCellsEditor inst={inst} />}
         </div>
       )}
     </aside>
+  );
+}
+
+function GridCellsEditor({ inst }: { inst: GridInstance }) {
+  const updateProps = useStudio((s) => s.updateProps);
+  const rows = Math.max(1, Math.min(12, inst.props.rows));
+  const cols = Math.max(1, Math.min(12, inst.props.cols));
+  const cells = inst.props.cells ?? {};
+  const rowLabel = (r: number) => (r < 26 ? String.fromCharCode(65 + r) : String(r + 1));
+
+  const setCell = (r: number, c: number, v: string) => {
+    const next = { ...cells };
+    if (v) next[`${r}-${c}`] = v;
+    else delete next[`${r}-${c}`];
+    updateProps(inst.id, { cells: next });
+  };
+
+  return (
+    <div className="mt-4">
+      <span className="mb-1 block text-xs font-semibold text-muted">Positions — type contents</span>
+      <div className="overflow-x-auto rounded-md border border-border p-2">
+        <table style={{ borderSpacing: 2, borderCollapse: "separate" }}>
+          <thead>
+            <tr>
+              <th />
+              {Array.from({ length: cols }).map((_, c) => (
+                <th key={c} className="text-[9px] font-bold text-muted">{c + 1}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }).map((_, r) => (
+              <tr key={r}>
+                <td className="pr-1 text-[9px] font-bold text-muted">{rowLabel(r)}</td>
+                {Array.from({ length: cols }).map((_, c) => (
+                  <td key={c}>
+                    <input
+                      value={cells[`${r}-${c}`] ?? ""}
+                      onChange={(e) => setCell(r, c, e.target.value)}
+                      className="h-5 w-6 rounded border border-border bg-surface-2 text-center text-[9px] outline-none focus:border-primary"
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

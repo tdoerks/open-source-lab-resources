@@ -70,7 +70,8 @@ export interface NoteInstance extends BaseInstance {
 }
 export interface GridInstance extends BaseInstance {
   type: "grid";
-  props: { label: string; rows: number; cols: number; note?: string };
+  /** `cells` maps a "row-col" key (0-indexed) to that position's short content. */
+  props: { label: string; rows: number; cols: number; note?: string; cells?: Record<string, string> };
 }
 export interface FooterInstance extends BaseInstance {
   type: "footer";
