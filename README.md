@@ -14,6 +14,18 @@ This repository contains open-source resources designed to streamline laboratory
 
 ### Current Resources:
 
+#### 📍 [Check-in Board](./checkin-board/)
+A glanceable office in/out status board — tap where you are on a tablet, phone, or laptop:
+- **In/out statuses** - In Lab, In Office, In a Meeting, At Lunch, Off-site/Field, Working Remotely, Out / On Leave
+- **Features:**
+  - Big, color-coded, colorblind-safe status banner (icon + word, never color alone)
+  - Optional note ("back at 3pm") with quick presets
+  - "Last updated" time + recent check-in history
+  - Large touch targets for tablet/phone
+  - Each visitor gets their own private board (auto-saves in browser)
+  - Export/import the board as JSON
+  - Single self-contained HTML — works offline
+
 #### 📋 [Freezer Defrosting Management](./freezer-defrost/)
 Complete system for managing freezer defrosting procedures:
 - **Interactive Sign** - Fill-in-the-browser HTML form with auto-calculations
