@@ -23,13 +23,35 @@ on a tablet, phone, or laptop. Perfect for a small display mounted by your door.
 - Large touch targets for tablet/phone; auto-saves in the browser (`localStorage`).
 - Backup: export/import the board as JSON.
 
+## Cross-device sync (optional)
+
+By default the board is single-device — your status lives in the browser you tapped it on. Turn on **sync**
+and your phone can update the board while the tablet (and any visitor) sees it live.
+
+**How it works:** the board reads and writes a shared `status.json` in your GitHub repo via the GitHub API.
+Devices poll it (~45s) and adopt the newest status. It's a **single shared board** — your phone and tablet
+show the same thing.
+
+**Set it up (once):**
+1. Make a **fine-grained GitHub token**: GitHub → *Settings → Developer settings → Fine-grained tokens →
+   Generate*. Repository access: **only this repo**. Permissions: **Contents → Read and write**.
+2. Open the board → **⚙️ Settings → Cross-device sync**. The owner/repo/path autofill on GitHub Pages —
+   just paste the token → **Save & connect** (use **Test** to check it first).
+3. Repeat on every device that should *update* the board (tablet + phone). A device with **no token** can
+   still *view* the live status, just not change it.
+
+The sync pill in the header shows the state: **Local only · Synced · Live (view only) · Sync error**.
+
+**Security:** the token is stored only in that device's browser (`localStorage`, separate from the board
+data so it never lands in an Export). Scope it to this one repo's Contents, and revoke it anytime from the
+same GitHub page. For a **public** repo this is low-risk; the token only lets someone edit that repo's files.
+
 ## Notes
 
-- **Single-device by design (v1).** Your status lives in the browser you tapped it on — it is *not* a
-  shared board that others watch remotely, and it doesn't sync between your phone and the tablet. That's
-  what makes it safe for anyone to use their own copy.
-- **Optional cross-device sync (planned).** A later version can commit your status to a repo via the
-  GitHub API so your phone updates the tablet and visitors see it live — the Settings panel is already
-  stubbed for it.
+- **Forkers get their own board.** Fork the repo and each fork syncs to its *own* `status.json` with its own
+  token — so "anyone can use it themselves" still holds.
+- **Last-write-wins.** If two devices tap at once, the later timestamp wins (no merge). Fine for a presence
+  board.
+- **Without sync** the board is fully self-contained and works offline from `file://`.
 
 *Single self-contained HTML file — no build step, no dependencies, no server.*

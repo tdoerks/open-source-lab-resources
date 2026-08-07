@@ -23,6 +23,7 @@ A glanceable office in/out status board — tap where you are on a tablet, phone
   - "Last updated" time + recent check-in history
   - Large touch targets for tablet/phone
   - Each visitor gets their own private board (auto-saves in browser)
+  - **Optional cross-device sync** - phone updates the board, tablet & visitors see it live (GitHub token)
   - Export/import the board as JSON
   - Single self-contained HTML — works offline
 
