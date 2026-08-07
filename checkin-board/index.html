@@ -104,13 +104,34 @@
   .drawer .close{align-self:flex-end; background:none; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1;}
   .badge{display:inline-block; background:#334155; color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:3px 8px; border-radius:6px;}
   .danger{background:#7f1d1d; border-color:#7f1d1d; color:#fff;}
-  @media (max-width:480px){ main{padding:12px;} .banner{padding:28px 16px; min-height:200px;} }
+
+  /* ── sync pill (Phase 2) ───────────────────────── */
+  .hgroup{display:flex; align-items:center; gap:10px;}
+  .sync-pill{
+    display:flex; align-items:center; gap:7px; font-size:12px; font-weight:700; letter-spacing:.3px;
+    color:var(--muted); background:var(--panel2); border:1px solid var(--line);
+    padding:8px 12px; border-radius:20px; cursor:pointer; min-height:36px;
+  }
+  .sync-pill .sdot{width:9px; height:9px; border-radius:50%; background:#6b7280; flex:none;}
+  .sync-pill.ok  .sdot{background:#22c55e;}
+  .sync-pill.busy .sdot{background:#eab308; animation:pulse 1s infinite;}
+  .sync-pill.err .sdot{background:#ef4444;}
+  .sync-pill.ro  .sdot{background:#3b82f6;}
+  @keyframes pulse{50%{opacity:.25;}}
+  .drawer code{background:var(--bg); padding:1px 5px; border-radius:5px; font-size:12px;}
+  .drawer details summary{cursor:pointer; color:var(--muted); font-size:13px;}
+  @media (max-width:480px){ main{padding:12px;} .banner{padding:28px 16px; min-height:200px;} .sync-pill span.txt{display:none;} }
 </style>
 </head>
 <body>
   <header>
     <h1>📍 CHECK-IN BOARD</h1>
-    <button class="gear" id="gearBtn" title="Settings" aria-label="Settings">⚙️</button>
+    <div class="hgroup">
+      <button class="sync-pill" id="syncPill" title="Sync status — tap for settings">
+        <span class="sdot"></span><span class="txt" id="syncText">Local only</span>
+      </button>
+      <button class="gear" id="gearBtn" title="Settings" aria-label="Settings">⚙️</button>
+    </div>
   </header>
 
   <main>
@@ -169,14 +190,30 @@
       <button class="btn danger" id="resetBtn">Reset board</button>
     </div>
 
-    <div class="sec">
-      <label>Cross-device sync <span class="badge">Phase 2</span></label>
-      <small>Not active yet. Later, a GitHub repo + token here will let your phone update the board and let
-        visitors see your status. These fields are inert for now.</small>
+    <div class="sec" id="syncSec">
+      <label>Cross-device sync <span class="badge" id="syncBadge">off</span></label>
+      <small>Save your status to a shared <code>status.json</code> in your GitHub repo, so your phone can update
+        the board and anyone can see it. Uses a fine-scoped GitHub token, stored only in this browser.</small>
       <label>owner / repo</label>
-      <input type="text" placeholder="tdoerks/checkin-board" disabled>
-      <label>GitHub token</label>
-      <input type="password" placeholder="added later — no token needed now" disabled>
+      <input type="text" id="cfgRepo" placeholder="tdoerks/open-source-lab-resources" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label>branch</label>
+      <input type="text" id="cfgBranch" placeholder="main" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label>file path (in the repo)</label>
+      <input type="text" id="cfgPath" placeholder="checkin-board/status.json" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <label>GitHub token — Contents: read &amp; write, this repo only</label>
+      <input type="password" id="cfgToken" placeholder="github_pat_… (stays in this browser)" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="note-actions">
+        <button class="btn primary" id="syncConnectBtn">Save &amp; connect</button>
+        <button class="btn" id="syncTestBtn">Test</button>
+      </div>
+      <button class="btn danger" id="syncDisconnectBtn" style="display:none;">Disconnect &amp; forget token</button>
+      <small id="syncMsg" style="min-height:1em;"></small>
+      <details>
+        <summary>How to make the token (30 sec)</summary>
+        <small>GitHub → <b>Settings → Developer settings → Fine-grained tokens → Generate new token</b>.
+        Repository access: <b>Only select repositories → this repo</b>. Permissions: <b>Contents → Read and write</b>.
+        Generate, copy, paste above. You can revoke it anytime from that same page.</small>
+      </details>
     </div>
   </aside>
 
@@ -285,7 +322,7 @@ function setStatus(id){
   state.updated_at = now;
   state.history.unshift({ status:id, note:state.note, at:now });
   state.history = state.history.slice(0, HISTORY_MAX);
-  save(); render();
+  save(); render(); pushRemote('Status → ' + byId(id).label);
 }
 function saveNote(){
   const val = document.getElementById('noteInput').value.trim().slice(0,60);
@@ -293,14 +330,14 @@ function saveNote(){
   const now = new Date().toISOString();
   state.updated_at = now;
   if(state.history[0]) state.history[0].note = val;   // reflect on the current (latest) check-in
-  save(); renderBanner(); renderHistory();
+  save(); renderBanner(); renderHistory(); pushRemote('Update note');
 }
 /* <!-- REVIEW: a note persists across status changes until you Clear it; change here if a new status should wipe the note --> */
 function clearNote(){
   document.getElementById('noteInput').value = '';
   state.note = '';
   if(state.history[0]) state.history[0].note = '';
-  save(); renderBanner(); renderHistory();
+  save(); renderBanner(); renderHistory(); pushRemote('Clear note');
 }
 function resetBoard(){
   if(!confirm('Clear the current status and all history on this device?')) return;
@@ -326,6 +363,184 @@ function importJSON(file){
     } catch { alert('That file was not valid check-in-board JSON.'); }
   };
   r.readAsText(file);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Phase 2 — GitHub cross-device sync (Option A: token → commit status.json)
+   Shared board: this device polls a status.json in the repo and adopts the
+   newest state; taps are pushed back via the GitHub Contents API. Token lives
+   only in this browser, in a SEPARATE key so it never lands in an Export.
+   ══════════════════════════════════════════════════════════════════════ */
+const SYNC_KEY = 'checkin-board-sync';   // separate from KEY — keeps the token out of exported board JSON
+let sync = loadSync();
+let lastSha = null;
+let pollTimer = null, pushTimer = null;
+
+function loadSync(){ try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch { return {}; } }
+function saveSync(){ localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); }
+function syncEnabled(){ return !!(sync.owner && sync.repo); }
+function canWrite(){ return syncEnabled() && !!sync.token; }
+
+/* utf8-safe base64 (notes/emoji round-trip cleanly) */
+function b64encode(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64decode(b64){ return decodeURIComponent(escape(atob(String(b64).replace(/\s/g,'')))); }
+
+function apiUrl(){
+  return 'https://api.github.com/repos/' + encodeURIComponent(sync.owner) + '/' +
+         encodeURIComponent(sync.repo) + '/contents/' +
+         sync.path.split('/').map(encodeURIComponent).join('/');
+}
+function ghHeaders(){
+  const h = { 'Accept':'application/vnd.github+json' };
+  if(sync.token) h['Authorization'] = 'Bearer ' + sync.token;
+  return h;
+}
+function setSyncStatus(kind, text){
+  const pill = document.getElementById('syncPill');
+  if(pill) pill.className = 'sync-pill ' + (kind || '');
+  const t = document.getElementById('syncText'); if(t) t.textContent = text;
+}
+
+async function remoteGet(){
+  const q = (sync.branch ? '?ref=' + encodeURIComponent(sync.branch) + '&' : '?') + 't=' + Date.now();
+  const res = await fetch(apiUrl() + q, { headers: ghHeaders(), cache:'no-store' });
+  if(res.status === 404) return { missing:true };
+  if(!res.ok) throw new Error('GET ' + res.status);
+  const data = await res.json();
+  lastSha = data.sha;
+  return { data: JSON.parse(b64decode(data.content)), sha: data.sha };
+}
+async function remotePut(message){
+  const body = { message: message || 'Update check-in status',
+                 content: b64encode(JSON.stringify(state, null, 2)) };
+  if(sync.branch) body.branch = sync.branch;
+  if(lastSha) body.sha = lastSha;
+  let res = await fetch(apiUrl(), { method:'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+  if(res.status === 409 || res.status === 422){          // sha stale → refresh + retry once
+    try { const g = await remoteGet(); if(g && !g.missing){ body.sha = g.sha; } } catch {}
+    res = await fetch(apiUrl(), { method:'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+  }
+  if(!res.ok) throw new Error('PUT ' + res.status);
+  const data = await res.json();
+  lastSha = data.content && data.content.sha;
+}
+
+/* remote wins only if strictly newer (ISO timestamps sort lexicographically) */
+function adoptRemote(remote){
+  if(!remote || !remote.updated_at) return false;
+  if(state.updated_at && remote.updated_at <= state.updated_at) return false;
+  state = Object.assign(defaultState(), remote);
+  save();
+  const ni = document.getElementById('noteInput'); if(ni) ni.value = state.note || '';
+  render();
+  return true;
+}
+
+async function pollOnce(){
+  if(!syncEnabled()) return;
+  try {
+    setSyncStatus('busy', 'Syncing…');
+    const g = await remoteGet();
+    if(g.missing){
+      if(canWrite()){ await remotePut('Initialize check-in board'); setSyncStatus('ok','Synced'); }
+      else { setSyncStatus('ro','Waiting…'); }
+      return;
+    }
+    adoptRemote(g.data);
+    setSyncStatus(canWrite() ? 'ok' : 'ro', canWrite() ? 'Synced' : 'Live (view only)');
+  } catch(e){ setSyncStatus('err', 'Sync error'); }
+}
+function startPolling(){
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  if(!syncEnabled()) return;
+  pollOnce();
+  pollTimer = setInterval(pollOnce, canWrite() ? 45000 : 90000);   // authed 45s; view-only 90s
+}
+/* push a local change back to the repo (debounced so rapid taps make one commit) */
+function pushRemote(reason){
+  if(!canWrite()) return;
+  if(pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(async () => {
+    try { setSyncStatus('busy','Saving…'); await remotePut(reason); setSyncStatus('ok','Synced'); }
+    catch(e){ setSyncStatus('err','Save failed'); }
+  }, 500);
+}
+
+/* ── sync settings UI ── */
+function detectDefaults(){
+  const d = { owner:'', repo:'', branch:'main', path:'status.json' };
+  const host = location.hostname;
+  if(host.endsWith('.github.io')){
+    d.owner = host.slice(0, -('.github.io'.length));
+    const parts = location.pathname.split('/').filter(Boolean);   // [repo, folder…]
+    if(parts.length){
+      d.repo = parts[0];
+      const folder = parts.slice(1);                              // within-repo folder
+      d.path = (folder.length ? folder.join('/') + '/' : '') + 'status.json';
+    }
+  }
+  return d;
+}
+function parseRepo(v){
+  const p = String(v||'').trim().replace(/^https?:\/\/github\.com\//,'').replace(/\.git$/,'').split('/').filter(Boolean);
+  return p.length >= 2 ? { owner:p[0], repo:p[1] } : null;
+}
+function readCfgForm(){
+  const r = parseRepo(document.getElementById('cfgRepo').value);
+  return {
+    owner: r ? r.owner : '', repo: r ? r.repo : '',
+    branch: document.getElementById('cfgBranch').value.trim() || 'main',
+    path:   document.getElementById('cfgPath').value.trim() || 'status.json',
+    token:  document.getElementById('cfgToken').value.trim(),
+  };
+}
+function syncMsg(text, isErr){ const el = document.getElementById('syncMsg'); el.textContent = text; el.style.color = isErr ? '#f87171' : 'var(--muted)'; }
+function reflectSyncState(){
+  const on = syncEnabled();
+  document.getElementById('syncBadge').textContent = on ? (canWrite() ? 'on' : 'read-only') : 'off';
+  document.getElementById('syncDisconnectBtn').style.display = on ? 'block' : 'none';
+  if(!on) setSyncStatus('', 'Local only');
+}
+function connectSync(){
+  const cfg = readCfgForm();
+  if(!cfg.owner || !cfg.repo){ syncMsg('Enter owner/repo, e.g. tdoerks/open-source-lab-resources', true); return; }
+  sync = cfg; saveSync(); lastSha = null;
+  reflectSyncState();
+  syncMsg(cfg.token ? 'Connected — your taps now sync to the repo.' : 'Connected read-only (no token): you see updates but can’t push.', false);
+  startPolling();
+}
+async function testSync(){
+  const cfg = readCfgForm();
+  if(!cfg.owner || !cfg.repo){ syncMsg('Enter owner/repo first.', true); return; }
+  const saved = sync; sync = cfg;                          // test with the form values
+  try {
+    syncMsg('Testing…', false);
+    const g = await remoteGet();
+    if(g.missing) syncMsg(cfg.token ? '✓ Reached repo — status.json will be created on your first tap.' : '✓ Reached repo, but no status.json yet.', false);
+    else          syncMsg('✓ Success — read shared status: ' + (g.data.status ? byId(g.data.status).label : 'empty') + '.', false);
+  } catch(e){
+    syncMsg('✗ ' + e.message + (cfg.token ? ' — check the token and repo path.' : ' — private repos need a token.'), true);
+  } finally { sync = saved; lastSha = null; }
+}
+function disconnectSync(){
+  if(!confirm('Disconnect sync and remove the saved token from this browser?')) return;
+  sync = {}; localStorage.removeItem(SYNC_KEY); lastSha = null;
+  if(pollTimer){ clearInterval(pollTimer); pollTimer = null; }
+  document.getElementById('cfgToken').value = '';
+  reflectSyncState(); setSyncStatus('', 'Local only');
+  syncMsg('Disconnected. This device is local-only again.', false);
+}
+function initSyncUI(){
+  const d = detectDefaults();
+  document.getElementById('cfgRepo').value   = (sync.owner && sync.repo) ? sync.owner + '/' + sync.repo : (d.owner && d.repo ? d.owner + '/' + d.repo : '');
+  document.getElementById('cfgBranch').value = sync.branch || d.branch;
+  document.getElementById('cfgPath').value   = sync.path   || d.path;
+  document.getElementById('cfgToken').value  = sync.token  || '';
+  reflectSyncState();
+  document.getElementById('syncConnectBtn').addEventListener('click', connectSync);
+  document.getElementById('syncTestBtn').addEventListener('click', testSync);
+  document.getElementById('syncDisconnectBtn').addEventListener('click', disconnectSync);
+  document.getElementById('syncPill').addEventListener('click', openDrawer);
 }
 
 /* ── Settings drawer ── */
@@ -360,9 +575,15 @@ function init(){
   document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
   document.getElementById('importFile').addEventListener('change', e => { if(e.target.files[0]) importJSON(e.target.files[0]); });
 
+  // Phase 2 sync
+  initSyncUI();
+
   render();
   // keep the "updated X ago" fresh without a full re-render
   setInterval(() => { document.getElementById('bTime').textContent = state.status ? relativeTime(state.updated_at) : ''; }, 30000);
+
+  // if this device is already configured for sync, start the poll/adopt loop
+  startPolling();
 }
 init();
 </script>
