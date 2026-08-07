@@ -46,6 +46,25 @@ The sync pill in the header shows the state: **Local only · Synced · Live (vie
 data so it never lands in an Export). Scope it to this one repo's Contents, and revoke it anytime from the
 same GitHub page. For a **public** repo this is low-risk; the token only lets someone edit that repo's files.
 
+## Door sign & QR code (low-energy option)
+
+Don't want to leave a tablet on? Print a **"Where is Tyler?" QR sign** and tape it outside the labs. Anyone
+who scans it opens your board **on their own phone, read-only** — so nothing of yours has to stay running.
+
+- Open the board → **⚙️ Settings → Door sign & QR code**. Set the title, then **Print door sign** (or
+  **Copy link** to share it).
+- The QR encodes `…/checkin-board/?view`, which loads in **reader mode**: a big status banner that
+  auto-refreshes, with no tap buttons.
+- **Scanners can never change your status** — reader mode has no token, so the GitHub API rejects any write
+  from it. Writing only works on a device where *you* entered the token.
+
+## Edit lock (optional PIN)
+
+Set a **4-digit PIN** (⚙️ Settings → *Edit lock*) so a passer-by can't change your status on the unattended
+office tablet. When set, changing status needs the PIN; the 🔒/🔓 button in the header locks/unlocks the
+device. This only guards your own signed-in tablet — QR/link viewers already can't edit. The PIN is a casual
+tamper-guard stored on that device, not account security.
+
 ## Notes
 
 - **Forkers get their own board.** Fork the repo and each fork syncs to its *own* `status.json` with its own
