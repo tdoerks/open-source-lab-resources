@@ -24,6 +24,8 @@ A glanceable office in/out status board — tap where you are on a tablet, phone
   - Large touch targets for tablet/phone
   - Each visitor gets their own private board (auto-saves in browser)
   - **Optional cross-device sync** - phone updates the board, tablet & visitors see it live (GitHub token)
+  - **Printable QR "door sign"** - scan to see the live status read-only, no tablet left running
+  - **Optional 4-digit edit lock** for the shared tablet
   - Export/import the board as JSON
   - Single self-contained HTML — works offline
 
