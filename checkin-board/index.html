@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check-in Board</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --ink:#e8edf2; --muted:#94a3b8;
+    --line:#334155; --shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:16px/1.4 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 18px; background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  header h1{font-size:16px; font-weight:700; letter-spacing:.3px; color:var(--muted);}
+  .gear{
+    background:var(--panel2); border:1px solid var(--line); color:var(--ink);
+    width:44px; height:44px; border-radius:10px; font-size:20px; cursor:pointer;
+  }
+  .gear:active{transform:scale(.96);}
+  main{flex:1; display:flex; flex-direction:column; gap:16px; padding:16px; max-width:820px; width:100%; margin:0 auto;}
+
+  /* ── status banner ─────────────────────────────── */
+  .banner{
+    border-radius:20px; padding:36px 24px; text-align:center; color:#fff;
+    box-shadow:var(--shadow); transition:background .25s ease;
+    background:#334155; display:flex; flex-direction:column; align-items:center; gap:10px;
+    min-height:230px; justify-content:center;
+  }
+  .banner .icon{font-size:72px; line-height:1;}
+  .banner .label{font-size:clamp(30px,7vw,52px); font-weight:800; letter-spacing:.5px; text-shadow:0 2px 8px rgba(0,0,0,.25);}
+  .banner .note{font-size:clamp(16px,3.5vw,22px); font-weight:600; opacity:.95; min-height:0;}
+  .banner .note:empty{display:none;}
+  .banner .time{font-size:14px; font-weight:600; opacity:.85; letter-spacing:.3px; text-transform:uppercase;}
+  .banner.unset{color:var(--muted);}
+  .banner.unset .label{font-size:clamp(22px,5vw,34px); font-weight:700;}
+
+  /* ── tap grid ──────────────────────────────────── */
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;}
+  .status-btn{
+    display:flex; align-items:center; gap:12px; padding:16px 18px; min-height:68px;
+    border-radius:14px; border:2px solid var(--line); background:var(--panel);
+    color:var(--ink); cursor:pointer; font-size:18px; font-weight:700; text-align:left;
+    transition:transform .08s ease, border-color .15s, background .15s;
+  }
+  .status-btn .b-icon{font-size:28px; line-height:1; flex:none;}
+  .status-btn:active{transform:scale(.97);}
+  .status-btn.active{color:#fff; border-color:transparent; box-shadow:var(--shadow);}
+  .status-btn.active .check{margin-left:auto; font-size:20px;}
+
+  /* ── note row ──────────────────────────────────── */
+  .note-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+  .note-toggle{
+    width:100%; text-align:left; background:none; border:none; color:var(--muted);
+    padding:14px 18px; font-size:15px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;
+  }
+  .note-body{padding:0 18px 18px; display:none; flex-direction:column; gap:10px;}
+  .note-body.open{display:flex;}
+  .note-body input[type=text]{
+    width:100%; padding:14px; border-radius:10px; border:1px solid var(--line);
+    background:var(--panel2); color:var(--ink); font-size:17px;
+  }
+  .presets{display:flex; flex-wrap:wrap; gap:8px;}
+  .preset{background:var(--panel2); border:1px solid var(--line); color:var(--ink); padding:9px 14px; border-radius:20px; font-size:14px; cursor:pointer;}
+  .preset:active{transform:scale(.96);}
+  .note-actions{display:flex; gap:10px;}
+  .btn{padding:12px 18px; border-radius:10px; border:1px solid var(--line); background:var(--panel2); color:var(--ink); font-size:15px; font-weight:700; cursor:pointer;}
+  .btn.primary{background:#2563eb; border-color:#2563eb; color:#fff;}
+  .btn:active{transform:scale(.97);}
+
+  /* ── history ───────────────────────────────────── */
+  .history{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 18px;}
+  .history h2{font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:10px;}
+  .history ul{list-style:none; display:flex; flex-direction:column; gap:8px;}
+  .history li{display:flex; align-items:center; gap:10px; font-size:15px; color:var(--ink);}
+  .history .dot{width:12px; height:12px; border-radius:50%; flex:none;}
+  .history .h-note{color:var(--muted); font-size:13px;}
+  .history .h-time{margin-left:auto; color:var(--muted); font-size:13px; white-space:nowrap;}
+  .history .empty{color:var(--muted); font-size:14px;}
+
+  /* ── settings drawer ───────────────────────────── */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; z-index:10;}
+  .overlay.open{display:block;}
+  .drawer{
+    position:fixed; top:0; right:0; height:100%; width:min(380px,90vw); background:var(--panel);
+    border-left:1px solid var(--line); transform:translateX(100%); transition:transform .22s ease;
+    z-index:11; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:18px;
+  }
+  .drawer.open{transform:translateX(0);}
+  .drawer h2{font-size:15px;}
+  .drawer .sec{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px;}
+  .drawer .sec small{color:var(--muted); font-size:13px; line-height:1.5;}
+  .drawer label{font-size:13px; color:var(--muted); font-weight:600;}
+  .drawer input{padding:10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:14px;}
+  .drawer input:disabled{opacity:.5;}
+  .drawer .close{align-self:flex-end; background:none; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1;}
+  .badge{display:inline-block; background:#334155; color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; padding:3px 8px; border-radius:6px;}
+  .danger{background:#7f1d1d; border-color:#7f1d1d; color:#fff;}
+  @media (max-width:480px){ main{padding:12px;} .banner{padding:28px 16px; min-height:200px;} }
+</style>
+</head>
+<body>
+  <header>
+    <h1>📍 CHECK-IN BOARD</h1>
+    <button class="gear" id="gearBtn" title="Settings" aria-label="Settings">⚙️</button>
+  </header>
+
+  <main>
+    <!-- Status banner (View 1) -->
+    <section class="banner unset" id="banner" aria-live="polite">
+      <div class="icon" id="bIcon">👋</div>
+      <div class="label" id="bLabel">Tap a status below</div>
+      <div class="note" id="bNote"></div>
+      <div class="time" id="bTime"></div>
+    </section>
+
+    <!-- Tap grid (View 2) -->
+    <section class="grid" id="grid"></section>
+
+    <!-- Note row (View 3) -->
+    <section class="note-card">
+      <button class="note-toggle" id="noteToggle">
+        <span>✏️ Add a note (optional)</span><span id="noteChevron">▸</span>
+      </button>
+      <div class="note-body" id="noteBody">
+        <input type="text" id="noteInput" maxlength="60" placeholder="e.g. back at 3pm  ·  back Monday">
+        <div class="presets" id="presets"></div>
+        <div class="note-actions">
+          <button class="btn primary" id="saveNoteBtn">Save note</button>
+          <button class="btn" id="clearNoteBtn">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent history (View 4) -->
+    <section class="history">
+      <h2>Recent check-ins</h2>
+      <ul id="historyList"><li class="empty">No check-ins yet — tap a status above.</li></ul>
+    </section>
+  </main>
+
+  <!-- Settings drawer (View 5) -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="drawer" id="drawer" aria-label="Settings">
+    <button class="close" id="closeDrawer" aria-label="Close">×</button>
+    <h2>Settings</h2>
+
+    <div class="sec">
+      <label>Backup</label>
+      <small>Save or restore this board's status + history as a JSON file (single-device backup).</small>
+      <div class="note-actions">
+        <button class="btn" id="exportBtn">Export JSON</button>
+        <button class="btn" id="importBtn">Import JSON</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+    </div>
+
+    <div class="sec">
+      <label>Reset</label>
+      <small>Clear the current status and history on this device.</small>
+      <button class="btn danger" id="resetBtn">Reset board</button>
+    </div>
+
+    <div class="sec">
+      <label>Cross-device sync <span class="badge">Phase 2</span></label>
+      <small>Not active yet. Later, a GitHub repo + token here will let your phone update the board and let
+        visitors see your status. These fields are inert for now.</small>
+      <label>owner / repo</label>
+      <input type="text" placeholder="tdoerks/checkin-board" disabled>
+      <label>GitHub token</label>
+      <input type="password" placeholder="added later — no token needed now" disabled>
+    </div>
+  </aside>
+
+<script>
+"use strict";
+
+/* ── House pattern: localStorage autosave + restore (bwgs-tracking) ── */
+const KEY = 'checkin-board';                       // spec's named key — do not change (sibling-tool collision)
+
+/* Status enum — id, label, icon, banner color, group. Colorblind-safe: icon + word carry meaning, never color alone. */
+const STATUSES = [
+  { id:'in-lab',    label:'In Lab',                 icon:'🔬', color:'#15803d', group:'available' },
+  { id:'in-office', label:'In Office',              icon:'🏢', color:'#16a34a', group:'available' },
+  { id:'meeting',   label:'In a Meeting',           icon:'👥', color:'#b45309', group:'transient' },
+  { id:'lunch',     label:'At Lunch',               icon:'🍽️', color:'#d97706', group:'transient' },
+  { id:'offsite',   label:'Off-site / Field',       icon:'🚗', color:'#1d4ed8', group:'elsewhere' },
+  { id:'remote',    label:'Working Remotely',       icon:'🏠', color:'#2563eb', group:'elsewhere' },
+  { id:'leave',     label:'Out / On Leave',         icon:'🌴', color:'#dc2626', group:'out' },
+];
+const UNKNOWN = { id:'unknown', label:'Unknown', icon:'❔', color:'#6b7280' };
+const byId = id => STATUSES.find(s => s.id === id) || UNKNOWN;
+
+/* <!-- REVIEW: history capped at last 5 check-ins; note capped at 60 chars; quick-note presets below --> */
+const HISTORY_MAX = 5;
+const PRESETS = ['back at 3pm', 'back in 10', 'back Monday', 'do not disturb'];
+
+function defaultState(){ return { status:null, note:'', updated_at:null, history:[] }; }
+function load(){
+  try { return JSON.parse(localStorage.getItem(KEY)) ?? defaultState(); }
+  catch { return defaultState(); }
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+let state = load();
+
+/* ── Computations (derived display values) ── */
+function relativeTime(iso){
+  if(!iso) return '';
+  const then = new Date(iso), now = new Date();
+  const s = Math.max(0, Math.round((now - then)/1000));
+  if(s < 45)   return 'updated just now';
+  const m = Math.round(s/60);
+  if(m < 60)   return 'updated ' + m + (m===1?' min ago':' min ago');
+  const h = Math.round(m/60);
+  if(s < 86400 && h < 24) return 'updated ' + h + (h===1?' hr ago':' hrs ago');
+  return 'updated ' + then.toLocaleString([], {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+}
+
+/* ── Views ── */
+function renderBanner(){
+  const b = document.getElementById('banner');
+  const s = state.status ? byId(state.status) : null;
+  if(!s){
+    b.className = 'banner unset'; b.style.background = '';
+    document.getElementById('bIcon').textContent  = '👋';
+    document.getElementById('bLabel').textContent = 'Tap a status below';
+    document.getElementById('bNote').textContent  = '';
+    document.getElementById('bTime').textContent  = '';
+    return;
+  }
+  b.className = 'banner'; b.style.background = s.color;
+  document.getElementById('bIcon').textContent  = s.icon;
+  document.getElementById('bLabel').textContent = s.label;      // word always shown (colorblind-safe)
+  document.getElementById('bNote').textContent  = state.note || '';
+  document.getElementById('bTime').textContent  = relativeTime(state.updated_at);
+}
+function renderGrid(){
+  const g = document.getElementById('grid');
+  g.innerHTML = '';
+  for(const s of STATUSES){
+    const active = state.status === s.id;
+    const btn = document.createElement('button');
+    btn.className = 'status-btn' + (active ? ' active' : '');
+    if(active) btn.style.background = s.color;
+    btn.innerHTML = '<span class="b-icon">'+s.icon+'</span><span>'+s.label+'</span>' +
+                    (active ? '<span class="check">✓</span>' : '');
+    btn.addEventListener('click', () => setStatus(s.id));
+    g.appendChild(btn);
+  }
+}
+function renderHistory(){
+  const ul = document.getElementById('historyList');
+  if(!state.history.length){ ul.innerHTML = '<li class="empty">No check-ins yet — tap a status above.</li>'; return; }
+  ul.innerHTML = '';
+  for(const h of state.history){
+    const s = byId(h.status);
+    const li = document.createElement('li');
+    const noteHtml = h.note ? ' <span class="h-note">— '+escapeHtml(h.note)+'</span>' : '';
+    li.innerHTML = '<span class="dot" style="background:'+s.color+'"></span>' +
+                   '<span>'+s.icon+' '+s.label+'</span>' + noteHtml +
+                   '<span class="h-time">'+fmtClock(h.at)+'</span>';
+    ul.appendChild(li);
+  }
+}
+function render(){ renderBanner(); renderGrid(); renderHistory(); }
+
+function fmtClock(iso){
+  const d = new Date(iso);
+  return d.toLocaleString([], {weekday:'short', hour:'numeric', minute:'2-digit'});
+}
+function escapeHtml(str){ return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ── Interactions ── */
+function setStatus(id){
+  const now = new Date().toISOString();
+  state.status = id;
+  state.updated_at = now;
+  state.history.unshift({ status:id, note:state.note, at:now });
+  state.history = state.history.slice(0, HISTORY_MAX);
+  save(); render();
+}
+function saveNote(){
+  const val = document.getElementById('noteInput').value.trim().slice(0,60);
+  state.note = val;
+  const now = new Date().toISOString();
+  state.updated_at = now;
+  if(state.history[0]) state.history[0].note = val;   // reflect on the current (latest) check-in
+  save(); renderBanner(); renderHistory();
+}
+/* <!-- REVIEW: a note persists across status changes until you Clear it; change here if a new status should wipe the note --> */
+function clearNote(){
+  document.getElementById('noteInput').value = '';
+  state.note = '';
+  if(state.history[0]) state.history[0].note = '';
+  save(); renderBanner(); renderHistory();
+}
+function resetBoard(){
+  if(!confirm('Clear the current status and all history on this device?')) return;
+  state = defaultState();
+  document.getElementById('noteInput').value = '';
+  save(); render(); closeDrawer();
+}
+
+/* ── House pattern: JSON export / import round-trip (bwgs-tracking) ── */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = Object.assign(document.createElement('a'), {href:URL.createObjectURL(blob), download:KEY + '.json'});
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importJSON(file){
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const loaded = JSON.parse(r.result);
+      state = Object.assign(defaultState(), loaded);
+      document.getElementById('noteInput').value = state.note || '';
+      save(); render();
+    } catch { alert('That file was not valid check-in-board JSON.'); }
+  };
+  r.readAsText(file);
+}
+
+/* ── Settings drawer ── */
+function openDrawer(){ document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); }
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+/* ── Wire up ── */
+function init(){
+  // note editor
+  document.getElementById('noteInput').value = state.note || '';
+  const presetWrap = document.getElementById('presets');
+  PRESETS.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'preset'; b.textContent = p;
+    b.addEventListener('click', () => { const i = document.getElementById('noteInput'); i.value = p; saveNote(); });
+    presetWrap.appendChild(b);
+  });
+  document.getElementById('noteToggle').addEventListener('click', () => {
+    document.getElementById('noteBody').classList.toggle('open');
+    const open = document.getElementById('noteBody').classList.contains('open');
+    document.getElementById('noteChevron').textContent = open ? '▾' : '▸';
+  });
+  document.getElementById('saveNoteBtn').addEventListener('click', saveNote);
+  document.getElementById('clearNoteBtn').addEventListener('click', clearNote);
+
+  // settings
+  document.getElementById('gearBtn').addEventListener('click', openDrawer);
+  document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
+  document.getElementById('overlay').addEventListener('click', closeDrawer);
+  document.getElementById('resetBtn').addEventListener('click', resetBoard);
+  document.getElementById('exportBtn').addEventListener('click', exportJSON);
+  document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+  document.getElementById('importFile').addEventListener('change', e => { if(e.target.files[0]) importJSON(e.target.files[0]); });
+
+  render();
+  // keep the "updated X ago" fresh without a full re-render
+  setInterval(() => { document.getElementById('bTime').textContent = state.status ? relativeTime(state.updated_at) : ''; }, 30000);
+}
+init();
+</script>
+</body>
+</html>
