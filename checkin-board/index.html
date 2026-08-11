@@ -3082,6 +3082,10 @@ function renderSignContacts(){
   if(bc) bc.innerHTML = contactHTML(items, 4);
   const bcCard = document.getElementById('boardContactsCard');
   if(bcCard) bcCard.style.display = items.length ? 'block' : 'none';
+  // The board itself shows the contact QRs; the "scan for status" QR is only the fallback
+  // for when no contact methods are set up yet (the sign + Settings preview always keep it).
+  const bqCard = document.getElementById('boardQrCard');
+  if(bqCard) bqCard.style.display = items.length ? 'none' : 'flex';
 }
 function initSignUI(){
   signCfg = loadSignCfg();
