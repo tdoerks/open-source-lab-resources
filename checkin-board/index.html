@@ -143,6 +143,13 @@
   /* ── QR preview + printable door sign ──────────── */
   .qr-preview{ background:#fff; padding:10px; border-radius:10px; display:inline-block; align-self:center; }
   .qr-preview img{ display:block; width:170px; height:170px; image-rendering:pixelated; }
+  .method-toggles{ display:flex; flex-wrap:wrap; gap:8px 16px; margin:4px 0 8px; }
+  .method-toggles label{ display:flex; align-items:center; gap:6px; color:var(--ink); font-size:14px; font-weight:600; margin:0; }
+  .method-toggles input{ width:auto; margin:0; }
+  .sign-contacts{ display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
+  .sign-contacts .cqr{ background:#fff; padding:6px; border-radius:8px; text-align:center; }
+  .sign-contacts .cqr img{ display:block; width:92px; height:92px; image-rendering:pixelated; }
+  .sign-contacts .cqr span{ display:block; font-size:12px; color:#111; margin-top:3px; font-weight:600; }
   #printSign{ display:none; }
   @media print{
     body * { visibility:hidden !important; }
@@ -151,6 +158,10 @@
     #printSign .ps-title{ font-size:46px; font-weight:800; margin-bottom:6px; }
     #printSign .ps-sub{ font-size:22px; color:#333; margin-bottom:26px; }
     #printSign img{ width:60vw; max-width:460px; height:auto; image-rendering:pixelated; }
+    #printSign .ps-contacts{ display:flex; justify-content:center; flex-wrap:wrap; gap:4vw; margin-top:30px; }
+    #printSign .ps-contacts .cqr{ text-align:center; }
+    #printSign .ps-contacts .cqr img{ width:22vw; max-width:180px; height:auto; image-rendering:pixelated; }
+    #printSign .ps-contacts .cqr span{ display:block; font-size:20px; font-weight:700; color:#000; margin-top:8px; }
     #printSign .ps-foot{ font-size:16px; color:#333; margin-top:22px; word-break:break-all; }
   }
 </style>
@@ -259,6 +270,26 @@
       <input type="text" id="signTitle" value="Where is Tyler?" autocomplete="off">
       <div class="qr-preview" id="qrPreview"></div>
       <small id="qrUrl" style="word-break:break-all;"></small>
+
+      <label style="margin-top:10px;">Quick-contact QR codes on the sign <span class="badge">optional</span></label>
+      <small>Add scannable QR codes so people can reach you straight from the sign. These details are saved
+        <b>only in this browser</b> — they’re never committed to the public repo, so your number stays off
+        the web page. Pick your office line or cell as you like.</small>
+      <label>Your name (for “Save contact”)</label>
+      <input type="text" id="cName" placeholder="Tyler Doerksen" autocomplete="off">
+      <label>Phone (for Call / Text / Save contact)</label>
+      <input type="tel" id="cPhone" placeholder="+1 785 555 1234" autocomplete="off">
+      <label>Email / Teams address</label>
+      <input type="email" id="cEmail" placeholder="you@ksu.edu" autocomplete="off">
+      <div class="method-toggles">
+        <label><input type="checkbox" id="mCall"> 📞 Call</label>
+        <label><input type="checkbox" id="mText"> 💬 Text</label>
+        <label><input type="checkbox" id="mTeams"> 🟣 Teams</label>
+        <label><input type="checkbox" id="mEmail"> ✉️ Email</label>
+        <label><input type="checkbox" id="mVcard"> 🪪 Save contact</label>
+      </div>
+      <div class="sign-contacts" id="signContacts"></div>
+
       <div class="note-actions">
         <button class="btn primary" id="printSignBtn">Print door sign</button>
         <button class="btn" id="copyQrUrlBtn">Copy link</button>
@@ -298,6 +329,7 @@
     <div class="ps-title" id="psTitle">Where is Tyler?</div>
     <div class="ps-sub">Scan to see where I am right now</div>
     <img id="psImg" alt="QR code">
+    <div class="ps-contacts" id="psContacts"></div>
     <div class="ps-foot" id="psFoot"></div>
   </div>
 
@@ -2954,12 +2986,101 @@ function renderQR(){
 function printSign(){
   document.getElementById('psTitle').textContent = document.getElementById('signTitle').value.trim() || 'Where is Tyler?';
   renderQR();
+  renderSignContacts();
   window.print();
 }
 function copyQrUrl(){
   const url = boardViewURL();
   const done = () => { const el = document.getElementById('qrUrl'); const t = el.textContent; el.textContent = 'Copied ✓  ' + url; setTimeout(() => el.textContent = t, 1500); };
   if(navigator.clipboard) navigator.clipboard.writeText(url).then(done, done); else done();
+}
+
+/* ── Contact-action QR codes on the sign (details stay in this browser, never in the repo) ── */
+const SIGN_KEY = 'checkin-board-sign';
+let signCfg = defaultSignCfg();
+function defaultSignCfg(){ return { name:'', phone:'', email:'', m:{ call:false, text:true, teams:true, mail:false, vcard:false } }; }
+function loadSignCfg(){ try { const s = JSON.parse(localStorage.getItem(SIGN_KEY)); if(s && s.m) return s; } catch {} return defaultSignCfg(); }
+function saveSignCfg(){ localStorage.setItem(SIGN_KEY, JSON.stringify(signCfg)); }
+const CONTACT_METHODS = [
+  { key:'call',  el:'mCall',  icon:'📞', label:'Call' },
+  { key:'text',  el:'mText',  icon:'💬', label:'Text' },
+  { key:'teams', el:'mTeams', icon:'🟣', label:'Teams' },
+  { key:'mail',  el:'mEmail', icon:'✉️', label:'Email' },
+  { key:'vcard', el:'mVcard', icon:'🪪', label:'Save contact' },
+];
+function normPhone(p){ return (p || '').replace(/[^\d+]/g, ''); }
+function vcardText(cfg){
+  const tel = normPhone(cfg.phone);
+  const parts = (cfg.name || '').trim().split(/\s+/).filter(Boolean);
+  const last = parts.length > 1 ? parts[parts.length - 1] : '';
+  const first = parts.length > 1 ? parts.slice(0, -1).join(' ') : (parts[0] || '');
+  return ['BEGIN:VCARD', 'VERSION:3.0',
+    'N:' + last + ';' + first + ';;;',
+    'FN:' + (cfg.name || ''),
+    tel ? 'TEL;TYPE=CELL:' + tel : '',
+    cfg.email ? 'EMAIL:' + cfg.email : '',
+    'END:VCARD'].filter(Boolean).join('\n');
+}
+function contactUri(key, cfg){
+  const tel = normPhone(cfg.phone);
+  switch(key){
+    case 'call':  return tel ? 'tel:' + tel : null;
+    case 'text':  return tel ? 'sms:' + tel : null;
+    case 'teams': return cfg.email ? 'https://teams.microsoft.com/l/chat/0/0?users=' + encodeURIComponent(cfg.email) : null;
+    case 'mail':  return cfg.email ? 'mailto:' + cfg.email : null;
+    case 'vcard': return (cfg.name || tel || cfg.email) ? vcardText(cfg) : null;
+  }
+  return null;
+}
+function enabledContacts(){
+  return CONTACT_METHODS
+    .filter(m => signCfg.m && signCfg.m[m.key])
+    .map(m => ({ ...m, uri: contactUri(m.key, signCfg) }))
+    .filter(x => x.uri);
+}
+function qrDataURL(text, cell, ec){
+  const q = qrcode(0, ec || 'M'); q.addData(text); q.make();
+  return q.createDataURL(cell, 2);
+}
+function contactHTML(items, cell){
+  return items.map(it =>
+    '<div class="cqr"><img alt="' + it.label + ' QR" src="' +
+    qrDataURL(it.uri, cell, it.key === 'vcard' ? 'L' : 'M') +
+    '"><span>' + it.icon + ' ' + it.label + '</span></div>').join('');
+}
+function renderSignContacts(){
+  if(typeof qrcode === 'undefined') return;
+  const items = enabledContacts();
+  const prev = document.getElementById('signContacts');
+  if(prev) prev.innerHTML = contactHTML(items, 3);      // small preview in Settings
+  const ps = document.getElementById('psContacts');
+  if(ps) ps.innerHTML = contactHTML(items, 6);          // higher-res for print
+}
+function initSignUI(){
+  signCfg = loadSignCfg();
+  document.getElementById('cName').value = signCfg.name || '';
+  document.getElementById('cPhone').value = signCfg.phone || '';
+  document.getElementById('cEmail').value = signCfg.email || '';
+  CONTACT_METHODS.forEach(m => { document.getElementById(m.el).checked = !!(signCfg.m && signCfg.m[m.key]); });
+  const onChange = () => {
+    signCfg = {
+      name: document.getElementById('cName').value.trim(),
+      phone: document.getElementById('cPhone').value.trim(),
+      email: document.getElementById('cEmail').value.trim(),
+      m: {
+        call:  document.getElementById('mCall').checked,
+        text:  document.getElementById('mText').checked,
+        teams: document.getElementById('mTeams').checked,
+        mail:  document.getElementById('mEmail').checked,
+        vcard: document.getElementById('mVcard').checked,
+      },
+    };
+    saveSignCfg();
+    renderSignContacts();
+  };
+  ['cName', 'cPhone', 'cEmail'].forEach(id => document.getElementById(id).addEventListener('input', onChange));
+  CONTACT_METHODS.forEach(m => document.getElementById(m.el).addEventListener('change', onChange));
+  renderSignContacts();
 }
 
 /* ── Edit lock (PIN) — casual tamper guard for the signed-in tablet only ── */
@@ -3057,6 +3178,7 @@ function init(){
 
   // QR door sign
   renderQR();
+  initSignUI();
   document.getElementById('printSignBtn').addEventListener('click', printSign);
   document.getElementById('copyQrUrlBtn').addEventListener('click', copyQrUrl);
 
