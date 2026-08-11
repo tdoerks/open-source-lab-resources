@@ -20,9 +20,19 @@ The full sample ID is `{YY}KS{MM}{TYPE}{NN}-{SUFFIX}`, e.g. `26KS07CB01-EC`. The
 code encodes that ID; the date/time stamp is today's.
 
 ## Editing the sample panel
-The sample lists live at the top of the app's second `<script>` block:
-`TYPES`, `SUFFIXES`, and `PRESETS` (grouped by suffix). Edit those arrays to change
-the monthly panel — no other changes needed.
+Step 2 has an **✎ Edit panel** mode — no code needed. In it you can rename a sample,
+remove one (`×`), add one (the `+` box at the end of a group), add or delete whole
+pathogen groups, and **rename a type across every group at once** (e.g. `GB` → `PC`).
+
+**Those edits are saved in your browser only** (`localStorage`, key `plate_panel`) —
+other people loading the page still get the built-in panel. To change the panel *for
+everyone*, hit **Copy as code** in the editor and paste the result over `DEFAULT_PANEL`
+near the top of the app's second `<script>` block, then commit. **Reset to built-in
+panel** discards the local copy.
+
+`TYPES` and `SUFFIXES` no longer exist as separate lists to maintain: the custom-ID
+builder's buttons are derived from `DEFAULT_PANEL.types`/`.suffixes` **plus whatever
+the panel actually uses**, so adding `PC01-EC` gets you a `PC` button automatically.
 
 ## Notes
 - Self-contained: one HTML file, runs offline, nothing sent anywhere.

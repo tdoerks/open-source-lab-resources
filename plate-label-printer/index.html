@@ -223,9 +223,9 @@
         <span class="muted">Click a sample to rename it, &times; to remove it, or type in the “+” box to add one.</span>
       </div>
       <div class="row">
-        <label>Rename type <input type="text" id="renameFrom" placeholder="GB" size="4"></label>
+        <label>Rename type <input type="text" id="renameFrom" placeholder="from" size="4"></label>
         <span class="muted">&rarr;</span>
-        <label><input type="text" id="renameTo" placeholder="PC" size="4"></label>
+        <label><input type="text" id="renameTo" placeholder="to" size="4"></label>
         <button id="renameTypeBtn" class="btn btn-sm">Rename everywhere</button>
         <span id="renameMsg" class="muted"></span>
       </div>
@@ -3112,13 +3112,13 @@ var qrcode = function() {
   // browser only. To change it for EVERYONE on the live site, use "Copy as code"
   // in the editor and paste the result over DEFAULT_PANEL below, then commit.
   var DEFAULT_PANEL = {
-    types:    ['SA', 'SH', 'GT', 'CL', 'CG', 'CB', 'TI', 'GB', 'CH'],
+    types:    ['SA', 'SH', 'GT', 'CL', 'CG', 'CB', 'TI', 'PC', 'CH'],
     suffixes: ['EC', 'E', 'A', 'C1', 'S1', 'V1', 'V2'],
     presets: [
-      { suffix: 'EC', items: ['CB01','CB02','CB03','CB04','GT01','GT02','GT03','GT04','GT05','GT06','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
-      { suffix: 'E',  items: ['CB01','CB02','GT01','GB01','CL01','CG01','CH01','SA01','SA02','SH01','SH02','TI01','TI02'] },
-      { suffix: 'S1', items: ['CB01','CB02','CB03','CB04','GT01','GT02','GT03','GT04','GT05','GT06','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
-      { suffix: 'C1', items: ['CB01','CB02','CB03','CB04','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
+      { suffix: 'EC', items: ['CB01','CB02','CB03','CB04','GT01','GT02','GT03','GT04','GT05','GT06','PC01','PC02','PC03','PC04','CL01','CG01','CH01'] },
+      { suffix: 'E',  items: ['CB01','CB02','GT01','PC01','CL01','CG01','CH01','SA01','SA02','SH01','SH02','TI01','TI02'] },
+      { suffix: 'S1', items: ['CB01','CB02','CB03','CB04','GT01','GT02','GT03','GT04','GT05','GT06','PC01','PC02','PC03','PC04','CL01','CG01','CH01'] },
+      { suffix: 'C1', items: ['CB01','CB02','CB03','CB04','PC01','PC02','PC03','PC04','CL01','CG01','CH01'] },
       { suffix: 'V1', items: ['SA01','SA02','SH01','SH02','TI01','TI02'] },
       { suffix: 'V2', items: ['SA01','SA02','SH01','SH02','TI01','TI02'] },
       { suffix: 'A',  items: ['SA01','SA02','SH01','SH02','TI01','TI02'] }
@@ -3394,7 +3394,7 @@ var qrcode = function() {
     reflectPanelEditing();
   }
 
-  // Rename a type across every group, e.g. GB01/GB02… → PC01/PC02…
+  // Rename a type across every group, e.g. CB01/CB02… → XX01/XX02…
   function renameType() {
     var from = document.getElementById('renameFrom').value.trim().toUpperCase();
     var to   = document.getElementById('renameTo').value.trim().toUpperCase();
