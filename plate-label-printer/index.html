@@ -100,6 +100,17 @@
   .preset-group-h{display:flex; align-items:center; gap:10px; margin-bottom:7px;}
   .preset-group-h .tag{font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:700; font-size:.82rem; color:var(--accent); background:var(--accent-soft); padding:2px 9px; border-radius:6px;}
   .preset-cells{display:flex; flex-wrap:wrap; gap:6px;}
+  /* panel editor */
+  .panel-edit-bar{border:1px solid var(--accent); background:var(--accent-soft); border-radius:9px; padding:11px 13px; margin-bottom:14px; display:flex; flex-direction:column; gap:9px;}
+  .panel-edit-bar .row{display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
+  .panel-edit-bar label{font-size:.88rem; display:inline-flex; align-items:center; gap:6px; color:var(--muted);}
+  .panel-edit-bar input[type=text]{font-family:ui-monospace,Menlo,Consolas,monospace; text-transform:uppercase;}
+  .preset-cell.editing{cursor:text; display:inline-flex; align-items:center; gap:7px;}
+  .preset-cell.editing:hover{border-color:var(--accent); color:var(--accent);}
+  .preset-cell .cell-x{font-weight:700; opacity:.5; cursor:pointer; padding:0 1px; line-height:1;}
+  .preset-cell .cell-x:hover{opacity:1; color:var(--danger, #c0392b);}
+  .add-cell input, .add-group input{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; padding:5px 8px; border:1px dashed var(--border-strong); border-radius:7px; background:transparent; color:var(--text); text-transform:uppercase;}
+  .add-group{display:flex; align-items:center; gap:8px; padding-top:4px;}
 
   /* Manual details */
   details.manual{margin-top:12px; border-top:1px solid var(--border); padding-top:14px;}
@@ -203,7 +214,33 @@
       <button id="addSelectedBtn" class="btn btn-primary btn-sm">Add selected to batch</button>
       <button id="clearSelBtn" class="btn btn-sm">Clear selection</button>
       <span id="selCount" class="muted"></span>
+      <button id="editPanelBtn" class="btn btn-sm" style="margin-left:auto;">&#9998; Edit panel</button>
     </div>
+
+    <div id="panelEditBar" class="panel-edit-bar" hidden>
+      <div class="row">
+        <strong>Editing the panel</strong>
+        <span class="muted">Click a sample to rename it, &times; to remove it, or type in the “+” box to add one.</span>
+      </div>
+      <div class="row">
+        <label>Rename type <input type="text" id="renameFrom" placeholder="GB" size="4"></label>
+        <span class="muted">&rarr;</span>
+        <label><input type="text" id="renameTo" placeholder="PC" size="4"></label>
+        <button id="renameTypeBtn" class="btn btn-sm">Rename everywhere</button>
+        <span id="renameMsg" class="muted"></span>
+      </div>
+      <div class="row">
+        <button id="panelDoneBtn" class="btn btn-primary btn-sm">Done editing</button>
+        <button id="panelCopyBtn" class="btn btn-sm">Copy as code</button>
+        <button id="panelResetBtn" class="btn btn-sm">Reset to built-in panel</button>
+        <span id="panelMsg" class="muted"></span>
+      </div>
+      <p class="muted" style="margin:2px 0 0; font-size:.82rem;">
+        Edits are saved <b>in this browser only</b>. To change the panel for everyone on the live site,
+        hit <b>Copy as code</b> and paste the result over <code>DEFAULT_PANEL</code> in this file.
+      </p>
+    </div>
+
     <div id="presetGrid"></div>
 
     <details class="manual">
@@ -3070,18 +3107,63 @@ var qrcode = function() {
   }
 
 
-  // ── Sample panel (same every month — edit these lists to change the panel) ──
-  var TYPES    = ['SA', 'SH', 'GT', 'CL', 'CG', 'CB', 'TI', 'GB', 'CH'];
-  var SUFFIXES = ['EC', 'E', 'A', 'C1', 'S1', 'V1', 'V2'];
-  var PRESETS = [
-    { suffix: 'EC', items: ['CB01','CB02','CB03','CB04','GT01','GT02','GT03','GT04','GT05','GT06','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
-    { suffix: 'E',  items: ['CB01','CB02','GT01','GB01','CL01','CG01','CH01','SA01','SA02','SH01','SH02','TI01','TI02'] },
-    { suffix: 'S1', items: ['CB01','CB02','CB03','CB04','GT01','GT02','GT03','GT04','GT05','GT06','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
-    { suffix: 'C1', items: ['CB01','CB02','CB03','CB04','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
-    { suffix: 'V1', items: ['SA01','SA02','SH01','SH02','TI01','TI02'] },
-    { suffix: 'V2', items: ['SA01','SA02','SH01','SH02','TI01','TI02'] },
-    { suffix: 'A',  items: ['SA01','SA02','SH01','SH02','TI01','TI02'] }
-  ];
+  // ── Sample panel ────────────────────────────────────────────────────────────
+  // The panel is editable in the app (step 2 → "Edit panel"); edits live in this
+  // browser only. To change it for EVERYONE on the live site, use "Copy as code"
+  // in the editor and paste the result over DEFAULT_PANEL below, then commit.
+  var DEFAULT_PANEL = {
+    types:    ['SA', 'SH', 'GT', 'CL', 'CG', 'CB', 'TI', 'GB', 'CH'],
+    suffixes: ['EC', 'E', 'A', 'C1', 'S1', 'V1', 'V2'],
+    presets: [
+      { suffix: 'EC', items: ['CB01','CB02','CB03','CB04','GT01','GT02','GT03','GT04','GT05','GT06','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
+      { suffix: 'E',  items: ['CB01','CB02','GT01','GB01','CL01','CG01','CH01','SA01','SA02','SH01','SH02','TI01','TI02'] },
+      { suffix: 'S1', items: ['CB01','CB02','CB03','CB04','GT01','GT02','GT03','GT04','GT05','GT06','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
+      { suffix: 'C1', items: ['CB01','CB02','CB03','CB04','GB01','GB02','GB03','GB04','CL01','CG01','CH01'] },
+      { suffix: 'V1', items: ['SA01','SA02','SH01','SH02','TI01','TI02'] },
+      { suffix: 'V2', items: ['SA01','SA02','SH01','SH02','TI01','TI02'] },
+      { suffix: 'A',  items: ['SA01','SA02','SH01','SH02','TI01','TI02'] }
+    ]
+  };
+  var PANEL_KEY = 'plate_panel';
+
+  // Derived from the panel on every change — the rest of the app reads these.
+  var panel, TYPES, SUFFIXES, PRESETS, panelEditing = false;
+
+  function clonePanel(p) { return JSON.parse(JSON.stringify(p)); }
+  function uniq(list) {
+    var seen = {}, out = [];
+    list.forEach(function (x) { if (x && !seen[x]) { seen[x] = 1; out.push(x); } });
+    return out;
+  }
+  function typeOf(item) { var m = /^([A-Za-z]+)/.exec(item); return m ? m[1].toUpperCase() : ''; }
+
+  // Types/suffixes for the custom-ID builder are the stored lists PLUS anything
+  // in use in the panel, so adding PC01-EC gets you a PC button for free.
+  function applyPanel(p) {
+    panel    = p;
+    PRESETS  = p.presets;
+    SUFFIXES = uniq((p.suffixes || []).concat(p.presets.map(function (g) { return g.suffix; })));
+    var inUse = [];
+    p.presets.forEach(function (g) { g.items.forEach(function (it) { inUse.push(typeOf(it)); }); });
+    TYPES = uniq((p.types || []).concat(inUse));
+  }
+  function loadPanel() {
+    var p = null;
+    try { p = JSON.parse(localStorage.getItem(PANEL_KEY)); } catch (e) {}
+    if (!p || !Array.isArray(p.presets)) p = clonePanel(DEFAULT_PANEL);
+    applyPanel(p);
+  }
+  function savePanel() {
+    try { localStorage.setItem(PANEL_KEY, JSON.stringify(panel)); } catch (e) {}
+  }
+  // Re-derive, persist, and redraw everything that reads the panel.
+  function panelChanged() {
+    applyPanel(panel);
+    savePanel();
+    renderPresetGrid();
+    renderManualPickers();
+    reflectPanelEditing();
+  }
 
   var manType = null, manSuffix = null;
 
@@ -3136,35 +3218,123 @@ var qrcode = function() {
       tag.className = 'tag';
       tag.textContent = '-' + group.suffix;
       h.appendChild(tag);
-      var selAll = document.createElement('button');
-      selAll.className = 'btn-xs';
-      selAll.textContent = 'select all';
-      selAll.addEventListener('click', function () {
-        group.items.forEach(function (it) { selection[group.suffix + '|' + it] = true; });
-        refreshPresetSelection();
-      });
-      h.appendChild(selAll);
+      if (panelEditing) {
+        var delGroup = document.createElement('button');
+        delGroup.className = 'btn-xs';
+        delGroup.textContent = 'delete group';
+        delGroup.addEventListener('click', function () {
+          if (!confirm('Delete the whole -' + group.suffix + ' group (' + group.items.length + ' samples)?')) return;
+          panel.presets = panel.presets.filter(function (g) { return g !== group; });
+          panelChanged();
+        });
+        h.appendChild(delGroup);
+      } else {
+        var selAll = document.createElement('button');
+        selAll.className = 'btn-xs';
+        selAll.textContent = 'select all';
+        selAll.addEventListener('click', function () {
+          group.items.forEach(function (it) { selection[group.suffix + '|' + it] = true; });
+          refreshPresetSelection();
+        });
+        h.appendChild(selAll);
+      }
       sec.appendChild(h);
 
       var cells = document.createElement('div');
       cells.className = 'preset-cells';
-      group.items.forEach(function (it) {
+      group.items.forEach(function (it, idx) {
         var key = group.suffix + '|' + it;
         var b = document.createElement('button');
-        b.className = 'preset-cell' + (selection[key] ? ' sel' : '');
+        b.className = 'preset-cell' + (!panelEditing && selection[key] ? ' sel' : '') + (panelEditing ? ' editing' : '');
         b.setAttribute('data-key', key);
-        b.textContent = it + '-' + group.suffix;
-        b.title = base + it + '-' + group.suffix;
-        b.addEventListener('click', function () {
-          selection[key] = !selection[key];
-          refreshPresetSelection();
-        });
+        b.title = panelEditing ? 'Click to rename ' + it + '-' + group.suffix : base + it + '-' + group.suffix;
+
+        if (panelEditing) {
+          // Click the name to rename it, the × to remove it.
+          var name = document.createElement('span');
+          name.textContent = it + '-' + group.suffix;
+          b.appendChild(name);
+          var x = document.createElement('span');
+          x.className = 'cell-x';
+          x.textContent = '×';
+          x.title = 'Remove ' + it + '-' + group.suffix;
+          x.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            group.items.splice(idx, 1);
+            panelChanged();
+          });
+          b.appendChild(x);
+          b.addEventListener('click', function () {
+            var next = prompt('Rename sample (the -' + group.suffix + ' is added automatically):', it);
+            if (next === null) return;
+            next = next.trim().toUpperCase();
+            if (!next || next === it) return;
+            if (group.items.indexOf(next) >= 0) { alert(next + '-' + group.suffix + ' is already in this group.'); return; }
+            group.items[idx] = next;
+            panelChanged();
+          });
+        } else {
+          b.textContent = it + '-' + group.suffix;
+          b.addEventListener('click', function () {
+            selection[key] = !selection[key];
+            refreshPresetSelection();
+          });
+        }
         cells.appendChild(b);
       });
+
+      if (panelEditing) cells.appendChild(addSampleCell(group));
       sec.appendChild(cells);
       grid.appendChild(sec);
     });
+    if (panelEditing) grid.appendChild(addGroupRow());
     refreshPresetSelection();
+  }
+
+  // "+ add" cell at the end of a group in edit mode.
+  function addSampleCell(group) {
+    var wrap = document.createElement('span');
+    wrap.className = 'add-cell';
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = '+ e.g. PC01';
+    inp.size = 9;
+    function commit() {
+      var v = inp.value.trim().toUpperCase();
+      if (!v) return;
+      if (group.items.indexOf(v) >= 0) { alert(v + '-' + group.suffix + ' is already in this group.'); return; }
+      group.items.push(v);
+      panelChanged();
+    }
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); commit(); } });
+    inp.addEventListener('blur', commit);
+    wrap.appendChild(inp);
+    return wrap;
+  }
+
+  // "+ add group" row at the bottom of the grid in edit mode.
+  function addGroupRow() {
+    var row = document.createElement('div');
+    row.className = 'preset-group add-group';
+    var inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = '+ new pathogen group, e.g. V3';
+    inp.size = 22;
+    function commit() {
+      var v = inp.value.trim().toUpperCase();
+      if (!v) return;
+      if (panel.presets.some(function (g) { return g.suffix === v; })) { alert('There is already a -' + v + ' group.'); return; }
+      panel.presets.push({ suffix: v, items: [] });
+      panelChanged();
+    }
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); commit(); } });
+    row.appendChild(inp);
+    var btn = document.createElement('button');
+    btn.className = 'btn-xs';
+    btn.textContent = 'add group';
+    btn.addEventListener('click', commit);
+    row.appendChild(btn);
+    return row;
   }
 
   function refreshPresetSelection() {
@@ -3207,9 +3377,88 @@ var qrcode = function() {
     }
   }
 
+  // ── Panel editor ────────────────────────────────────────────────────────────
+  function reflectPanelEditing() {
+    var bar = document.getElementById('panelEditBar');
+    if (panelEditing) bar.removeAttribute('hidden'); else bar.setAttribute('hidden', '');
+    document.getElementById('editPanelBtn').textContent = panelEditing ? '✓ Done editing' : '✎ Edit panel';
+    // selecting and editing are different modes — don't leave a stale selection behind
+    ['selectAllBtn', 'addSelectedBtn', 'clearSelBtn', 'presetQty'].forEach(function (id) {
+      document.getElementById(id).disabled = panelEditing;
+    });
+  }
+  function setPanelEditing(on) {
+    panelEditing = on;
+    if (on) { selection = {}; }
+    renderPresetGrid();
+    reflectPanelEditing();
+  }
+
+  // Rename a type across every group, e.g. GB01/GB02… → PC01/PC02…
+  function renameType() {
+    var from = document.getElementById('renameFrom').value.trim().toUpperCase();
+    var to   = document.getElementById('renameTo').value.trim().toUpperCase();
+    var msg  = document.getElementById('renameMsg');
+    if (!from || !to || from === to) { msg.textContent = 'Enter two different type codes.'; return; }
+    var n = 0;
+    panel.presets.forEach(function (g) {
+      g.items = g.items.map(function (it) {
+        if (typeOf(it) !== from) return it;
+        n++;
+        return to + it.slice(from.length);
+      });
+      g.items = uniq(g.items);
+    });
+    panel.types = uniq((panel.types || []).map(function (t) { return t === from ? to : t; }));
+    if (!n) { msg.textContent = 'No ' + from + ' samples found.'; return; }
+    msg.textContent = 'Renamed ' + n + ' sample' + (n === 1 ? '' : 's') + ': ' + from + ' → ' + to + '.';
+    panelChanged();
+  }
+
+  // Emit the panel as a DEFAULT_PANEL literal to paste back into this file.
+  function panelAsCode() {
+    var lines = ['var DEFAULT_PANEL = {'];
+    lines.push('  types:    ' + JSON.stringify(TYPES).replace(/","/g, "', '").replace(/^\["/, "['").replace(/"\]$/, "']") + ',');
+    lines.push('  suffixes: ' + JSON.stringify(SUFFIXES).replace(/","/g, "', '").replace(/^\["/, "['").replace(/"\]$/, "']") + ',');
+    lines.push('  presets: [');
+    panel.presets.forEach(function (g, i) {
+      var items = JSON.stringify(g.items).replace(/","/g, "','").replace(/^\["/, "['").replace(/"\]$/, "']");
+      lines.push("    { suffix: '" + g.suffix + "', items: " + items + ' }' + (i < panel.presets.length - 1 ? ',' : ''));
+    });
+    lines.push('  ]');
+    lines.push('};');
+    return lines.join('\n');
+  }
+  function copyPanelCode() {
+    var code = panelAsCode();
+    var msg = document.getElementById('panelMsg');
+    function ok() { msg.textContent = 'Copied — paste over DEFAULT_PANEL.'; setTimeout(function () { msg.textContent = ''; }, 4000); }
+    function fail() { msg.textContent = 'Copy blocked — opening it in a prompt instead.'; prompt('Copy this over DEFAULT_PANEL:', code); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(ok, fail);
+    else fail();
+  }
+  function resetPanel() {
+    if (!confirm('Discard your panel edits and go back to the built-in sample list?')) return;
+    try { localStorage.removeItem(PANEL_KEY); } catch (e) {}
+    applyPanel(clonePanel(DEFAULT_PANEL));
+    selection = {};
+    renderPresetGrid();
+    renderManualPickers();
+    document.getElementById('panelMsg').textContent = 'Reset to the built-in panel.';
+  }
+  function initPanelEditor() {
+    document.getElementById('editPanelBtn').addEventListener('click', function () { setPanelEditing(!panelEditing); });
+    document.getElementById('panelDoneBtn').addEventListener('click', function () { setPanelEditing(false); });
+    document.getElementById('renameTypeBtn').addEventListener('click', renameType);
+    document.getElementById('panelCopyBtn').addEventListener('click', copyPanelCode);
+    document.getElementById('panelResetBtn').addEventListener('click', resetPanel);
+    reflectPanelEditing();
+  }
+
   // ── Manual builder ──────────────────────────────────────────────────────────
-  function initManualPickers() {
+  function renderManualPickers() {
     var typeWrap = document.getElementById('typeBtns');
+    typeWrap.innerHTML = '';
     TYPES.forEach(function (t) {
       var b = document.createElement('button');
       b.className = 'pick'; b.textContent = t;
@@ -3229,6 +3478,17 @@ var qrcode = function() {
       });
       sufWrap.appendChild(b);
     });
+    // a renamed/removed type or suffix must not stay selected in the builder
+    if (TYPES.indexOf(manType) < 0) manType = null;
+    if (SUFFIXES.indexOf(manSuffix) < 0) manSuffix = null;
+    highlight(typeWrap, manType);
+    highlight(sufWrap, manSuffix);
+    updateManPreview();
+  }
+
+  // One-time listener wiring; the buttons themselves re-render on panel changes.
+  function initManualPickers() {
+    renderManualPickers();
     document.getElementById('manNum').addEventListener('input', updateManPreview);
     document.getElementById('manNote').addEventListener('input', updateManPreview);
     document.getElementById('manAddBtn').addEventListener('click', function () {
@@ -3554,7 +3814,9 @@ var qrcode = function() {
     } catch (e) {}
 
     initBaseControls();
+    loadPanel();                 // panel first — the pickers and grid read from it
     initManualPickers();
+    initPanelEditor();
     renderPresetGrid();
     updateManPreview();
     refreshBase();
