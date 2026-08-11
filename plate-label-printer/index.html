@@ -102,10 +102,16 @@
   .preset-cells{display:flex; flex-wrap:wrap; gap:6px;}
   /* panel editor */
   .panel-edit-bar{border:1px solid var(--accent); background:var(--accent-soft); border-radius:9px; padding:11px 13px; margin-bottom:14px; display:flex; flex-direction:column; gap:9px;}
+  .panel-edit-bar[hidden]{display:none;}   /* author display: must beat the UA [hidden] rule */
   .panel-edit-bar .row{display:flex; align-items:center; gap:9px; flex-wrap:wrap;}
   .panel-edit-bar label{font-size:.88rem; display:inline-flex; align-items:center; gap:6px; color:var(--muted);}
   .panel-edit-bar input[type=text]{font-family:ui-monospace,Menlo,Consolas,monospace; text-transform:uppercase;}
-  .preset-cell.editing{cursor:text; display:inline-flex; align-items:center; gap:7px;}
+  .preset-cell.editing{cursor:grab; display:inline-flex; align-items:center; gap:7px;}
+  .preset-cell.editing:active{cursor:grabbing;}
+  .preset-cell.dragging{opacity:.4;}
+  /* insertion marker: which side of this cell the dragged one will land on */
+  .preset-cell.drop-before{box-shadow:-3px 0 0 0 var(--accent);}
+  .preset-cell.drop-after{box-shadow:3px 0 0 0 var(--accent);}
   .preset-cell.editing:hover{border-color:var(--accent); color:var(--accent);}
   .preset-cell .cell-x{font-weight:700; opacity:.5; cursor:pointer; padding:0 1px; line-height:1;}
   .preset-cell .cell-x:hover{opacity:1; color:var(--danger, #c0392b);}
@@ -220,7 +226,7 @@
     <div id="panelEditBar" class="panel-edit-bar" hidden>
       <div class="row">
         <strong>Editing the panel</strong>
-        <span class="muted">Click a sample to rename it, &times; to remove it, or type in the “+” box to add one.</span>
+        <span class="muted">Drag a sample to reorder it within its group &middot; click to rename &middot; &times; to remove &middot; type in the “+” box to add.</span>
       </div>
       <div class="row">
         <label>Rename type <input type="text" id="renameFrom" placeholder="from" size="4"></label>
@@ -3247,10 +3253,12 @@ var qrcode = function() {
         var b = document.createElement('button');
         b.className = 'preset-cell' + (!panelEditing && selection[key] ? ' sel' : '') + (panelEditing ? ' editing' : '');
         b.setAttribute('data-key', key);
-        b.title = panelEditing ? 'Click to rename ' + it + '-' + group.suffix : base + it + '-' + group.suffix;
+        b.title = panelEditing ? 'Drag to reorder, click to rename ' + it + '-' + group.suffix
+                               : base + it + '-' + group.suffix;
 
         if (panelEditing) {
-          // Click the name to rename it, the × to remove it.
+          // Drag to reorder within the group, click the name to rename, × to remove.
+          makeDraggableCell(b, group, idx);
           var name = document.createElement('span');
           name.textContent = it + '-' + group.suffix;
           b.appendChild(name);
@@ -3265,6 +3273,7 @@ var qrcode = function() {
           });
           b.appendChild(x);
           b.addEventListener('click', function () {
+            if (justDragged()) return;      // a drop shouldn't also open the rename prompt
             var next = prompt('Rename sample (the -' + group.suffix + ' is added automatically):', it);
             if (next === null) return;
             next = next.trim().toUpperCase();
@@ -3289,6 +3298,66 @@ var qrcode = function() {
     });
     if (panelEditing) grid.appendChild(addGroupRow());
     refreshPresetSelection();
+  }
+
+  // ── Drag to reorder samples within a group (edit mode) ──────────────────────
+  // Reordering is confined to one group: a sample's suffix comes from the group
+  // it sits in, so dragging across groups would silently rename it.
+  var dragSrc = null;          // { group, idx } of the cell being dragged
+  var dragEndedAt = 0;         // suppresses the click that can follow a drop
+  function justDragged() { return Date.now() - dragEndedAt < 250; }
+
+  function clearDropMarks() {
+    var marked = document.querySelectorAll('.preset-cell.drop-before, .preset-cell.drop-after');
+    for (var i = 0; i < marked.length; i++) marked[i].classList.remove('drop-before', 'drop-after');
+  }
+  // Flex-wrapped cells sit side by side, so the horizontal midpoint decides the side.
+  function dropsAfter(el, ev) {
+    var r = el.getBoundingClientRect();
+    return ev.clientX > r.left + r.width / 2;
+  }
+  function moveItem(group, from, to, after) {
+    var insertAt = after ? to + 1 : to;
+    if (insertAt === from || insertAt === from + 1) return;   // dropped back where it started
+    var moved = group.items.splice(from, 1)[0];
+    if (from < insertAt) insertAt--;                          // indices shifted by the removal
+    group.items.splice(insertAt, 0, moved);
+    panelChanged();
+  }
+
+  function makeDraggableCell(b, group, idx) {
+    b.draggable = true;
+    b.addEventListener('dragstart', function (ev) {
+      dragSrc = { group: group, idx: idx };
+      b.classList.add('dragging');
+      if (ev.dataTransfer) {
+        ev.dataTransfer.effectAllowed = 'move';
+        try { ev.dataTransfer.setData('text/plain', group.items[idx]); } catch (e) {}
+      }
+    });
+    b.addEventListener('dragend', function () {
+      b.classList.remove('dragging');
+      clearDropMarks();
+      dragSrc = null;
+      dragEndedAt = Date.now();
+    });
+    b.addEventListener('dragover', function (ev) {
+      if (!dragSrc || dragSrc.group !== group) return;   // same group only
+      ev.preventDefault();
+      if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+      b.classList.remove('drop-before', 'drop-after');
+      b.classList.add(dropsAfter(b, ev) ? 'drop-after' : 'drop-before');
+    });
+    b.addEventListener('dragleave', function () { b.classList.remove('drop-before', 'drop-after'); });
+    b.addEventListener('drop', function (ev) {
+      if (!dragSrc || dragSrc.group !== group) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var from = dragSrc.idx, after = dropsAfter(b, ev);
+      dragEndedAt = Date.now();
+      clearDropMarks();
+      moveItem(group, from, idx, after);
+    });
   }
 
   // "+ add" cell at the end of a group in edit mode.
