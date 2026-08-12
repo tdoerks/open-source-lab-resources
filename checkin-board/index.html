@@ -268,7 +268,10 @@
       <label>file path (in the repo)</label>
       <input type="text" id="cfgPath" placeholder="checkin-board/status.json" autocomplete="off" autocapitalize="off" spellcheck="false">
       <label>GitHub token — Contents: read &amp; write, this repo only</label>
-      <input type="password" id="cfgToken" placeholder="github_pat_… (stays in this browser)" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="password" id="cfgToken" placeholder="github_pat_… (stays in this browser)" autocomplete="off" autocapitalize="off" spellcheck="false" style="flex:1;">
+        <button type="button" id="tokenToggle" class="btn" style="flex:none;padding:10px 14px;font-size:14px;" title="Show/hide token">👁️</button>
+      </div>
       <div class="note-actions">
         <button class="btn primary" id="syncConnectBtn">Save &amp; connect</button>
         <button class="btn" id="syncTestBtn">Test</button>
@@ -310,15 +313,6 @@
         <label><input type="checkbox" id="mVcard"> 🪪 Save contact</label>
       </div>
       <div class="sign-contacts" id="signContacts"></div>
-
-      <label style="margin-top:10px;">Publish to everyone who scans <span class="badge">public</span></label>
-      <small>By default the details above live <b>only in this browser</b>, so a colleague who scans your
-        door sign still gets the status QR — their phone has no copy. Publishing writes them into
-        <code>status.json</code> so the contact QRs work on <b>their</b> phone too. That repo is public:
-        publishing puts these details on the web, and they stay in the git history even if you unpublish.
-        Use a work line and a work address. Requires cross-device sync to be connected above.</small>
-      <label class="method-toggles" style="margin:0;"><input type="checkbox" id="mPublish"> 🌐 Publish these contact details</label>
-      <small id="publishMsg" style="min-height:1em;"></small>
 
       <div class="note-actions">
         <button class="btn primary" id="printSignBtn">Print door sign</button>
@@ -2661,9 +2655,7 @@ const byId = id => STATUSES.find(s => s.id === id) || UNKNOWN;
 const HISTORY_MAX = 5;
 const PRESETS = ['back at 3pm', 'back in 10', 'back Monday', 'do not disturb'];
 
-/* `contact` is the PUBLISHED contact block — it rides along in status.json so that
-   people who scan the sign get working QRs. localStorage never reaches their phone. */
-function defaultState(){ return { status:null, note:'', updated_at:null, history:[], contact:null }; }
+function defaultState(){ return { status:null, note:'', updated_at:null, history:[] }; }
 function load(){
   try { return JSON.parse(localStorage.getItem(KEY)) ?? defaultState(); }
   catch { return defaultState(); }
@@ -2730,7 +2722,7 @@ function renderHistory(){
     ul.appendChild(li);
   }
 }
-function render(){ renderBanner(); renderGrid(); renderHistory(); renderSignContacts(); }
+function render(){ renderBanner(); renderGrid(); renderHistory(); }
 
 function fmtClock(iso){
   const d = new Date(iso);
@@ -2859,15 +2851,7 @@ async function remotePut(message){
 
 /* remote wins only if strictly newer (ISO timestamps sort lexicographically) */
 function adoptRemote(remote){
-  if(!remote) return false;
-  /* Published contacts track the remote independently of updated_at — they change
-     far less often than the status, and must not wait on a status change to land. */
-  if('contact' in remote && JSON.stringify(remote.contact) !== JSON.stringify(state.contact)){
-    state.contact = remote.contact;
-    save();
-    renderSignContacts();
-  }
-  if(!remote.updated_at) return false;
+  if(!remote || !remote.updated_at) return false;
   if(state.updated_at && remote.updated_at <= state.updated_at) return false;
   state = Object.assign(defaultState(), remote);
   save();
@@ -2987,6 +2971,13 @@ function initSyncUI(){
   document.getElementById('syncTestBtn').addEventListener('click', testSync);
   document.getElementById('syncDisconnectBtn').addEventListener('click', disconnectSync);
   document.getElementById('syncPill').addEventListener('click', openDrawer);
+  document.getElementById('tokenToggle').addEventListener('click', () => {
+    const inp = document.getElementById('cfgToken');
+    const btn = document.getElementById('tokenToggle');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.textContent = show ? '🙈' : '👁️';
+  });
 }
 
 /* read a co-located status.json directly (reader/QR scanners — no token, no API limit) */
@@ -3074,18 +3065,11 @@ function contactUri(key, cfg){
   }
   return null;
 }
-function contactsFrom(cfg){
-  if(!cfg) return [];
-  return CONTACT_METHODS
-    .filter(m => cfg.m && cfg.m[m.key])
-    .map(m => ({ ...m, uri: contactUri(m.key, cfg) }))
-    .filter(x => x.uri);
-}
-/* This browser's own details win; otherwise fall back to whatever was published
-   into status.json — that fallback is what makes the QRs work for scanners. */
 function enabledContacts(){
-  const local = contactsFrom(signCfg);
-  return local.length ? local : contactsFrom(state.contact);
+  return CONTACT_METHODS
+    .filter(m => signCfg.m && signCfg.m[m.key])
+    .map(m => ({ ...m, uri: contactUri(m.key, signCfg) }))
+    .filter(x => x.uri);
 }
 function qrDataURL(text, cell, ec){
   const q = qrcode(0, ec || 'M'); q.addData(text); q.make();
@@ -3137,36 +3121,6 @@ function initSignUI(){
   };
   ['cName', 'cPhone', 'cEmail'].forEach(id => document.getElementById(id).addEventListener('input', onChange));
   CONTACT_METHODS.forEach(m => document.getElementById(m.el).addEventListener('change', onChange));
-
-  const pub = document.getElementById('mPublish');
-  pub.checked = !!(state.contact && state.contact.m);
-  pub.addEventListener('change', () => publishContact(pub.checked));
-  renderSignContacts();
-}
-
-/* Copy this browser's contact details into status.json (or take them back out). */
-function publishContact(on){
-  const msg = document.getElementById('publishMsg');
-  const pub = document.getElementById('mPublish');
-  if(on){
-    if(!canWrite()){
-      pub.checked = false;
-      msg.textContent = 'Connect cross-device sync with a token first — publishing commits to the repo.';
-      return;
-    }
-    if(!contactsFrom(signCfg).length){
-      pub.checked = false;
-      msg.textContent = 'Fill in a phone or email above (and tick a method) before publishing.';
-      return;
-    }
-    state.contact = { name: signCfg.name, phone: signCfg.phone, email: signCfg.email, m: { ...signCfg.m } };
-    msg.textContent = '🌐 Published — people who scan your sign now get these QRs.';
-  } else {
-    state.contact = null;
-    msg.textContent = 'Unpublished — removed from status.json (it stays in the git history).';
-  }
-  save();
-  pushRemote(on ? 'Publish contact details' : 'Remove published contact details');
   renderSignContacts();
 }
 
