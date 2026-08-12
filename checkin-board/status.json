@@ -1,6 +1,18 @@
 {
-  "status": null,
+  "status": "in-lab",
   "note": "",
-  "updated_at": null,
-  "history": []
+  "updated_at": "2026-08-12T16:00:53.194Z",
+  "history": [
+    {
+      "status": "in-lab",
+      "note": "",
+      "at": "2026-08-12T16:00:53.194Z"
+    },
+    {
+      "status": "in-office",
+      "note": "",
+      "at": "2026-08-12T15:48:59.434Z"
+    }
+  ],
+  "contact": null
 }
