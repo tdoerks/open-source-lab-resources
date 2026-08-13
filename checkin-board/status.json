@@ -1,8 +1,13 @@
 {
-  "status": "meeting",
+  "status": "in-lab",
   "note": "in office meeting til 1",
-  "updated_at": "2026-08-13T16:26:39.422Z",
+  "updated_at": "2026-08-13T17:49:34.351Z",
   "history": [
+    {
+      "status": "in-lab",
+      "note": "in office meeting til 1",
+      "at": "2026-08-13T17:49:34.351Z"
+    },
     {
       "status": "meeting",
       "note": "in office meeting til 1",
@@ -22,11 +27,6 @@
       "status": "in-office",
       "note": "",
       "at": "2026-08-12T17:04:29.440Z"
-    },
-    {
-      "status": "meeting",
-      "note": "",
-      "at": "2026-08-12T17:04:23.254Z"
     }
   ],
   "contact": null
