@@ -30,47 +30,44 @@
 
   /* ── status banner ─────────────────────────────── */
   .banner{
-    border-radius:20px; padding:36px 24px; text-align:center; color:#fff;
-    box-shadow:var(--shadow); transition:background .25s ease;
-    background:#334155; display:flex; flex-direction:column; align-items:center; gap:10px;
-    min-height:230px; justify-content:center;
+    border-radius:20px; color:#fff; box-shadow:var(--shadow);
+    background:#334155; display:flex; flex-direction:row;
+    min-height:230px; overflow:hidden;
   }
-  .banner .icon{font-size:72px; line-height:1;}
-  .banner .label{font-size:clamp(30px,7vw,52px); font-weight:800; letter-spacing:.5px; text-shadow:0 2px 8px rgba(0,0,0,.25);}
-  .banner .note{font-size:clamp(16px,3.5vw,22px); font-weight:600; opacity:.95; min-height:0;}
-  .banner .note:empty{display:none;}
-  .banner .time{font-size:14px; font-weight:600; opacity:.85; letter-spacing:.3px; text-transform:uppercase;}
-  .banner.unset{color:var(--muted);}
-  .banner.unset .label{font-size:clamp(22px,5vw,34px); font-weight:700;}
+  .banner-section{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:36px 24px; text-align:center; gap:10px; transition:background .25s ease;
+  }
+  .banner-section + .banner-section{ border-left:2px solid rgba(255,255,255,0.15); }
+  .banner-section .icon{font-size:clamp(40px,8vw,72px); line-height:1;}
+  .banner-section .label{font-size:clamp(20px,4vw,42px); font-weight:800; letter-spacing:.5px; text-shadow:0 2px 8px rgba(0,0,0,.25);}
+  .banner-section .note{font-size:clamp(13px,2.5vw,18px); font-weight:600; opacity:.95;}
+  .banner-section .note:empty{display:none;}
+  .banner-section .time{font-size:13px; font-weight:600; opacity:.85; letter-spacing:.3px; text-transform:uppercase;}
+  .banner.unset .banner-section{color:var(--muted);}
+  .banner.unset .banner-section .label{font-size:clamp(22px,5vw,34px); font-weight:700;}
 
   /* ── tap grid ──────────────────────────────────── */
   .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px;}
   .status-btn{
-    display:flex; align-items:center; gap:12px; padding:16px 18px; min-height:68px;
+    display:flex; flex-direction:column; gap:8px; padding:16px 18px; min-height:68px;
     border-radius:14px; border:2px solid var(--line); background:var(--panel);
     color:var(--ink); cursor:pointer; font-size:18px; font-weight:700; text-align:left;
     transition:transform .08s ease, border-color .15s, background .15s;
   }
+  .status-btn-row{display:flex; align-items:center; gap:12px; width:100%;}
   .status-btn .b-icon{font-size:28px; line-height:1; flex:none;}
   .status-btn:active{transform:scale(.97);}
   .status-btn.active{color:#fff; border-color:transparent; box-shadow:var(--shadow);}
   .status-btn.active .check{margin-left:auto; font-size:20px;}
+  .status-note-input{
+    width:100%; padding:8px 10px; border-radius:8px;
+    border:1px solid rgba(255,255,255,0.3); background:rgba(0,0,0,0.2);
+    color:#fff; font-size:14px; font-weight:500;
+  }
+  .status-note-input::placeholder{color:rgba(255,255,255,0.5);}
 
-  /* ── note row ──────────────────────────────────── */
-  .note-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
-  .note-toggle{
-    width:100%; text-align:left; background:none; border:none; color:var(--muted);
-    padding:14px 18px; font-size:15px; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;
-  }
-  .note-body{padding:0 18px 18px; display:none; flex-direction:column; gap:10px;}
-  .note-body.open{display:flex;}
-  .note-body input[type=text]{
-    width:100%; padding:14px; border-radius:10px; border:1px solid var(--line);
-    background:var(--panel2); color:var(--ink); font-size:17px;
-  }
-  .presets{display:flex; flex-wrap:wrap; gap:8px;}
-  .preset{background:var(--panel2); border:1px solid var(--line); color:var(--ink); padding:9px 14px; border-radius:20px; font-size:14px; cursor:pointer;}
-  .preset:active{transform:scale(.96);}
+  /* ── note-actions / btn (used in settings drawer) ── */
   .note-actions{display:flex; gap:10px;}
   .btn{padding:12px 18px; border-radius:10px; border:1px solid var(--line); background:var(--panel2); color:var(--ink); font-size:15px; font-weight:700; cursor:pointer;}
   .btn.primary{background:#2563eb; border-color:#2563eb; color:#fff;}
@@ -120,7 +117,7 @@
   @keyframes pulse{50%{opacity:.25;}}
   .drawer code{background:var(--bg); padding:1px 5px; border-radius:5px; font-size:12px;}
   .drawer details summary{cursor:pointer; color:var(--muted); font-size:13px;}
-  @media (max-width:480px){ main{padding:12px;} .banner{padding:28px 16px; min-height:200px;} .sync-pill span.txt{display:none;} }
+  @media (max-width:480px){ main{padding:12px;} .banner{min-height:180px;} .banner-section{padding:20px 12px;} .sync-pill span.txt{display:none;} }
 
   /* ── reader (QR) mode — read-only status display ── */
   .lockbtn{ background:var(--panel2); border:1px solid var(--line); color:var(--ink); width:44px; height:44px; border-radius:10px; font-size:18px; cursor:pointer; display:none; }
@@ -188,33 +185,13 @@
   </header>
 
   <main>
-    <!-- Status banner (View 1) -->
-    <section class="banner unset" id="banner" aria-live="polite">
-      <div class="icon" id="bIcon">👋</div>
-      <div class="label" id="bLabel">Tap a status below</div>
-      <div class="note" id="bNote"></div>
-      <div class="time" id="bTime"></div>
-    </section>
+    <!-- Status banner (View 1) — sections generated by JS -->
+    <section class="banner unset" id="banner" aria-live="polite"></section>
 
     <!-- Tap grid (View 2) -->
     <section class="grid" id="grid"></section>
 
-    <!-- Note row (View 3) -->
-    <section class="note-card">
-      <button class="note-toggle" id="noteToggle">
-        <span>✏️ Add a note (optional)</span><span id="noteChevron">▸</span>
-      </button>
-      <div class="note-body" id="noteBody">
-        <input type="text" id="noteInput" maxlength="60" placeholder="e.g. back at 3pm  ·  back Monday">
-        <div class="presets" id="presets"></div>
-        <div class="note-actions">
-          <button class="btn primary" id="saveNoteBtn">Save note</button>
-          <button class="btn" id="clearNoteBtn">Clear</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Recent history (View 4) -->
+    <!-- Recent history (View 3) -->
     <section class="history">
       <h2>Recent check-ins</h2>
       <ul id="historyList"><li class="empty">No check-ins yet — tap a status above.</li></ul>
@@ -2651,13 +2628,22 @@ const STATUSES = [
 const UNKNOWN = { id:'unknown', label:'Unknown', icon:'❔', color:'#6b7280' };
 const byId = id => STATUSES.find(s => s.id === id) || UNKNOWN;
 
-/* <!-- REVIEW: history capped at last 5 check-ins; note capped at 60 chars; quick-note presets below --> */
 const HISTORY_MAX = 5;
-const PRESETS = ['back at 3pm', 'back in 10', 'back Monday', 'do not disturb'];
 
-function defaultState(){ return { status:null, note:'', updated_at:null, history:[] }; }
+function defaultState(){ return { statuses:[], updated_at:null, history:[] }; }
+function normalizeState(raw){
+  if(!raw) return defaultState();
+  // backward compat: old format had status (string) + note (string)
+  if(raw.status !== undefined && !raw.statuses){
+    raw.statuses = raw.status ? [{id: raw.status, note: raw.note || ''}] : [];
+    delete raw.status; delete raw.note;
+  }
+  if(!Array.isArray(raw.statuses)) raw.statuses = [];
+  if(!Array.isArray(raw.history)) raw.history = [];
+  return raw;
+}
 function load(){
-  try { return JSON.parse(localStorage.getItem(KEY)) ?? defaultState(); }
+  try { return normalizeState(JSON.parse(localStorage.getItem(KEY)) ?? defaultState()); }
   catch { return defaultState(); }
 }
 function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
@@ -2679,32 +2665,46 @@ function relativeTime(iso){
 /* ── Views ── */
 function renderBanner(){
   const b = document.getElementById('banner');
-  const s = state.status ? byId(state.status) : null;
-  if(!s){
-    b.className = 'banner unset'; b.style.background = '';
-    document.getElementById('bIcon').textContent  = READER ? '📍' : '👋';
-    document.getElementById('bLabel').textContent = READER ? 'No status set yet' : 'Tap a status below';
-    document.getElementById('bNote').textContent  = '';
-    document.getElementById('bTime').textContent  = '';
+  const active = state.statuses || [];
+  if(!active.length){
+    b.className = 'banner unset';
+    b.innerHTML = '<div class="banner-section"><div class="icon">'+(READER?'📍':'👋')+'</div>' +
+                  '<div class="label">'+(READER?'No status set yet':'Tap a status below')+'</div></div>';
     return;
   }
-  b.className = 'banner'; b.style.background = s.color;
-  document.getElementById('bIcon').textContent  = s.icon;
-  document.getElementById('bLabel').textContent = s.label;      // word always shown (colorblind-safe)
-  document.getElementById('bNote').textContent  = state.note || '';
-  document.getElementById('bTime').textContent  = relativeTime(state.updated_at);
+  b.className = 'banner';
+  b.innerHTML = active.map((entry, i) => {
+    const s = byId(entry.id);
+    const timeHtml = i === 0 ? '<div class="time">'+relativeTime(state.updated_at)+'</div>' : '';
+    return '<div class="banner-section" style="background:'+s.color+'">' +
+           '<div class="icon">'+s.icon+'</div>' +
+           '<div class="label">'+s.label+'</div>' +
+           (entry.note ? '<div class="note">'+escapeHtml(entry.note)+'</div>' : '') +
+           timeHtml + '</div>';
+  }).join('');
 }
 function renderGrid(){
   const g = document.getElementById('grid');
   g.innerHTML = '';
+  const activeIds = new Set((state.statuses||[]).map(e => e.id));
   for(const s of STATUSES){
-    const active = state.status === s.id;
+    const active = activeIds.has(s.id);
+    const entry = active ? state.statuses.find(e => e.id === s.id) : null;
     const btn = document.createElement('button');
     btn.className = 'status-btn' + (active ? ' active' : '');
     if(active) btn.style.background = s.color;
-    btn.innerHTML = '<span class="b-icon">'+s.icon+'</span><span>'+s.label+'</span>' +
-                    (active ? '<span class="check">✓</span>' : '');
-    btn.addEventListener('click', () => setStatus(s.id));
+    btn.innerHTML = '<div class="status-btn-row"><span class="b-icon">'+s.icon+'</span><span>'+s.label+'</span>' +
+                    (active ? '<span class="check" style="margin-left:auto">✓</span>' : '') + '</div>' +
+                    (active ? '<input class="status-note-input" type="text" maxlength="60" placeholder="add a note…" value="'+escapeHtml(entry.note||'')+'">' : '');
+    btn.addEventListener('click', (e) => {
+      if(e.target.classList.contains('status-note-input')) return;
+      toggleStatus(s.id);
+    });
+    if(active){
+      const inp = btn.querySelector('.status-note-input');
+      inp.addEventListener('input', () => setStatusNote(s.id, inp.value));
+      inp.addEventListener('click', e => e.stopPropagation());
+    }
     g.appendChild(btn);
   }
 }
@@ -2713,11 +2713,15 @@ function renderHistory(){
   if(!state.history.length){ ul.innerHTML = '<li class="empty">No check-ins yet — tap a status above.</li>'; return; }
   ul.innerHTML = '';
   for(const h of state.history){
-    const s = byId(h.status);
+    // support both new format (statuses array) and old (status string)
+    const statuses = h.statuses || (h.status ? [{id:h.status, note:h.note||''}] : []);
+    if(!statuses.length) continue;
     const li = document.createElement('li');
-    const noteHtml = h.note ? ' <span class="h-note">— '+escapeHtml(h.note)+'</span>' : '';
-    li.innerHTML = '<span class="dot" style="background:'+s.color+'"></span>' +
-                   '<span>'+s.icon+' '+s.label+'</span>' + noteHtml +
+    const primary = byId(statuses[0].id);
+    const labelHtml = statuses.map(e => { const s=byId(e.id); return s.icon+' '+s.label; }).join(' · ');
+    const noteHtml = statuses[0].note ? ' <span class="h-note">— '+escapeHtml(statuses[0].note)+'</span>' : '';
+    li.innerHTML = '<span class="dot" style="background:'+primary.color+'"></span>' +
+                   '<span>'+labelHtml+'</span>' + noteHtml +
                    '<span class="h-time">'+fmtClock(h.at)+'</span>';
     ul.appendChild(li);
   }
@@ -2731,36 +2735,40 @@ function fmtClock(iso){
 function escapeHtml(str){ return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* ── Interactions ── */
-function setStatus(id){
-  if(isLocked()){ openPinModal(() => setStatus(id)); return; }
+function toggleStatus(id){
+  if(isLocked()){ openPinModal(() => toggleStatus(id)); return; }
   const now = new Date().toISOString();
-  state.status = id;
+  const idx = (state.statuses||[]).findIndex(e => e.id === id);
+  if(idx >= 0){
+    state.statuses.splice(idx, 1);   // deselect
+  } else {
+    state.statuses = [...(state.statuses||[]), {id, note:''}];  // add
+  }
   state.updated_at = now;
-  state.history.unshift({ status:id, note:state.note, at:now });
-  state.history = state.history.slice(0, HISTORY_MAX);
-  save(); render(); pushRemote('Status → ' + byId(id).label);
+  const snapshot = (state.statuses||[]).map(e => ({id:e.id, note:e.note}));
+  if(snapshot.length){
+    state.history.unshift({ statuses: snapshot, at: now });
+    state.history = state.history.slice(0, HISTORY_MAX);
+  }
+  save(); render();
+  const label = state.statuses.map(e => byId(e.id).label).join(' + ') || 'cleared';
+  pushRemote('Status → ' + label);
 }
-function saveNote(){
-  if(isLocked()){ openPinModal(saveNote); return; }
-  const val = document.getElementById('noteInput').value.trim().slice(0,60);
-  state.note = val;
-  const now = new Date().toISOString();
-  state.updated_at = now;
-  if(state.history[0]) state.history[0].note = val;   // reflect on the current (latest) check-in
-  save(); renderBanner(); renderHistory(); pushRemote('Update note');
-}
-/* <!-- REVIEW: a note persists across status changes until you Clear it; change here if a new status should wipe the note --> */
-function clearNote(){
-  if(isLocked()){ openPinModal(clearNote); return; }
-  document.getElementById('noteInput').value = '';
-  state.note = '';
-  if(state.history[0]) state.history[0].note = '';
-  save(); renderBanner(); renderHistory(); pushRemote('Clear note');
+function setStatusNote(id, val){
+  if(isLocked()) return;
+  const entry = (state.statuses||[]).find(e => e.id === id);
+  if(!entry) return;
+  entry.note = val.trim().slice(0,60);
+  state.updated_at = new Date().toISOString();
+  if(state.history[0] && state.history[0].statuses){
+    const h = state.history[0].statuses.find(e => e.id === id);
+    if(h) h.note = entry.note;
+  }
+  save(); renderBanner(); pushRemote('Update note');
 }
 function resetBoard(){
   if(!confirm('Clear the current status and all history on this device?')) return;
   state = defaultState();
-  document.getElementById('noteInput').value = '';
   save(); render(); closeDrawer();
 }
 
@@ -2853,10 +2861,8 @@ async function remotePut(message){
 function adoptRemote(remote){
   if(!remote || !remote.updated_at) return false;
   if(state.updated_at && remote.updated_at <= state.updated_at) return false;
-  state = Object.assign(defaultState(), remote);
-  save();
-  const ni = document.getElementById('noteInput'); if(ni) ni.value = state.note || '';
-  render();
+  state = normalizeState(Object.assign(defaultState(), remote));
+  save(); render();
   return true;
 }
 
@@ -3188,23 +3194,6 @@ function closeDrawer(){ document.getElementById('drawer').classList.remove('open
 
 /* ── Wire up ── */
 function init(){
-  // note editor
-  document.getElementById('noteInput').value = state.note || '';
-  const presetWrap = document.getElementById('presets');
-  PRESETS.forEach(p => {
-    const b = document.createElement('button');
-    b.className = 'preset'; b.textContent = p;
-    b.addEventListener('click', () => { const i = document.getElementById('noteInput'); i.value = p; saveNote(); });
-    presetWrap.appendChild(b);
-  });
-  document.getElementById('noteToggle').addEventListener('click', () => {
-    document.getElementById('noteBody').classList.toggle('open');
-    const open = document.getElementById('noteBody').classList.contains('open');
-    document.getElementById('noteChevron').textContent = open ? '▾' : '▸';
-  });
-  document.getElementById('saveNoteBtn').addEventListener('click', saveNote);
-  document.getElementById('clearNoteBtn').addEventListener('click', clearNote);
-
   // settings
   document.getElementById('gearBtn').addEventListener('click', openDrawer);
   document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
@@ -3237,7 +3226,7 @@ function init(){
 
   render();
   // keep the "updated X ago" fresh without a full re-render
-  setInterval(() => { document.getElementById('bTime').textContent = state.status ? relativeTime(state.updated_at) : ''; }, 30000);
+  setInterval(() => renderBanner(), 30000);
 
   // start the poll/adopt loop (reader always; editable devices only if sync is configured)
   startPolling();

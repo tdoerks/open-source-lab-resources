@@ -33,11 +33,11 @@ jobs:
               state = json.load(f)
 
           now = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000Z')
-          status = "$STATUS"
-          history = [{'status': status, 'note': '', 'at': now}] + state.get('history', [])
+          status_id = "$STATUS"
+          entry = {'id': status_id, 'note': ''}
+          history = [{'statuses': [entry], 'at': now}] + state.get('history', [])
           state = {
-              'status': status,
-              'note': '',
+              'statuses': [entry],
               'updated_at': now,
               'history': history[:5]
           }
