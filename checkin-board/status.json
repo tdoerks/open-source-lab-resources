@@ -1,8 +1,13 @@
 {
-  "status": "in-office",
+  "status": "meeting",
   "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-  "updated_at": "2026-08-13T18:11:07.937Z",
+  "updated_at": "2026-08-13T18:11:08.705Z",
   "history": [
+    {
+      "status": "meeting",
+      "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
+      "at": "2026-08-13T18:11:08.705Z"
+    },
     {
       "status": "in-office",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
@@ -22,11 +27,6 @@
       "status": "in-lab",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
       "at": "2026-08-13T17:49:34.351Z"
-    },
-    {
-      "status": "meeting",
-      "note": "in office meeting til 1",
-      "at": "2026-08-13T16:16:33.830Z"
     }
   ],
   "contact": null
