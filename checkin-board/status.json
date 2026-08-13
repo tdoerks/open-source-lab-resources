@@ -1,32 +1,32 @@
 {
-  "status": "in-office",
+  "status": "in-lab",
   "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-  "updated_at": "2026-08-13T18:13:18.070Z",
+  "updated_at": "2026-08-13T18:13:20.354Z",
   "history": [
+    {
+      "status": "in-lab",
+      "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
+      "at": "2026-08-13T18:13:20.354Z"
+    },
     {
       "status": "in-office",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:13:18.070Z"
+      "at": "2026-08-13T18:13:19.934Z"
     },
     {
       "status": "in-lab",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:13:01.891Z"
+      "at": "2026-08-13T18:13:19.611Z"
     },
     {
       "status": "offsite",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:13:01.226Z"
+      "at": "2026-08-13T18:13:19.199Z"
     },
     {
       "status": "in-lab",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:12:54.576Z"
-    },
-    {
-      "status": "lunch",
-      "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:12:52.599Z"
+      "at": "2026-08-13T18:13:18.674Z"
     }
   ],
   "contact": null
