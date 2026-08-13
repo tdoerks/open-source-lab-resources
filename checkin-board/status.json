@@ -1,8 +1,13 @@
 {
-  "status": "in-lab",
+  "status": "offsite",
   "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-  "updated_at": "2026-08-13T18:12:54.576Z",
+  "updated_at": "2026-08-13T18:13:01.226Z",
   "history": [
+    {
+      "status": "offsite",
+      "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
+      "at": "2026-08-13T18:13:01.226Z"
+    },
     {
       "status": "in-lab",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
@@ -22,11 +27,6 @@
       "status": "leave",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
       "at": "2026-08-13T18:12:51.882Z"
-    },
-    {
-      "status": "remote",
-      "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:12:51.460Z"
     }
   ],
   "contact": null
