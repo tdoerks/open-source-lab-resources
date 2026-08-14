@@ -1,6 +1,15 @@
 {
-  "updated_at": "2026-08-14T15:04:50.747Z",
+  "updated_at": "2026-08-14T15:04:51.286Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "in-office",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-14T15:04:51.286Z"
+    },
     {
       "statuses": [
         {
@@ -60,28 +69,11 @@
         }
       ],
       "at": "2026-08-14T15:04:07.202Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "in-office",
-          "note": ""
-        },
-        {
-          "id": "offsite",
-          "note": ""
-        }
-      ],
-      "at": "2026-08-14T15:04:03.261Z"
     }
   ],
   "statuses": [
     {
       "id": "in-office",
-      "note": ""
-    },
-    {
-      "id": "offsite",
       "note": ""
     }
   ]
