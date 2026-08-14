@@ -2,20 +2,20 @@
   "statuses": [
     {
       "id": "offsite",
-      "note": "1-5"
+      "note": "1-5 8-"
     },
     {
       "id": "leave",
       "note": "Monday 8-17"
     }
   ],
-  "updated_at": "2026-08-14T17:07:57.669Z",
+  "updated_at": "2026-08-14T17:08:08.365Z",
   "history": [
     {
       "statuses": [
         {
           "id": "offsite",
-          "note": "1-5"
+          "note": "1-5 8-"
         },
         {
           "id": "leave",
