@@ -1,12 +1,13 @@
 {
-  "statuses": [
-    {
-      "id": "leave",
-      "note": ""
-    }
-  ],
-  "updated_at": "2026-08-13T23:13:09.000Z",
+  "status": "in-office",
+  "note": "",
+  "updated_at": "2026-08-14T14:52:58.693Z",
   "history": [
+    {
+      "status": "in-office",
+      "note": "",
+      "at": "2026-08-14T14:52:58.693Z"
+    },
     {
       "statuses": [
         {
@@ -30,11 +31,12 @@
       "status": "in-office",
       "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
       "at": "2026-08-13T18:14:15.989Z"
-    },
+    }
+  ],
+  "statuses": [
     {
-      "status": "in-lab",
-      "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:13:20.354Z"
+      "id": "leave",
+      "note": ""
     }
   ]
 }
