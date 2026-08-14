@@ -3,10 +3,27 @@
     {
       "id": "offsite",
       "note": ""
+    },
+    {
+      "id": "in-lab",
+      "note": ""
     }
   ],
-  "updated_at": "2026-08-14T15:12:52.990Z",
+  "updated_at": "2026-08-14T15:12:54.905Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "offsite",
+          "note": ""
+        },
+        {
+          "id": "in-lab",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-14T15:12:54.905Z"
+    },
     {
       "statuses": [
         {
@@ -46,23 +63,6 @@
         }
       ],
       "at": "2026-08-14T15:12:21.000Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "in-office",
-          "note": ""
-        },
-        {
-          "id": "in-lab",
-          "note": "til1"
-        },
-        {
-          "id": "offsite",
-          "note": "1-5"
-        }
-      ],
-      "at": "2026-08-14T15:07:14.436Z"
     }
   ]
 }
