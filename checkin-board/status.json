@@ -1,6 +1,15 @@
 {
-  "updated_at": "2026-08-14T15:02:58.422Z",
+  "updated_at": "2026-08-14T15:02:59.025Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "leave",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-14T15:02:59.025Z"
+    },
     {
       "statuses": [
         {
@@ -48,20 +57,11 @@
       "status": "in-office",
       "note": "",
       "at": "2026-08-14T14:54:47.375Z"
-    },
-    {
-      "status": "in-lab",
-      "note": "",
-      "at": "2026-08-14T14:54:47.004Z"
     }
   ],
   "statuses": [
     {
       "id": "leave",
-      "note": ""
-    },
-    {
-      "id": "in-office",
       "note": ""
     }
   ]
