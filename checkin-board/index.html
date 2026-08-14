@@ -2634,19 +2634,22 @@ function defaultState(){ return { statuses:[], updated_at:null, history:[] }; }
 function normalizeState(raw){
   if(!raw) return defaultState();
   // backward compat: old format had status (string) + note (string)
-  if(raw.status !== undefined && !raw.statuses){
-    raw.statuses = raw.status ? [{id: raw.status, note: raw.note || ''}] : [];
-    delete raw.status; delete raw.note;
+  if(!Array.isArray(raw.statuses)){
+    raw.statuses = (raw.status && raw.status !== null) ? [{id: raw.status, note: raw.note || ''}] : [];
   }
-  if(!Array.isArray(raw.statuses)) raw.statuses = [];
   if(!Array.isArray(raw.history)) raw.history = [];
+  // strip old-format fields so they never get re-serialized
+  delete raw.status; delete raw.note; delete raw.contact;
   return raw;
 }
 function load(){
   try { return normalizeState(JSON.parse(localStorage.getItem(KEY)) ?? defaultState()); }
   catch { return defaultState(); }
 }
-function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function save(){
+  const clean = { statuses: state.statuses, updated_at: state.updated_at, history: state.history };
+  localStorage.setItem(KEY, JSON.stringify(clean));
+}
 let state = load();
 
 /* ── Computations (derived display values) ── */

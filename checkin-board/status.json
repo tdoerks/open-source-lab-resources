@@ -1,42 +1,5 @@
 {
-  "status": "in-office",
-  "note": "",
-  "updated_at": "2026-08-14T14:54:47.375Z",
-  "history": [
-    {
-      "status": "in-office",
-      "note": "",
-      "at": "2026-08-14T14:54:47.375Z"
-    },
-    {
-      "status": "in-lab",
-      "note": "",
-      "at": "2026-08-14T14:54:47.004Z"
-    },
-    {
-      "status": "in-office",
-      "note": "",
-      "at": "2026-08-14T14:52:58.693Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "leave",
-          "note": ""
-        }
-      ],
-      "at": "2026-08-13T23:13:09.000Z"
-    },
-    {
-      "status": "offsite",
-      "note": "to occ healt appt for BRI clearance til 5",
-      "at": "2026-08-13T18:55:35.379Z"
-    }
-  ],
-  "statuses": [
-    {
-      "id": "leave",
-      "note": ""
-    }
-  ]
+  "statuses": [],
+  "updated_at": null,
+  "history": []
 }
