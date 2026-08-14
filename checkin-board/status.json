@@ -1,5 +1,52 @@
 {
-  "statuses": [],
-  "updated_at": null,
-  "history": []
+  "updated_at": "2026-08-14T15:02:55.727Z",
+  "history": [
+    {
+      "statuses": [
+        {
+          "id": "leave",
+          "note": ""
+        },
+        {
+          "id": "in-office",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-14T15:02:55.727Z"
+    },
+    {
+      "status": "in-office",
+      "note": "",
+      "at": "2026-08-14T14:54:47.375Z"
+    },
+    {
+      "status": "in-lab",
+      "note": "",
+      "at": "2026-08-14T14:54:47.004Z"
+    },
+    {
+      "status": "in-office",
+      "note": "",
+      "at": "2026-08-14T14:52:58.693Z"
+    },
+    {
+      "statuses": [
+        {
+          "id": "leave",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-13T23:13:09.000Z"
+    }
+  ],
+  "statuses": [
+    {
+      "id": "leave",
+      "note": ""
+    },
+    {
+      "id": "in-office",
+      "note": ""
+    }
+  ]
 }
