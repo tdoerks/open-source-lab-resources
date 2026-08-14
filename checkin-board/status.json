@@ -1,16 +1,21 @@
 {
   "statuses": [
     {
-      "id": "in-lab",
-      "note": "till1"
-    },
-    {
       "id": "offsite",
       "note": "1-5"
     }
   ],
-  "updated_at": "2026-08-14T15:13:04.112Z",
+  "updated_at": "2026-08-14T17:01:53.867Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "offsite",
+          "note": "1-5"
+        }
+      ],
+      "at": "2026-08-14T17:01:53.867Z"
+    },
     {
       "statuses": [
         {
@@ -54,15 +59,6 @@
         }
       ],
       "at": "2026-08-14T15:12:54.905Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "offsite",
-          "note": ""
-        }
-      ],
-      "at": "2026-08-14T15:12:52.990Z"
     }
   ]
 }
