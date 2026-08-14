@@ -311,7 +311,7 @@
       <small id="pinMsg" style="min-height:1em;"></small>
     </div>
 
-    <small style="color:var(--muted); text-align:center;">build 2026-08-14c</small>
+    <small style="color:var(--muted); text-align:center;">build 2026-08-14d</small>
   </aside>
 
   <!-- PIN entry modal -->
@@ -2709,7 +2709,10 @@ function renderGrid(){
       const inp = btn.querySelector('.status-note-input');
       inp.addEventListener('input', () => setStatusNote(s.id, inp.value));
       inp.addEventListener('click', e => e.stopPropagation());
-      inp.addEventListener('keydown', e => e.stopPropagation());
+      inp.addEventListener('keydown', e => { e.stopPropagation(); if(e.key === ' ') e.stopImmediatePropagation(); });
+      inp.addEventListener('focus', () => btn.setAttribute('data-input-focused', '1'));
+      inp.addEventListener('blur',  () => btn.removeAttribute('data-input-focused'));
+      btn.addEventListener('keydown', e => { if(btn.hasAttribute('data-input-focused')) e.preventDefault(); });
     }
     g.appendChild(btn);
   }
