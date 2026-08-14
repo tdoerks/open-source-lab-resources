@@ -1,20 +1,21 @@
 {
   "statuses": [
     {
-      "id": "in-office",
+      "id": "leave",
       "note": ""
-    },
-    {
-      "id": "in-lab",
-      "note": "til1"
-    },
-    {
-      "id": "offsite",
-      "note": "1-5"
     }
   ],
-  "updated_at": "2026-08-14T15:07:21.614Z",
+  "updated_at": "2026-08-14T15:12:21.000Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "leave",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-14T15:12:21.000Z"
+    },
     {
       "statuses": [
         {
@@ -62,19 +63,6 @@
         }
       ],
       "at": "2026-08-14T15:05:59.558Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "in-office",
-          "note": ""
-        },
-        {
-          "id": "offsite",
-          "note": "1-5"
-        }
-      ],
-      "at": "2026-08-14T15:05:57.613Z"
     }
   ]
 }
