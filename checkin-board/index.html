@@ -2707,6 +2707,7 @@ function renderGrid(){
       const inp = btn.querySelector('.status-note-input');
       inp.addEventListener('input', () => setStatusNote(s.id, inp.value));
       inp.addEventListener('click', e => e.stopPropagation());
+      inp.addEventListener('keydown', e => e.stopPropagation());
     }
     g.appendChild(btn);
   }
