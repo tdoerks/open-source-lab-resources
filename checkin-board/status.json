@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-14T15:03:38.446Z",
+  "updated_at": "2026-08-14T15:03:45.166Z",
   "history": [
     {
       "statuses": [
@@ -8,8 +8,21 @@
           "note": ""
         },
         {
-          "id": "in-lab",
+          "id": "offsite",
           "note": ""
+        }
+      ],
+      "at": "2026-08-14T15:03:45.166Z"
+    },
+    {
+      "statuses": [
+        {
+          "id": "in-office",
+          "note": ""
+        },
+        {
+          "id": "in-lab",
+          "note": "till"
         },
         {
           "id": "offsite",
@@ -52,32 +65,11 @@
         }
       ],
       "at": "2026-08-14T15:03:36.556Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "in-office",
-          "note": ""
-        },
-        {
-          "id": "offsite",
-          "note": ""
-        },
-        {
-          "id": "in-lab",
-          "note": ""
-        }
-      ],
-      "at": "2026-08-14T15:03:32.382Z"
     }
   ],
   "statuses": [
     {
       "id": "in-office",
-      "note": ""
-    },
-    {
-      "id": "in-lab",
       "note": ""
     },
     {
