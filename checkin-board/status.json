@@ -2,16 +2,16 @@
   "statuses": [
     {
       "id": "offsite",
-      "note": ""
+      "note": "1-5"
     }
   ],
-  "updated_at": "2026-08-14T17:07:27.110Z",
+  "updated_at": "2026-08-14T17:07:29.773Z",
   "history": [
     {
       "statuses": [
         {
           "id": "offsite",
-          "note": ""
+          "note": "1-5"
         }
       ],
       "at": "2026-08-14T17:07:27.110Z"
