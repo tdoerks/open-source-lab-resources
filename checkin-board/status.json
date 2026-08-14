@@ -1,8 +1,18 @@
 {
   "status": "in-office",
   "note": "",
-  "updated_at": "2026-08-14T14:52:58.693Z",
+  "updated_at": "2026-08-14T14:54:47.375Z",
   "history": [
+    {
+      "status": "in-office",
+      "note": "",
+      "at": "2026-08-14T14:54:47.375Z"
+    },
+    {
+      "status": "in-lab",
+      "note": "",
+      "at": "2026-08-14T14:54:47.004Z"
+    },
     {
       "status": "in-office",
       "note": "",
@@ -21,16 +31,6 @@
       "status": "offsite",
       "note": "to occ healt appt for BRI clearance til 5",
       "at": "2026-08-13T18:55:35.379Z"
-    },
-    {
-      "status": "in-lab",
-      "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:14:16.872Z"
-    },
-    {
-      "status": "in-office",
-      "note": "k203 til 2:30 then off to occ health appt for BRI clearance",
-      "at": "2026-08-13T18:14:15.989Z"
     }
   ],
   "statuses": [
