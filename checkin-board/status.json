@@ -1,6 +1,15 @@
 {
-  "updated_at": "2026-08-14T15:02:59.025Z",
+  "updated_at": "2026-08-14T15:03:01.118Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "in-office",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-14T15:03:01.118Z"
+    },
     {
       "statuses": [
         {
@@ -52,16 +61,11 @@
         }
       ],
       "at": "2026-08-14T15:02:55.727Z"
-    },
-    {
-      "status": "in-office",
-      "note": "",
-      "at": "2026-08-14T14:54:47.375Z"
     }
   ],
   "statuses": [
     {
-      "id": "leave",
+      "id": "in-office",
       "note": ""
     }
   ]
