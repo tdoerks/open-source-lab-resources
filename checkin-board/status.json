@@ -6,10 +6,10 @@
     },
     {
       "id": "leave",
-      "note": "Monday 8-1"
+      "note": "Monday 8-17"
     }
   ],
-  "updated_at": "2026-08-14T17:07:54.621Z",
+  "updated_at": "2026-08-14T17:07:55.412Z",
   "history": [
     {
       "statuses": [
@@ -19,7 +19,7 @@
         },
         {
           "id": "leave",
-          "note": "Monday 8-1"
+          "note": "Monday 8-17"
         }
       ],
       "at": "2026-08-14T17:07:42.144Z"
