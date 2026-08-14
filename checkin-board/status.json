@@ -1,6 +1,23 @@
 {
-  "updated_at": "2026-08-14T15:02:55.727Z",
+  "updated_at": "2026-08-14T15:02:57.538Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "leave",
+          "note": ""
+        },
+        {
+          "id": "in-office",
+          "note": ""
+        },
+        {
+          "id": "meeting",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-14T15:02:57.538Z"
+    },
     {
       "statuses": [
         {
@@ -28,15 +45,6 @@
       "status": "in-office",
       "note": "",
       "at": "2026-08-14T14:52:58.693Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "leave",
-          "note": ""
-        }
-      ],
-      "at": "2026-08-13T23:13:09.000Z"
     }
   ],
   "statuses": [
@@ -46,6 +54,10 @@
     },
     {
       "id": "in-office",
+      "note": ""
+    },
+    {
+      "id": "meeting",
       "note": ""
     }
   ]
