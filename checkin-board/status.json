@@ -6,10 +6,10 @@
     },
     {
       "id": "leave",
-      "note": ""
+      "note": "Monday"
     }
   ],
-  "updated_at": "2026-08-14T17:07:42.144Z",
+  "updated_at": "2026-08-14T17:07:44.700Z",
   "history": [
     {
       "statuses": [
@@ -19,7 +19,7 @@
         },
         {
           "id": "leave",
-          "note": ""
+          "note": "Monday"
         }
       ],
       "at": "2026-08-14T17:07:42.144Z"
