@@ -311,7 +311,7 @@
       <small id="pinMsg" style="min-height:1em;"></small>
     </div>
 
-    <small style="color:var(--muted); text-align:center;">build 2026-08-14d</small>
+    <small style="color:var(--muted); text-align:center;">build 2026-08-14e</small>
   </aside>
 
   <!-- PIN entry modal -->
@@ -2695,26 +2695,31 @@ function renderGrid(){
   for(const s of STATUSES){
     const active = activeIds.has(s.id);
     const entry = active ? state.statuses.find(e => e.id === s.id) : null;
+
+    // wrap in a div so the note input is never inside a <button>
+    const wrap = document.createElement('div');
+    wrap.className = 'status-btn' + (active ? ' active' : '');
+    if(active) wrap.style.background = s.color;
+
     const btn = document.createElement('button');
-    btn.className = 'status-btn' + (active ? ' active' : '');
-    if(active) btn.style.background = s.color;
-    btn.innerHTML = '<div class="status-btn-row"><span class="b-icon">'+s.icon+'</span><span>'+s.label+'</span>' +
-                    (active ? '<span class="check" style="margin-left:auto">✓</span>' : '') + '</div>' +
-                    (active ? '<input class="status-note-input" type="text" maxlength="60" placeholder="add a note…" value="'+escapeHtml(entry.note||'')+'">' : '');
-    btn.addEventListener('click', (e) => {
-      if(e.target.classList.contains('status-note-input')) return;
-      toggleStatus(s.id);
-    });
+    btn.type = 'button';
+    btn.className = 'status-btn-row';
+    btn.style.cssText = 'all:unset; display:flex; align-items:center; gap:12px; width:100%; cursor:pointer;';
+    btn.innerHTML = '<span class="b-icon">'+s.icon+'</span><span>'+s.label+'</span>' +
+                    (active ? '<span class="check" style="margin-left:auto">✓</span>' : '');
+    btn.addEventListener('click', () => toggleStatus(s.id));
+    wrap.appendChild(btn);
+
     if(active){
-      const inp = btn.querySelector('.status-note-input');
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.maxLength = 60;
+      inp.className = 'status-note-input';
+      inp.placeholder = 'add a note…';
+      inp.value = entry.note || '';
       inp.addEventListener('input', () => setStatusNote(s.id, inp.value));
-      inp.addEventListener('click', e => e.stopPropagation());
-      inp.addEventListener('keydown', e => { e.stopPropagation(); if(e.key === ' ') e.stopImmediatePropagation(); });
-      inp.addEventListener('focus', () => btn.setAttribute('data-input-focused', '1'));
-      inp.addEventListener('blur',  () => btn.removeAttribute('data-input-focused'));
-      btn.addEventListener('keydown', e => { if(btn.hasAttribute('data-input-focused')) e.preventDefault(); });
+      wrap.appendChild(inp);
     }
-    g.appendChild(btn);
+    g.appendChild(wrap);
   }
 }
 function renderHistory(){
