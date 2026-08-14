@@ -6,14 +6,14 @@
     },
     {
       "id": "in-lab",
-      "note": ""
+      "note": "til1"
     },
     {
       "id": "offsite",
       "note": ""
     }
   ],
-  "updated_at": "2026-08-14T15:07:14.436Z",
+  "updated_at": "2026-08-14T15:07:17.485Z",
   "history": [
     {
       "statuses": [
@@ -23,7 +23,7 @@
         },
         {
           "id": "in-lab",
-          "note": ""
+          "note": "til1"
         },
         {
           "id": "offsite",
