@@ -1,16 +1,15 @@
 {
-  "statuses": [
-    {
-      "id": "offsite",
-      "note": "1-5 8-14"
-    },
-    {
-      "id": "leave",
-      "note": "Monday 8-17"
-    }
-  ],
-  "updated_at": "2026-08-14T17:08:09.003Z",
+  "updated_at": "2026-08-18T14:21:53.029Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "offsite",
+          "note": "1-5 8-14"
+        }
+      ],
+      "at": "2026-08-18T14:21:53.029Z"
+    },
     {
       "statuses": [
         {
@@ -54,15 +53,12 @@
         }
       ],
       "at": "2026-08-14T17:07:27.110Z"
-    },
+    }
+  ],
+  "statuses": [
     {
-      "statuses": [
-        {
-          "id": "offsite",
-          "note": "1-5"
-        }
-      ],
-      "at": "2026-08-14T17:02:09.890Z"
+      "id": "offsite",
+      "note": "1-5 8-14"
     }
   ]
 }
