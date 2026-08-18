@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-08-18T14:22:01.286Z",
+  "updated_at": "2026-08-18T14:22:03.858Z",
   "history": [
     {
       "statuses": [
         {
           "id": "offsite",
-          "note": "Cvm east"
+          "note": "Cvm east -"
         }
       ],
       "at": "2026-08-18T14:21:53.029Z"
@@ -58,7 +58,7 @@
   "statuses": [
     {
       "id": "offsite",
-      "note": "Cvm east"
+      "note": "Cvm east -"
     }
   ]
 }
