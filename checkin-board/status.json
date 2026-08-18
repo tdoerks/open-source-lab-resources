@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-08-18T14:21:53.029Z",
+  "updated_at": "2026-08-18T14:21:57.323Z",
   "history": [
     {
       "statuses": [
         {
           "id": "offsite",
-          "note": "1-5 8-14"
+          "note": ""
         }
       ],
       "at": "2026-08-18T14:21:53.029Z"
@@ -58,7 +58,7 @@
   "statuses": [
     {
       "id": "offsite",
-      "note": "1-5 8-14"
+      "note": ""
     }
   ]
 }
