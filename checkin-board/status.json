@@ -1,16 +1,21 @@
 {
   "statuses": [
     {
-      "id": "remote",
-      "note": ""
-    },
-    {
       "id": "lunch",
       "note": ""
     }
   ],
-  "updated_at": "2026-08-19T18:43:31.695Z",
+  "updated_at": "2026-08-19T18:43:33.138Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "lunch",
+          "note": ""
+        }
+      ],
+      "at": "2026-08-19T18:43:33.138Z"
+    },
     {
       "statuses": [
         {
@@ -54,19 +59,6 @@
         }
       ],
       "at": "2026-08-18T14:21:53.029Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "offsite",
-          "note": "1-5 8-14"
-        },
-        {
-          "id": "leave",
-          "note": "Monday 8-17"
-        }
-      ],
-      "at": "2026-08-14T17:07:42.144Z"
     }
   ]
 }
