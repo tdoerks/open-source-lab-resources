@@ -6,10 +6,10 @@
     },
     {
       "id": "offsite",
-      "note": "Cvm east 3"
+      "note": "Cvm east 3-5"
     }
   ],
-  "updated_at": "2026-08-26T17:50:15.065Z",
+  "updated_at": "2026-08-26T17:50:16.003Z",
   "history": [
     {
       "statuses": [
@@ -19,7 +19,7 @@
         },
         {
           "id": "offsite",
-          "note": "Cvm east 3"
+          "note": "Cvm east 3-5"
         }
       ],
       "at": "2026-08-26T17:49:58.732Z"
