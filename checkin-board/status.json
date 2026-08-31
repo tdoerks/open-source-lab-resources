@@ -1,16 +1,21 @@
 {
   "statuses": [
     {
-      "id": "in-lab",
-      "note": "Core"
-    },
-    {
       "id": "offsite",
       "note": "Cvm east 3-5"
     }
   ],
-  "updated_at": "2026-08-26T17:50:16.003Z",
+  "updated_at": "2026-08-31T16:35:47.739Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "offsite",
+          "note": "Cvm east 3-5"
+        }
+      ],
+      "at": "2026-08-31T16:35:47.739Z"
+    },
     {
       "statuses": [
         {
@@ -54,15 +59,6 @@
         }
       ],
       "at": "2026-08-26T15:43:10.799Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "in-lab",
-          "note": "K203"
-        }
-      ],
-      "at": "2026-08-25T18:27:44.132Z"
     }
   ]
 }
