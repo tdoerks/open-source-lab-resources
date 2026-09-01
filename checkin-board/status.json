@@ -1,11 +1,6 @@
 {
-  "statuses": [
-    {
-      "id": "in-lab",
-      "note": "Core"
-    }
-  ],
-  "updated_at": "2026-09-01T17:25:53.278Z",
+  "statuses": [],
+  "updated_at": "2026-09-01T18:37:13.917Z",
   "history": [
     {
       "statuses": [
