@@ -6,10 +6,10 @@
     },
     {
       "id": "meeting",
-      "note": ""
+      "note": "Staff council"
     }
   ],
-  "updated_at": "2026-09-01T18:37:17.719Z",
+  "updated_at": "2026-09-01T18:37:23.915Z",
   "history": [
     {
       "statuses": [
@@ -19,7 +19,7 @@
         },
         {
           "id": "meeting",
-          "note": ""
+          "note": "Staff council"
         }
       ],
       "at": "2026-09-01T18:37:17.719Z"
