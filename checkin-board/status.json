@@ -3,10 +3,27 @@
     {
       "id": "in-office",
       "note": ""
+    },
+    {
+      "id": "meeting",
+      "note": ""
     }
   ],
-  "updated_at": "2026-09-01T18:37:15.731Z",
+  "updated_at": "2026-09-01T18:37:17.719Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "in-office",
+          "note": ""
+        },
+        {
+          "id": "meeting",
+          "note": ""
+        }
+      ],
+      "at": "2026-09-01T18:37:17.719Z"
+    },
     {
       "statuses": [
         {
@@ -42,19 +59,6 @@
         }
       ],
       "at": "2026-08-31T16:35:47.739Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "in-lab",
-          "note": "Core"
-        },
-        {
-          "id": "offsite",
-          "note": "Cvm east 3-5"
-        }
-      ],
-      "at": "2026-08-26T17:49:58.732Z"
     }
   ]
 }
