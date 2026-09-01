@@ -1,7 +1,21 @@
 {
-  "statuses": [],
-  "updated_at": "2026-09-01T18:37:13.917Z",
+  "statuses": [
+    {
+      "id": "in-office",
+      "note": ""
+    }
+  ],
+  "updated_at": "2026-09-01T18:37:15.731Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "in-office",
+          "note": ""
+        }
+      ],
+      "at": "2026-09-01T18:37:15.731Z"
+    },
     {
       "statuses": [
         {
@@ -41,15 +55,6 @@
         }
       ],
       "at": "2026-08-26T17:49:58.732Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "in-lab",
-          "note": "Core"
-        }
-      ],
-      "at": "2026-08-26T17:49:50.019Z"
     }
   ]
 }
