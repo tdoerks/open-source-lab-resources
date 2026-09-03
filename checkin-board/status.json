@@ -3,14 +3,19 @@
     {
       "id": "in-office",
       "note": ""
-    },
-    {
-      "id": "meeting",
-      "note": "Staff council 3:30-5"
     }
   ],
-  "updated_at": "2026-09-01T18:37:30.103Z",
+  "updated_at": "2026-09-03T15:21:36.216Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "in-office",
+          "note": ""
+        }
+      ],
+      "at": "2026-09-03T15:21:36.216Z"
+    },
     {
       "statuses": [
         {
@@ -50,15 +55,6 @@
         }
       ],
       "at": "2026-08-31T16:35:54.035Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "offsite",
-          "note": "Cvm east 3-5"
-        }
-      ],
-      "at": "2026-08-31T16:35:47.739Z"
     }
   ]
 }
