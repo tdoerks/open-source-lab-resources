@@ -3,10 +3,27 @@
     {
       "id": "remote",
       "note": ""
+    },
+    {
+      "id": "meeting",
+      "note": ""
     }
   ],
-  "updated_at": "2026-09-03T15:21:39.442Z",
+  "updated_at": "2026-09-03T15:21:47.675Z",
   "history": [
+    {
+      "statuses": [
+        {
+          "id": "remote",
+          "note": ""
+        },
+        {
+          "id": "meeting",
+          "note": ""
+        }
+      ],
+      "at": "2026-09-03T15:21:47.675Z"
+    },
     {
       "statuses": [
         {
@@ -46,15 +63,6 @@
         }
       ],
       "at": "2026-09-01T18:37:15.731Z"
-    },
-    {
-      "statuses": [
-        {
-          "id": "in-lab",
-          "note": "Core"
-        }
-      ],
-      "at": "2026-09-01T16:16:39.450Z"
     }
   ]
 }
