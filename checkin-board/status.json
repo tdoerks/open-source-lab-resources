@@ -2,16 +2,16 @@
   "statuses": [
     {
       "id": "leave",
-      "note": ""
+      "note": "Sick"
     }
   ],
-  "updated_at": "2026-09-04T18:13:47.037Z",
+  "updated_at": "2026-09-04T18:13:51.427Z",
   "history": [
     {
       "statuses": [
         {
           "id": "leave",
-          "note": ""
+          "note": "Sick"
         }
       ],
       "at": "2026-09-04T18:13:47.037Z"
