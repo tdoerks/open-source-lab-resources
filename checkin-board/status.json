@@ -2,16 +2,16 @@
   "statuses": [
     {
       "id": "in-lab",
-      "note": "K"
+      "note": "K203"
     }
   ],
-  "updated_at": "2026-09-17T15:51:37.212Z",
+  "updated_at": "2026-09-17T15:51:38.903Z",
   "history": [
     {
       "statuses": [
         {
           "id": "in-lab",
-          "note": "K"
+          "note": "K203"
         }
       ],
       "at": "2026-09-17T15:51:32.989Z"
