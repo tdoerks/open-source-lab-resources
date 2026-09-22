@@ -182,7 +182,7 @@
       <h1>Plate Label Printer</h1>
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
-    <span class="build">build 2026-09-22c</span>
+    <span class="build">build 2026-09-22d</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3779,7 +3779,7 @@ var qrcode = function() {
       var mS = 0.03;                                      // tighter margin for near-square labels
       var fullW = W - 2 * mS;
       var availS = H - 2 * mS;
-      var idPt2  = fitPt(fullW, NID, 20);
+      var idPt2  = fitPt(W, 14, 20);                          // size for full width + 14-char IDs
       var barH2  = textOn ? Math.min(idPt2 / 72 * 1.7, H * 0.34) : 0;
       var datePt2 = dateOn ? fitPt(fullW, 20, 10) : 0;
       var dateH2  = dateOn ? datePt2 / 72 * 1.6 : 0;
@@ -3794,8 +3794,8 @@ var qrcode = function() {
       var stackH2 = (qrOn ? qSideS + gapQR : 0) + belowH;
       var y = Math.max(mS, mS + (availS - stackH2) / 2);
       if (qrOn)   { objs.push(mkQR((W - qSideS) / 2, y, qSideS)); y += qSideS + gapQR; }
-      if (textOn) { objs.push(mkText(mS, y, fullW, barH2, idPt2)); y += barH2 + gapTD2; }
-      if (dateOn) { objs.push(mkDate(mS, y, fullW, dateH2, datePt2)); }
+      if (textOn) { objs.push(mkText(0, y, W, barH2, idPt2)); y += barH2 + gapTD2; }
+      if (dateOn) { objs.push(mkDate(0, y, W, dateH2, datePt2)); }
     }
     return objs;
   }
