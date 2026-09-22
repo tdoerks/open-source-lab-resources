@@ -182,7 +182,7 @@
       <h1>Plate Label Printer</h1>
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
-    <span class="build">build 2026-07-09b</span>
+    <span class="build">build 2026-09-22c</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3776,24 +3776,26 @@ var qrcode = function() {
       if (dateOn) { objs.push(mkDate(colX, topY, colW, dateH, datePt)); }
       if (qrOn)   objs.push(mkQR(W - m - qSide, (H - qSide) / 2, qSide));
     } else {
-      var fullW = W - 2 * m;
+      var mS = 0.03;                                      // tighter margin for near-square labels
+      var fullW = W - 2 * mS;
+      var availS = H - 2 * mS;
       var idPt2  = fitPt(fullW, NID, 20);
       var barH2  = textOn ? Math.min(idPt2 / 72 * 1.7, H * 0.34) : 0;
       var datePt2 = dateOn ? fitPt(fullW, 20, 10) : 0;
       var dateH2  = dateOn ? datePt2 / 72 * 1.6 : 0;
-      var gapTD2  = (textOn && dateOn) ? m * 0.6 : 0;
+      var gapTD2  = (textOn && dateOn) ? mS * 0.4 : 0;
       var belowH  = barH2 + gapTD2 + dateH2;             // content under the QR
-      var gapQR   = (qrOn && (textOn || dateOn)) ? m : 0;
+      var gapQR   = (qrOn && (textOn || dateOn)) ? mS : 0;
       var qSideS  = 0;
       if (qrOn) {
-        var wantQR = Math.min(fullW, avail * 0.9);
-        qSideS = Math.max(0.2, Math.min(wantQR, avail - belowH - gapQR));
+        var wantQR = Math.min(fullW, availS * 0.9);
+        qSideS = Math.max(0.2, Math.min(wantQR, availS - belowH - gapQR));
       }
       var stackH2 = (qrOn ? qSideS + gapQR : 0) + belowH;
-      var y = Math.max(m, m + (avail - stackH2) / 2);
+      var y = Math.max(mS, mS + (availS - stackH2) / 2);
       if (qrOn)   { objs.push(mkQR((W - qSideS) / 2, y, qSideS)); y += qSideS + gapQR; }
-      if (textOn) { objs.push(mkText(m, y, fullW, barH2, idPt2)); y += barH2 + gapTD2; }
-      if (dateOn) { objs.push(mkDate(m, y, fullW, dateH2, datePt2)); }
+      if (textOn) { objs.push(mkText(mS, y, fullW, barH2, idPt2)); y += barH2 + gapTD2; }
+      if (dateOn) { objs.push(mkDate(mS, y, fullW, dateH2, datePt2)); }
     }
     return objs;
   }
