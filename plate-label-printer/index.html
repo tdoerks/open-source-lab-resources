@@ -3756,7 +3756,7 @@ var qrcode = function() {
   // text (so it never becomes a big empty black box). Any element can be omitted.
   var NID = 13;   // nominal ID length used to size the ID font
   function buildLayout(W, H, opts) {
-    var m = 0.03, objs = [];   // tightened from 0.05in — more room for QR/text on small labels
+    var m = 0.05, objs = [];
     var wide = W > H * 1.9;
     var qrOn = opts.qr, textOn = opts.text, dateOn = opts.date;
     var avail = H - 2 * m;   // usable height
@@ -3781,7 +3781,7 @@ var qrcode = function() {
       var barH2  = textOn ? Math.min(idPt2 / 72 * 1.7, H * 0.34) : 0;
       var datePt2 = dateOn ? fitPt(fullW, 20, 10) : 0;
       var dateH2  = dateOn ? datePt2 / 72 * 1.6 : 0;
-      var gapTD2  = (textOn && dateOn) ? m * 0.4 : 0;
+      var gapTD2  = (textOn && dateOn) ? m * 0.6 : 0;
       var belowH  = barH2 + gapTD2 + dateH2;             // content under the QR
       var gapQR   = (qrOn && (textOn || dateOn)) ? m : 0;
       var qSideS  = 0;
