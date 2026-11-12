@@ -3823,22 +3823,22 @@ var qrcode = function() {
 
     // ── 1×1 cryo layout: rotated ID bar left | QR center | NARMS logo right ──
     if (W <= 1.05 && H <= 1.05 && !wide) {
-      var mC = 0.08, mCI = 0.03;  // outer edge, inner gap
-      var leftEdge = mC;
+      var mCH = 0.08, mCV = 0.13, mCI = 0.03;  // horiz, vert, inner gap
+      var leftEdge = mCH;
       if (textOn) {
         var barW = 0.14;
         // font sized to fill the bar height (barW) when rotated — cap at ~9pt
         var barPt = Math.min(barW * 72 * 0.85, 9);
-        var txt = mkText(mC, mC, barW, H - 2 * mC, barPt);
+        var txt = mkText(mCH, mCV, barW, H - 2 * mCV, barPt);
         txt.rotation = 270;
         objs.push(txt);
-        leftEdge = mC + barW + mCI;
+        leftEdge = mCH + barW + mCI;
       }
-      var rightEdge = W - mC;
+      var rightEdge = W - mCH;
       if (logoOn) {
         var logoW = 0.14;
-        objs.push(mkLogo(W - mC - logoW, mC, logoW, H - 2 * mC, 270));
-        rightEdge = W - mC - logoW - mCI;
+        objs.push(mkLogo(W - mCH - logoW, mCV, logoW, H - 2 * mCV, 270));
+        rightEdge = W - mCH - logoW - mCI;
       }
       if (qrOn) {
         var avQ = rightEdge - leftEdge;
@@ -3847,7 +3847,7 @@ var qrcode = function() {
       }
       if (dateOn) {
         var dH = 0.09;
-        objs.push(mkDate(leftEdge, H - mC - dH, rightEdge - leftEdge, dH, 5));
+        objs.push(mkDate(leftEdge, H - mCV - dH, rightEdge - leftEdge, dH, 5));
       }
       return objs;
     }
@@ -3984,7 +3984,7 @@ var qrcode = function() {
     for (var i = 0; i < rbtns.length; i++) {
       rbtns[i].classList.toggle('active', parseInt(rbtns[i].getAttribute('data-rot'), 10) === state.printRotation);
     }
-    var sizeDefaults = { sq1: { x: -3, y: 3 } };
+    var sizeDefaults = { sq1: { x: -3, y: 0 } };
     var saved = sizeDefaults[currentSize.key] || { x: 0, y: 0 };
     try { saved = JSON.parse(localStorage.getItem(nudgeKey())) || saved; } catch (e) {}
     state.nudgeXmm = saved.x || 0; state.nudgeYmm = saved.y || 0;
