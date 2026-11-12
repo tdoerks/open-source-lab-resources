@@ -3835,21 +3835,21 @@ var qrcode = function() {
 
     // ── 1×1.5 layout: QR + NARMS logo side-by-side top, ID + date below ──────
     if (W >= 1.4 && W <= 1.6 && H >= 0.9 && H <= 1.1) {
-      var mS2 = 0.18, gap2 = 0.03;
-      var usW = W - 2 * mS2;
+      var mH2 = 0.18, mV2 = 0.05, gap2 = 0.03;
+      var usW = W - 2 * mH2;
       var topH = H * 0.48;
       var qS2 = qrOn ? Math.min(topH, usW * 0.44) : 0;
       var logoW2 = logoOn ? (usW - qS2 - (qrOn ? gap2 : 0)) : 0;
-      var qX2 = mS2, logoX2 = mS2 + qS2 + (qrOn && logoOn ? gap2 : 0);
-      if (qrOn)   objs.push(mkQR(qX2, mS2 + (topH - qS2) / 2, qS2));
-      if (logoOn) objs.push(mkLogo(logoX2, mS2, logoW2, topH, 0));
-      var belowY = mS2 + topH + mS2;
-      var belowH2 = H - belowY - mS2;
+      var qX2 = mH2, logoX2 = mH2 + qS2 + (qrOn && logoOn ? gap2 : 0);
+      if (qrOn)   objs.push(mkQR(qX2, mV2 + (topH - qS2) / 2, qS2));
+      if (logoOn) objs.push(mkLogo(logoX2, mV2, logoW2, topH, 0));
+      var belowY = mV2 + topH + mV2;
+      var belowH2 = H - belowY - mV2;
       var idPt3 = fitPt(usW, 14, 20);
       var dateH3 = dateOn ? fitPt(usW, 20, 10) / 72 * 1.6 : 0;
-      var barH3 = textOn ? Math.min(idPt3 / 72 * 1.7, belowH2 - dateH3 - (textOn && dateOn ? mS2 * 0.4 : 0)) : 0;
-      if (textOn) { objs.push(mkText(mS2, belowY, usW, barH3, idPt3)); belowY += barH3 + mS2 * 0.4; }
-      if (dateOn) { objs.push(mkDate(mS2, belowY, usW, dateH3, 8)); }
+      var barH3 = textOn ? Math.min(idPt3 / 72 * 1.7, belowH2 - dateH3 - (textOn && dateOn ? mV2 * 0.4 : 0)) : 0;
+      if (textOn) { objs.push(mkText(mH2, belowY, usW, barH3, idPt3)); belowY += barH3 + mV2 * 0.4; }
+      if (dateOn) { objs.push(mkDate(mH2, belowY, usW, dateH3, 8)); }
       return objs;
     }
 
