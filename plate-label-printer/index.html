@@ -3979,7 +3979,8 @@ var qrcode = function() {
   function loadSizeCalibration() {
     var savedRot = NaN;
     try { savedRot = parseInt(localStorage.getItem(rotKey()), 10); } catch (e) {}
-    state.printRotation = isNaN(savedRot) ? 90 : savedRot;
+    var rotDefaults = { sq1: 0 };
+    state.printRotation = isNaN(savedRot) ? (rotDefaults[currentSize.key] !== undefined ? rotDefaults[currentSize.key] : 90) : savedRot;
     var rbtns = document.querySelectorAll('.rotate-opt');
     for (var i = 0; i < rbtns.length; i++) {
       rbtns[i].classList.toggle('active', parseInt(rbtns[i].getAttribute('data-rot'), 10) === state.printRotation);
