@@ -182,7 +182,7 @@
       <h1>Plate Label Printer</h1>
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
-    <span class="build">build 2026-11-12 (e29b97b)</span>
+    <span class="build">build 2026-11-12 (next)</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3818,7 +3818,7 @@ var qrcode = function() {
       var rightEdge = W - mC;
       if (logoOn) {
         var logoW = 0.22;
-        objs.push(mkLogo(W - mC - logoW, mC, logoW, H - 2 * mC, 90));
+        objs.push(mkLogo(W - mC - logoW, mC, logoW, H - 2 * mC, 270));
         rightEdge = W - mC - logoW - mC;
       }
       if (qrOn) {
@@ -3833,8 +3833,28 @@ var qrcode = function() {
       return objs;
     }
 
+    // ── 1×1.5 layout: QR + NARMS logo side-by-side top, ID + date below ──────
+    if (W >= 1.4 && W <= 1.6 && H >= 0.9 && H <= 1.1) {
+      var mS2 = 0.03, gap2 = 0.03;
+      var usW = W - 2 * mS2;
+      var topH = H * 0.48;
+      var qS2 = qrOn ? Math.min(topH, usW * 0.44) : 0;
+      var logoW2 = logoOn ? (usW - qS2 - (qrOn ? gap2 : 0)) : 0;
+      var qX2 = mS2, logoX2 = mS2 + qS2 + (qrOn && logoOn ? gap2 : 0);
+      if (qrOn)   objs.push(mkQR(qX2, mS2 + (topH - qS2) / 2, qS2));
+      if (logoOn) objs.push(mkLogo(logoX2, mS2, logoW2, topH, 0));
+      var belowY = mS2 + topH + mS2;
+      var belowH2 = H - belowY - mS2;
+      var idPt3 = fitPt(usW, 14, 20);
+      var dateH3 = dateOn ? fitPt(usW, 20, 10) / 72 * 1.6 : 0;
+      var barH3 = textOn ? Math.min(idPt3 / 72 * 1.7, belowH2 - dateH3 - (textOn && dateOn ? mS2 * 0.4 : 0)) : 0;
+      if (textOn) { objs.push(mkText(mS2, belowY, usW, barH3, idPt3)); belowY += barH3 + mS2 * 0.4; }
+      if (dateOn) { objs.push(mkDate(mS2, belowY, usW, dateH3, 8)); }
+      return objs;
+    }
+
     var avail = H - 2 * m;   // usable height
-    // Logo strip on far right for all non-cryo sizes (0 width when off)
+    // Logo strip on far right for all other non-cryo sizes
     var logoW = logoOn ? Math.min(0.22, H * 0.22) : 0;
     var logoX = W - m - logoW;
     if (logoOn) objs.push(mkLogo(logoX, m, logoW, avail, 90));
