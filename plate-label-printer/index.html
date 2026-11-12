@@ -197,6 +197,7 @@
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showText" checked> ID / text bar</label>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showQR" checked> QR code</label>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showDate" checked> Date/time stamp</label>
+      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showLogo"> NARMS logo</label>
     </div>
   </div>
 
@@ -266,6 +267,20 @@
         <div class="row"><span class="lbl">Preview</span><strong id="manPreview">&mdash;</strong>
           <label style="margin-left:10px;">Qty <input type="number" id="manQty" value="1" min="1" style="width:62px;"></label>
           <button id="manAddBtn" class="btn btn-primary btn-sm">Add</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="manual" style="margin-top:8px;">
+      <summary>Or paste a list of IDs</summary>
+      <div class="manual-inner">
+        <p class="muted" style="margin:0 0 8px;">Paste one ID per line (e.g. from Excel). Each line becomes one label entry.</p>
+        <textarea id="pasteListInput" rows="5" placeholder="26KS10CB01-E&#10;26KS10CB02-E&#10;26KS10CB03-E" style="width:100%;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);resize:vertical;box-sizing:border-box;" spellcheck="false"></textarea>
+        <div class="row" style="margin-top:6px;">
+          <label>Qty each <input type="number" id="pasteListQty" value="1" min="1" style="width:62px;"></label>
+          <button id="pasteListAddBtn" class="btn btn-primary btn-sm">Add all to batch</button>
+          <button class="btn btn-sm" onclick="document.getElementById('pasteListInput').value=''">Clear</button>
+          <span id="pasteListMsg" class="muted"></span>
         </div>
       </div>
     </details>
@@ -2997,7 +3012,14 @@ var qrcode = function() {
       var w = Math.round(obj.bounds.w * 96 * SCALE);
       var h = Math.round(obj.bounds.h * 96 * SCALE);
 
-      if (obj.type === 'text' || obj.type === 'datetime') {
+      if (obj.type === 'image') {
+        if (NARMS_IMG.complete && NARMS_IMG.naturalWidth) {
+          var iw = NARMS_IMG.naturalWidth, ih = NARMS_IMG.naturalHeight;
+          var sc = Math.min(w / iw, h / ih);
+          var dw = iw * sc, dh = ih * sc;
+          ctx.drawImage(NARMS_IMG, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+        }
+      } else if (obj.type === 'text' || obj.type === 'datetime') {
         var val;
         if (obj.type === 'datetime') {
           val = formatDateTime(obj.includeTime, obj.use24Hour);
@@ -3726,7 +3748,12 @@ var qrcode = function() {
     { key: 'sq1',    label: '1 × 1 in',       w: 1.0,   h: 1.0,  paper: '30332 1 in x 1 in' }
   ];
   var currentSize = SIZES[0];
-  var elemOpts = { text: true, qr: true, date: true };
+  var elemOpts = { text: true, qr: true, date: true, logo: false };
+
+  // NARMS logo (embedded, used when elemOpts.logo is true)
+  var NARMS_IMG = new Image();
+  NARMS_IMG.src = 'data:image/jpeg;base64,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';
+  NARMS_IMG.onload = function () { if (elemOpts.logo) updatePreview(); };
 
   function mkText(x, y, w, h, pt) {
     return { type: 'text', name: 'TEXT', isVariable: true, defaultText: '',
@@ -3748,6 +3775,9 @@ var qrcode = function() {
       rotation: 0, font: { family: 'Arial', sizePt: 8, bold: false, italic: false },
       align: 'center', valign: 'middle' };
   }
+  function mkLogo(x, y, w, h) {
+    return { type: 'image', name: 'LOGO', bounds: { x: x, y: y, w: w, h: h } };
+  }
   // Point size for an nChars string to fill widthIn (Arial bold ~0.60em advance).
   function fitPt(widthIn, nChars, cap) {
     return Math.max(5, Math.min((widthIn * 72) / (nChars * 0.60), cap || 22));
@@ -3761,9 +3791,38 @@ var qrcode = function() {
   function buildLayout(W, H, opts) {
     var m = 0.05, objs = [];
     var wide = W > H * 1.9;
-    var qrOn = opts.qr, textOn = opts.text, dateOn = opts.date;
-    var avail = H - 2 * m;   // usable height
+    var qrOn = opts.qr, textOn = opts.text, dateOn = opts.date, logoOn = opts.logo;
 
+    // ── 1×1 cryo layout: rotated ID bar left | QR center | NARMS logo right ──
+    if (W <= 1.05 && H <= 1.05 && !wide) {
+      var mC = 0.03;
+      var leftEdge = mC;
+      if (textOn) {
+        var barW = 0.145;
+        var txt = mkText(mC, mC, barW, H - 2 * mC, 7);
+        txt.rotation = 270;
+        objs.push(txt);
+        leftEdge = mC + barW + mC;
+      }
+      var rightEdge = W - mC;
+      if (logoOn) {
+        var logoW = 0.19;
+        objs.push(mkLogo(W - mC - logoW, mC * 2, logoW, H - mC * 4));
+        rightEdge = W - mC - logoW - mC;
+      }
+      if (qrOn) {
+        var avQ = rightEdge - leftEdge;
+        var qS = Math.min(avQ - 0.04, H - 2 * mC);
+        objs.push(mkQR(leftEdge + (avQ - qS) / 2, (H - qS) / 2, qS));
+      }
+      if (dateOn) {
+        var dH = 0.08;
+        objs.push(mkDate(leftEdge, H - mC - dH, rightEdge - leftEdge, dH, 5));
+      }
+      return objs;
+    }
+
+    var avail = H - 2 * m;   // usable height
     if (wide) {
       var qSide = qrOn ? Math.min(avail, W * 0.42) : 0;
       var colX = m, colW = W - (qrOn ? qSide + m : 0) - 2 * m;
@@ -3912,13 +3971,27 @@ var qrcode = function() {
     fq.addEventListener('input', function () { pq.value = fq.value; });
 
     // element toggles
-    ['showText', 'showQR', 'showDate'].forEach(function (id) {
+    ['showText', 'showQR', 'showDate', 'showLogo'].forEach(function (id) {
       document.getElementById(id).addEventListener('change', function () {
         elemOpts.text = document.getElementById('showText').checked;
         elemOpts.qr   = document.getElementById('showQR').checked;
         elemOpts.date = document.getElementById('showDate').checked;
+        elemOpts.logo = document.getElementById('showLogo').checked;
         applyLabel();
       });
+    });
+
+    // paste-list handler
+    document.getElementById('pasteListAddBtn').addEventListener('click', function () {
+      var raw = document.getElementById('pasteListInput').value;
+      var qty = Math.max(1, parseInt(document.getElementById('pasteListQty').value, 10) || 1);
+      var lines = raw.split(/[\n\r,\t]+/).map(function (s) { return s.trim().toUpperCase(); })
+                     .filter(function (s) { return s.length > 0; });
+      if (!lines.length) { document.getElementById('pasteListMsg').textContent = 'Nothing to add.'; return; }
+      lines.forEach(function (id) { addBatchRow(id, qty); });
+      document.getElementById('pasteListInput').value = '';
+      document.getElementById('pasteListMsg').textContent = 'Added ' + lines.length + ' ID' + (lines.length !== 1 ? 's' : '') + '.';
+      renderBatch();
     });
 
     // rotation button clicks (once)
