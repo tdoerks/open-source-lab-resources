@@ -3842,7 +3842,7 @@ var qrcode = function() {
       }
       if (qrOn) {
         var avQ = rightEdge - leftEdge;
-        var qS = Math.min(avQ, H - 2 * mC);
+        var qS = Math.min(avQ, H - 2 * mCV);
         objs.push(mkQR(leftEdge + (avQ - qS) / 2, (H - qS) / 2, qS));
       }
       if (dateOn) {
