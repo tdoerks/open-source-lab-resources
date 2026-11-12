@@ -3015,9 +3015,18 @@ var qrcode = function() {
       if (obj.type === 'image') {
         if (NARMS_IMG.complete && NARMS_IMG.naturalWidth) {
           var iw = NARMS_IMG.naturalWidth, ih = NARMS_IMG.naturalHeight;
-          var sc = Math.min(w / iw, h / ih);
+          var imgRot = obj.rotation || 0;
+          var rot90img = imgRot === 90 || imgRot === 270;
+          // swap available dims when rotated so contain-fit uses the right axis
+          var fitW = rot90img ? h : w;
+          var fitH = rot90img ? w : h;
+          var sc = Math.min(fitW / iw, fitH / ih);
           var dw = iw * sc, dh = ih * sc;
-          ctx.drawImage(NARMS_IMG, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+          ctx.save();
+          ctx.translate(x + w / 2, y + h / 2);
+          ctx.rotate(imgRot * Math.PI / 180);
+          ctx.drawImage(NARMS_IMG, -dw / 2, -dh / 2, dw, dh);
+          ctx.restore();
         }
       } else if (obj.type === 'text' || obj.type === 'datetime') {
         var val;
@@ -3775,8 +3784,8 @@ var qrcode = function() {
       rotation: 0, font: { family: 'Arial', sizePt: 8, bold: false, italic: false },
       align: 'center', valign: 'middle' };
   }
-  function mkLogo(x, y, w, h) {
-    return { type: 'image', name: 'LOGO', bounds: { x: x, y: y, w: w, h: h } };
+  function mkLogo(x, y, w, h, rotation) {
+    return { type: 'image', name: 'LOGO', bounds: { x: x, y: y, w: w, h: h }, rotation: rotation || 0 };
   }
   // Point size for an nChars string to fill widthIn (Arial bold ~0.60em advance).
   function fitPt(widthIn, nChars, cap) {
@@ -3809,7 +3818,7 @@ var qrcode = function() {
       var rightEdge = W - mC;
       if (logoOn) {
         var logoW = 0.22;
-        objs.push(mkLogo(W - mC - logoW, mC, logoW, H - 2 * mC));
+        objs.push(mkLogo(W - mC - logoW, mC, logoW, H - 2 * mC, 90));
         rightEdge = W - mC - logoW - mC;
       }
       if (qrOn) {
