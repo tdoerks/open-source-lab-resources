@@ -3836,9 +3836,9 @@ var qrcode = function() {
       }
       var rightEdge = W - mC;
       if (logoOn) {
-        var logoW = 0.22;
-        objs.push(mkLogo(W - mC - logoW, mC, logoW, H - 2 * mC, 270));
-        rightEdge = W - mC - logoW - mCI;
+        var logoW = 0.14, logoOff = 0.16;
+        objs.push(mkLogo(W - mC - logoOff - logoW, mC + logoOff, logoW, H - 2 * mC - logoOff, 270));
+        rightEdge = W - mC - logoOff - logoW - mCI;
       }
       if (qrOn) {
         var avQ = rightEdge - leftEdge;
