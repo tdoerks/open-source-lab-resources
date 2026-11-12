@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-12 (3378721)</span>
+    <span class="build">build 2026-11-12 (9c39c5f)</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3863,22 +3863,19 @@ var qrcode = function() {
         objs.push(mkLogo(W - mCH - logoW, mCV, logoW, H - 2 * mCV, 270));
         rightEdge = W - mCH - logoW - mCI;
       }
+      var dtBarH = dateOn ? 0.09 : 0;
       if (dateOn) {
-        var dtStripW = 0.09;
-        var dtPt = Math.round(dtStripW * 72 * 0.75);
-        var dateStrip = mkDateOnly(leftEdge, mCV, dtStripW, H - 2 * mCV, dtPt);
-        dateStrip.rotation = 270;
-        objs.push(dateStrip);
-        leftEdge += dtStripW;
-        var timeStrip = mkTimeOnly(rightEdge - dtStripW, mCV, dtStripW, H - 2 * mCV, dtPt);
-        timeStrip.rotation = 270;
-        objs.push(timeStrip);
-        rightEdge -= dtStripW;
+        var cW = rightEdge - leftEdge;
+        objs.push(mkDateOnly(leftEdge, mCV, cW, dtBarH, 5));
+        objs.push(mkTimeOnly(leftEdge, H - mCV - dtBarH, cW, dtBarH, 5));
       }
       if (qrOn) {
-        var avQ = rightEdge - leftEdge;
-        var qS = Math.min(avQ, H - 2 * mCV);
-        objs.push(mkQR(leftEdge + (avQ - qS) / 2, (H - qS) / 2, qS));
+        var qTopY = mCV + dtBarH;
+        var qBotY = H - mCV - dtBarH;
+        var avH = qBotY - qTopY;
+        var avW = rightEdge - leftEdge;
+        var qS = Math.min(avW, avH);
+        objs.push(mkQR(leftEdge + (avW - qS) / 2, qTopY + (avH - qS) / 2, qS));
       }
       return objs;
     }
