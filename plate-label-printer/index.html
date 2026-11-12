@@ -196,8 +196,8 @@
       <span style="font-size:0.9em;color:var(--muted);">Show on label:</span>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showText" checked> ID / text bar</label>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showQR" checked> QR code</label>
-      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showDate" checked> Date/time stamp</label>
-      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showLogo"> NARMS logo</label>
+      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showDate"> Date/time stamp</label>
+      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showLogo" checked> NARMS logo</label>
     </div>
   </div>
 
@@ -3748,7 +3748,7 @@ var qrcode = function() {
     { key: 'sq1',    label: '1 × 1 in',       w: 1.0,   h: 1.0,  paper: '30332 1 in x 1 in' }
   ];
   var currentSize = SIZES[0];
-  var elemOpts = { text: true, qr: true, date: true, logo: false };
+  var elemOpts = { text: true, qr: true, date: false, logo: true };
 
   // NARMS logo (embedded, used when elemOpts.logo is true)
   var NARMS_IMG = new Image();
@@ -3795,28 +3795,30 @@ var qrcode = function() {
 
     // ── 1×1 cryo layout: rotated ID bar left | QR center | NARMS logo right ──
     if (W <= 1.05 && H <= 1.05 && !wide) {
-      var mC = 0.03;
+      var mC = 0.025;
       var leftEdge = mC;
       if (textOn) {
-        var barW = 0.145;
-        var txt = mkText(mC, mC, barW, H - 2 * mC, 7);
+        var barW = 0.14;
+        // font sized to fill the bar height (barW) when rotated — cap at ~9pt
+        var barPt = Math.min(barW * 72 * 0.85, 9);
+        var txt = mkText(mC, mC, barW, H - 2 * mC, barPt);
         txt.rotation = 270;
         objs.push(txt);
         leftEdge = mC + barW + mC;
       }
       var rightEdge = W - mC;
       if (logoOn) {
-        var logoW = 0.19;
-        objs.push(mkLogo(W - mC - logoW, mC * 2, logoW, H - mC * 4));
+        var logoW = 0.22;
+        objs.push(mkLogo(W - mC - logoW, mC, logoW, H - 2 * mC));
         rightEdge = W - mC - logoW - mC;
       }
       if (qrOn) {
         var avQ = rightEdge - leftEdge;
-        var qS = Math.min(avQ - 0.04, H - 2 * mC);
+        var qS = Math.min(avQ, H - 2 * mC);
         objs.push(mkQR(leftEdge + (avQ - qS) / 2, (H - qS) / 2, qS));
       }
       if (dateOn) {
-        var dH = 0.08;
+        var dH = 0.09;
         objs.push(mkDate(leftEdge, H - mC - dH, rightEdge - leftEdge, dH, 5));
       }
       return objs;
