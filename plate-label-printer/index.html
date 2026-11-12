@@ -3984,7 +3984,8 @@ var qrcode = function() {
     for (var i = 0; i < rbtns.length; i++) {
       rbtns[i].classList.toggle('active', parseInt(rbtns[i].getAttribute('data-rot'), 10) === state.printRotation);
     }
-    var saved = { x: 0, y: 0 };
+    var sizeDefaults = { sq1: { x: -3, y: 3 } };
+    var saved = sizeDefaults[currentSize.key] || { x: 0, y: 0 };
     try { saved = JSON.parse(localStorage.getItem(nudgeKey())) || saved; } catch (e) {}
     state.nudgeXmm = saved.x || 0; state.nudgeYmm = saved.y || 0;
     var nx = document.getElementById('nudgeX'), ny = document.getElementById('nudgeY');
