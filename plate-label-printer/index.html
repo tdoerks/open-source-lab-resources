@@ -3834,9 +3834,14 @@ var qrcode = function() {
     }
 
     var avail = H - 2 * m;   // usable height
+    // Logo strip on far right for all non-cryo sizes (0 width when off)
+    var logoW = logoOn ? Math.min(0.22, H * 0.22) : 0;
+    var logoX = W - m - logoW;
+    if (logoOn) objs.push(mkLogo(logoX, m, logoW, avail, 90));
+
     if (wide) {
-      var qSide = qrOn ? Math.min(avail, W * 0.42) : 0;
-      var colX = m, colW = W - (qrOn ? qSide + m : 0) - 2 * m;
+      var qSide = qrOn ? Math.min(avail, (W - logoW) * 0.42) : 0;
+      var colX = m, colW = W - (qrOn ? qSide + m : 0) - 2 * m - logoW;
       if (colW < 0.2) colW = 0.2;
       var idPt  = fitPt(colW, NID, H * 72 * 0.6);
       var datePt = dateOn ? fitPt(colW, 20, 10) : 0;
@@ -3847,28 +3852,29 @@ var qrcode = function() {
       var topY = Math.max(m, m + (avail - stackH) / 2);
       if (textOn) { objs.push(mkText(colX, topY, colW, barH, idPt)); topY += barH + gapTD; }
       if (dateOn) { objs.push(mkDate(colX, topY, colW, dateH, datePt)); }
-      if (qrOn)   objs.push(mkQR(W - m - qSide, (H - qSide) / 2, qSide));
+      if (qrOn)   objs.push(mkQR(W - m - logoW - (logoOn ? m : 0) - qSide, (H - qSide) / 2, qSide));
     } else {
-      var mS = 0.03;                                      // tighter margin for near-square labels
-      var fullW = W - 2 * mS;
+      var mS = 0.03;
+      var usableW = W - 2 * mS - logoW - (logoOn ? mS : 0);
       var availS = H - 2 * mS;
-      var idPt2  = fitPt(W - 0.25, 14, 20);                   // size for 14-char IDs, ~3mm breathing room per side
+      var idPt2  = fitPt(usableW, 14, 20);
       var barH2  = textOn ? Math.min(idPt2 / 72 * 1.7, H * 0.34) : 0;
-      var datePt2 = dateOn ? fitPt(fullW, 20, 10) : 0;
+      var datePt2 = dateOn ? fitPt(usableW, 20, 10) : 0;
       var dateH2  = dateOn ? datePt2 / 72 * 1.6 : 0;
       var gapTD2  = (textOn && dateOn) ? mS * 0.4 : 0;
-      var belowH  = barH2 + gapTD2 + dateH2;             // content under the QR
+      var belowH  = barH2 + gapTD2 + dateH2;
       var gapQR   = (qrOn && (textOn || dateOn)) ? mS : 0;
       var qSideS  = 0;
       if (qrOn) {
-        var wantQR = Math.min(fullW, availS * 0.9);
+        var wantQR = Math.min(usableW, availS * 0.9);
         qSideS = Math.max(0.2, Math.min(wantQR, availS - belowH - gapQR));
       }
       var stackH2 = (qrOn ? qSideS + gapQR : 0) + belowH;
       var y = Math.max(mS, mS + (availS - stackH2) / 2);
-      if (qrOn)   { objs.push(mkQR((W - qSideS) / 2, y, qSideS)); y += qSideS + gapQR; }
-      if (textOn) { objs.push(mkText(0.02, y, W - 0.02, barH2, idPt2)); y += barH2 + gapTD2; }
-      if (dateOn) { objs.push(mkDate(0.02, y, W - 0.02, dateH2, datePt2)); }
+      var cx = mS + (usableW - qSideS) / 2;
+      if (qrOn)   { objs.push(mkQR(cx, y, qSideS)); y += qSideS + gapQR; }
+      if (textOn) { objs.push(mkText(mS, y, usableW, barH2, idPt2)); y += barH2 + gapTD2; }
+      if (dateOn) { objs.push(mkDate(mS, y, usableW, dateH2, datePt2)); }
     }
     return objs;
   }
