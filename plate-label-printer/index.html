@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-12 (f25e179)</span>
+    <span class="build">build 2026-11-12 (3378721)</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3007,6 +3007,14 @@ var qrcode = function() {
     h = h % 12 || 12;
     return date + ' ' + h + ':' + m + ' ' + ampm;
   }
+  function formatTimeOnly(use24Hour) {
+    var d = new Date();
+    var h = d.getHours(), m = String(d.getMinutes()).padStart(2, '0');
+    if (use24Hour) return String(h).padStart(2, '0') + ':' + m;
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return h + ':' + m + ampm;
+  }
 
   // ── Label rendering ────────────────────────────────────────────────────────
 
@@ -3050,7 +3058,8 @@ var qrcode = function() {
       } else if (obj.type === 'text' || obj.type === 'datetime') {
         var val;
         if (obj.type === 'datetime') {
-          val = formatDateTime(obj.includeTime, obj.use24Hour);
+          if (obj.timeOnly) val = formatTimeOnly(obj.use24Hour);
+          else val = formatDateTime(obj.includeTime, obj.use24Hour);
         } else {
           val = obj.isVariable ? (values[obj.name] || '') : obj.defaultText;
         }
@@ -3797,6 +3806,20 @@ var qrcode = function() {
       align: 'center', valign: 'middle',
       dateFormat: 'MonthDayLongYear', includeTime: true, use24Hour: false, rotation: 0 };
   }
+  function mkDateOnly(x, y, w, h, pt) {
+    return { type: 'datetime', name: 'DATE', isVariable: false, defaultText: '',
+      bounds: { x: x, y: y, w: w, h: h },
+      font: { family: 'Arial', sizePt: pt || 5, bold: false, italic: false },
+      align: 'center', valign: 'middle',
+      dateFormat: 'MonthDayLongYear', includeTime: false, use24Hour: false, rotation: 0 };
+  }
+  function mkTimeOnly(x, y, w, h, pt) {
+    return { type: 'datetime', name: 'TIME', isVariable: false, defaultText: '',
+      bounds: { x: x, y: y, w: w, h: h },
+      font: { family: 'Arial', sizePt: pt || 5, bold: false, italic: false },
+      align: 'center', valign: 'middle',
+      timeOnly: true, use24Hour: false, rotation: 0 };
+  }
   function mkQR(x, y, s) {
     return { type: 'barcode', name: 'BARCODE', isVariable: false, defaultText: '',
       bounds: { x: x, y: y, w: s, h: s }, barcodeType: 'QRCode', linkedObjectName: 'TEXT',
@@ -3840,14 +3863,22 @@ var qrcode = function() {
         objs.push(mkLogo(W - mCH - logoW, mCV, logoW, H - 2 * mCV, 270));
         rightEdge = W - mCH - logoW - mCI;
       }
+      if (dateOn) {
+        var dtStripW = 0.09;
+        var dtPt = Math.round(dtStripW * 72 * 0.75);
+        var dateStrip = mkDateOnly(leftEdge, mCV, dtStripW, H - 2 * mCV, dtPt);
+        dateStrip.rotation = 270;
+        objs.push(dateStrip);
+        leftEdge += dtStripW;
+        var timeStrip = mkTimeOnly(rightEdge - dtStripW, mCV, dtStripW, H - 2 * mCV, dtPt);
+        timeStrip.rotation = 270;
+        objs.push(timeStrip);
+        rightEdge -= dtStripW;
+      }
       if (qrOn) {
         var avQ = rightEdge - leftEdge;
         var qS = Math.min(avQ, H - 2 * mCV);
         objs.push(mkQR(leftEdge + (avQ - qS) / 2, (H - qS) / 2, qS));
-      }
-      if (dateOn) {
-        var dH = 0.09;
-        objs.push(mkDate(leftEdge, H - mCV - dH, rightEdge - leftEdge, dH, 5));
       }
       return objs;
     }
