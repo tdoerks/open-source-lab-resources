@@ -182,6 +182,7 @@
       <h1>Plate Label Printer</h1>
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
+    <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
     <span class="build">build 2026-11-12 (f096f2b)</span>
   </div>
 
@@ -320,6 +321,24 @@
     </div>
     <p id="paperSizeNote" class="print-hint"></p>
     <p class="print-hint">In the print dialog: set <strong>Paper size</strong> to the label shown above (not Letter), Margins <strong>None</strong>, Scale <strong>100%</strong>, and turn <strong>Headers &amp; footers</strong> off.</p>
+  </div>
+</div>
+
+<div id="infoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:14px;padding:28px 32px;max-width:520px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.3);position:relative;">
+    <button onclick="document.getElementById('infoModal').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);">&times;</button>
+    <h2 style="margin:0 0 16px;font-size:1.1rem;">Printer Setup Guide</h2>
+    <p style="margin:0 0 10px;font-weight:700;">1. Rename printers (Windows)</p>
+    <p style="margin:0 0 14px;font-size:.9rem;color:var(--muted);">Settings &rarr; Bluetooth &amp; devices &rarr; Printers &amp; scanners &rarr; click printer &rarr; Printer properties &rarr; rename to e.g. <strong>DYMO Cryo 1&times;1</strong> or <strong>DYMO Inventory 1&times;1.5</strong>.</p>
+    <p style="margin:0 0 10px;font-weight:700;">2. Set print defaults per printer</p>
+    <p style="margin:0 0 6px;font-size:.9rem;color:var(--muted);">Settings &rarr; Printers &amp; scanners &rarr; click printer &rarr; <strong>Printing preferences</strong>:</p>
+    <table style="font-size:.88rem;border-collapse:collapse;width:100%;margin-bottom:14px;">
+      <tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:5px 8px;">Printer</th><th style="text-align:left;padding:5px 8px;">Media</th><th style="text-align:left;padding:5px 8px;">Quality</th><th style="text-align:left;padding:5px 8px;">Density</th></tr>
+      <tr><td style="padding:5px 8px;">Cryo 1&times;1</td><td style="padding:5px 8px;">Durable</td><td style="padding:5px 8px;">Best</td><td style="padding:5px 8px;">Dark</td></tr>
+      <tr><td style="padding:5px 8px;">Inventory 1&times;1.5</td><td style="padding:5px 8px;">Regular</td><td style="padding:5px 8px;">Normal</td><td style="padding:5px 8px;">Normal</td></tr>
+    </table>
+    <p style="margin:0 0 10px;font-weight:700;">3. Printing from this app</p>
+    <p style="margin:0;font-size:.9rem;color:var(--muted);">Click <strong>Print</strong>, then select the correct printer from the destination dropdown in the print dialog. Settings saved in step 2 apply automatically.</p>
   </div>
 </div>
 
@@ -3804,7 +3823,7 @@ var qrcode = function() {
 
     // ── 1×1 cryo layout: rotated ID bar left | QR center | NARMS logo right ──
     if (W <= 1.05 && H <= 1.05 && !wide) {
-      var mC = 0.025;
+      var mC = 0.08, mCI = 0.03;  // outer edge, inner gap
       var leftEdge = mC;
       if (textOn) {
         var barW = 0.14;
@@ -3813,13 +3832,13 @@ var qrcode = function() {
         var txt = mkText(mC, mC, barW, H - 2 * mC, barPt);
         txt.rotation = 270;
         objs.push(txt);
-        leftEdge = mC + barW + mC;
+        leftEdge = mC + barW + mCI;
       }
       var rightEdge = W - mC;
       if (logoOn) {
         var logoW = 0.22;
         objs.push(mkLogo(W - mC - logoW, mC, logoW, H - 2 * mC, 270));
-        rightEdge = W - mC - logoW - mC;
+        rightEdge = W - mC - logoW - mCI;
       }
       if (qrOn) {
         var avQ = rightEdge - leftEdge;
