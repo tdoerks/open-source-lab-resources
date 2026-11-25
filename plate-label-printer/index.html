@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-25 20:55</span>
+    <span class="build">build 2026-11-25 21:01</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3120,6 +3120,27 @@ var qrcode = function() {
             qr.addData(val);
             qr.make();
             var mCount = qr.getModuleCount();
+            if (obj.quietModules) {
+              // Small labels: draw the modules directly (true orientation, not the library's
+              // transposed render), sized to fill the box exactly instead of rounding each
+              // module down to whole pixels, inside a white quiet zone of quietModules
+              // modules so nearby black (ID bar, logo) doesn't stop it scanning.
+              var qz = obj.quietModules, side = Math.min(w, h);
+              var c = side / (mCount + 2 * qz);
+              var ox = x + (w - side) / 2, oy = y + (h - side) / 2;
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(ox, oy, side, side);
+              ctx.fillStyle = '#000000';
+              for (var r = 0; r < mCount; r++) {
+                for (var cc = 0; cc < mCount; cc++) {
+                  if (!qr.isDark(r, cc)) continue;
+                  var x0 = Math.round(ox + (qz + cc) * c), x1 = Math.round(ox + (qz + cc + 1) * c);
+                  var y0 = Math.round(oy + (qz + r) * c),  y1 = Math.round(oy + (qz + r + 1) * c);
+                  ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+                }
+              }
+              return;
+            }
             var cell = Math.max(1, Math.floor(Math.min(w, h) / mCount));
             var qrSize = mCount * cell;
             var qrCanvas = document.createElement('canvas');
@@ -3884,7 +3905,9 @@ var qrcode = function() {
       var qS = qrOn ? Math.min(rowH, rowW, 0.35) : 0;
       if (qrOn) {
         var qx = ksOn ? left : left + (rowW - qS) / 2;   // centred when there's no KS logo
-        objs.push(mkQR(qx, y1 + (rowH - qS) / 2, qS));
+        var qrObj = mkQR(qx, y1 + (rowH - qS) / 2, qS);
+        qrObj.quietModules = 2;   // white border; see the QR renderer
+        objs.push(qrObj);
       }
       if (ksOn) {
         var ksL = qrOn ? left + qS + 2 * gap : left;
