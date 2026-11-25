@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-25 20:31</span>
+    <span class="build">build 2026-11-25 20:35</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3848,7 +3848,7 @@ var qrcode = function() {
     if (W <= 1.05 && H <= 1.05 && !wide) {
       // mCR: wider margin on the logo side (it prints along the label's bottom edge at
       // the default 90° rotation, and was getting clipped at 0.08).
-      var mCH = 0.08, mCR = 0.12, mCV = 0.13, mCI = 0.03;  // horiz, logo-side, vert, inner gap
+      var mCH = 0.08, mCR = 0.16, mCV = 0.13, mCI = 0.02;  // horiz, logo-side, vert, inner gap
       var leftEdge = mCH;
       if (textOn) {
         var barW = 0.17, barMV = 0.08;   // ID bar: thicker, and longer (smaller end margins)
@@ -3862,7 +3862,7 @@ var qrcode = function() {
       }
       var rightEdge = W - mCR;
       if (logoOn) {
-        var logoW = 0.14;
+        var logoW = 0.18;   // logo strip thickness (the NARMS image is ~3.6:1, so this sets its size)
         objs.push(mkLogo(W - mCR - logoW, mCV, logoW, H - 2 * mCV, 270));
         rightEdge = W - mCR - logoW - mCI;
       }
