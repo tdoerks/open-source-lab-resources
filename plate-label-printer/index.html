@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-12 22:42</span>
+    <span class="build">build 2026-11-25 17:58</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3874,7 +3874,7 @@ var qrcode = function() {
         var qBotY = H - mCV - dtBarH;
         var avH = qBotY - qTopY;
         var avW = rightEdge - leftEdge;
-        var qS = Math.min(avW, avH);
+        var qS = Math.min(avW, avH) * 0.75;   // QR at 75% of the space, centred
         objs.push(mkQR(leftEdge + (avW - qS) / 2, qTopY + (avH - qS) / 2, qS));
       }
       return objs;
@@ -3985,7 +3985,9 @@ var qrcode = function() {
   }
 
   // ── Print rotation + nudge (persisted PER label size) ───────────────────────
-  function rotKey()   { return 'plate_print_rotation_' + currentSize.key; }
+  // 1×1 key is versioned: its default changed to 90° (label top at 12 o'clock), and
+  // the bump clears older saved 1×1 rotations so everyone gets the new default.
+  function rotKey()   { return 'plate_print_rotation_' + currentSize.key + (currentSize.key === 'sq1' ? '_v2' : ''); }
   function nudgeKey()  { return 'plate_print_nudge_' + currentSize.key; }
 
   function setPrintRotation(deg) {
@@ -4007,7 +4009,7 @@ var qrcode = function() {
   function loadSizeCalibration() {
     var savedRot = NaN;
     try { savedRot = parseInt(localStorage.getItem(rotKey()), 10); } catch (e) {}
-    var rotDefaults = { sq1: 0 };
+    var rotDefaults = { sq1: 90 };
     state.printRotation = isNaN(savedRot) ? (rotDefaults[currentSize.key] !== undefined ? rotDefaults[currentSize.key] : 90) : savedRot;
     var rbtns = document.querySelectorAll('.rotate-opt');
     for (var i = 0; i < rbtns.length; i++) {
