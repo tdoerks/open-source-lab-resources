@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-25 20:37</span>
+    <span class="build">build 2026-11-25 20:41</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3846,9 +3846,10 @@ var qrcode = function() {
 
     // ── 1×1 cryo layout: rotated ID bar left | QR center | NARMS logo right ──
     if (W <= 1.05 && H <= 1.05 && !wide) {
-      // mCR: wider margin on the logo side (it prints along the label's bottom edge at
-      // the default 90° rotation, and was getting clipped at 0.08).
-      var mCH = 0.08, mCR = 0.16, mCV = 0.13, mCI = 0.02;  // horiz, logo-side, vert, inner gap
+      // (Drawn sideways, then turned 90° below: mCH = top margin, mCR = bottom margin.)
+      // The default nudge moves everything ~3 mm down, so the top margin is small and
+      // the bottom (logo) margin large, to keep the logo clear of the bottom edge.
+      var mCH = 0.04, mCR = 0.22, mCV = 0.13, mCI = 0.02;  // top, bottom/logo, sides, inner gap
       var leftEdge = mCH;
       if (textOn) {
         var barW = 0.17, barMV = 0.08;   // ID bar: thicker, and longer (smaller end margins)
@@ -3877,7 +3878,7 @@ var qrcode = function() {
         var qBotY = H - mCV - dtBarH;
         var avH = qBotY - qTopY;
         var avW = rightEdge - leftEdge;
-        var qS = Math.min(avW, avH, 0.375);   // QR capped at 0.375 in (75% of its original size), centred
+        var qS = Math.min(avW, avH, 0.35);    // QR capped at 0.35 in, centred
         objs.push(mkQR(leftEdge + (avW - qS) / 2, qTopY + (avH - qS) / 2, qS));
       }
       // The layout above is drawn sideways; turn it 90° clockwise so that at the 0°
