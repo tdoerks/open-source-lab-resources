@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-25 17:58</span>
+    <span class="build">build 2026-11-25 20:31</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3846,22 +3846,25 @@ var qrcode = function() {
 
     // ── 1×1 cryo layout: rotated ID bar left | QR center | NARMS logo right ──
     if (W <= 1.05 && H <= 1.05 && !wide) {
-      var mCH = 0.08, mCV = 0.13, mCI = 0.03;  // horiz, vert, inner gap
+      // mCR: wider margin on the logo side (it prints along the label's bottom edge at
+      // the default 90° rotation, and was getting clipped at 0.08).
+      var mCH = 0.08, mCR = 0.12, mCV = 0.13, mCI = 0.03;  // horiz, logo-side, vert, inner gap
       var leftEdge = mCH;
       if (textOn) {
-        var barW = 0.14;
-        // font sized to fill the bar height (barW) when rotated — cap at ~9pt
-        var barPt = Math.min(barW * 72 * 0.85, 9);
-        var txt = mkText(mCH, mCV, barW, H - 2 * mCV, barPt);
+        var barW = 0.17, barMV = 0.08;   // ID bar: thicker, and longer (smaller end margins)
+        // font sized to fill the bar height (barW) when rotated — cap at ~10pt;
+        // the renderer shrinks it further if the ID is longer than the bar
+        var barPt = Math.min(barW * 72 * 0.85, 10);
+        var txt = mkText(mCH, barMV, barW, H - 2 * barMV, barPt);
         txt.rotation = 270;
         objs.push(txt);
         leftEdge = mCH + barW + mCI;
       }
-      var rightEdge = W - mCH;
+      var rightEdge = W - mCR;
       if (logoOn) {
         var logoW = 0.14;
-        objs.push(mkLogo(W - mCH - logoW, mCV, logoW, H - 2 * mCV, 270));
-        rightEdge = W - mCH - logoW - mCI;
+        objs.push(mkLogo(W - mCR - logoW, mCV, logoW, H - 2 * mCV, 270));
+        rightEdge = W - mCR - logoW - mCI;
       }
       var dtBarH = dateOn ? 0.09 : 0;
       if (dateOn) {
@@ -3874,7 +3877,7 @@ var qrcode = function() {
         var qBotY = H - mCV - dtBarH;
         var avH = qBotY - qTopY;
         var avW = rightEdge - leftEdge;
-        var qS = Math.min(avW, avH) * 0.75;   // QR at 75% of the space, centred
+        var qS = Math.min(avW, avH, 0.375);   // QR capped at 0.375 in (75% of its original size), centred
         objs.push(mkQR(leftEdge + (avW - qS) / 2, qTopY + (avH - qS) / 2, qS));
       }
       return objs;
