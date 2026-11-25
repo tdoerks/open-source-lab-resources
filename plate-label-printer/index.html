@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-25 21:01</span>
+    <span class="build">build 2026-11-25 21:57</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3146,7 +3146,17 @@ var qrcode = function() {
             var qrCanvas = document.createElement('canvas');
             qrCanvas.width  = qrSize;
             qrCanvas.height = qrSize;
-            qr.renderTo2dContext(qrCanvas.getContext('2d'), cell);
+            // Draw modules in true orientation: the library's renderTo2dContext swaps
+            // rows/columns (a mirrored code), which some phone camera apps won't read.
+            var qctx = qrCanvas.getContext('2d');
+            qctx.fillStyle = '#ffffff';
+            qctx.fillRect(0, 0, qrSize, qrSize);
+            qctx.fillStyle = '#000000';
+            for (var qr_r = 0; qr_r < mCount; qr_r++) {
+              for (var qr_c = 0; qr_c < mCount; qr_c++) {
+                if (qr.isDark(qr_r, qr_c)) qctx.fillRect(qr_c * cell, qr_r * cell, cell, cell);
+              }
+            }
             // Position the QR within its bounds per the label's alignment
             // (DYMO right-aligns the CI Pipette QR), instead of always centering.
             var qa = obj.align || 'center';
@@ -3878,7 +3888,7 @@ var qrcode = function() {
     // The printer doesn't print the bottom ~4 mm of a 30332 1×1 label, and the default
     // nudge moves everything ~3 mm down, so content is packed toward the top.
     if (W <= 1.05 && H <= 1.05 && !wide) {
-      var mTop = 0.02, mBot = 0.33, mSide = 0.13, gap = 0.015;
+      var mTop = 0.02, mBot = 0.32, mSide = 0.13, gap = 0.015;
       var y1 = mTop;
       if (textOn) {
         var barH = 0.17, barMH = 0.08;
@@ -3896,7 +3906,7 @@ var qrcode = function() {
       if (logoOn) {
         // NARMS strip height (the image is ~3.6:1, so this sets its size); a little
         // shorter when the date line also needs room
-        var logoH = dateOn ? 0.13 : 0.16;
+        var logoH = dateOn ? 0.14 : 0.19;
         objs.push(mkLogo(mSide, y2 - logoH, W - 2 * mSide, logoH, 0));
         y2 -= logoH + gap;
       }
