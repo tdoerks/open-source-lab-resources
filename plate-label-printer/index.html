@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-25 20:54</span>
+    <span class="build">build 2026-11-25 20:55</span>
   </div>
 
   <!-- Label size & contents -->
@@ -3853,7 +3853,7 @@ var qrcode = function() {
     var qrOn = opts.qr, textOn = opts.text, dateOn = opts.date, logoOn = opts.logo, ksOn = opts.ks;
 
     // ── 1×1 cryo layout (top at 12 o'clock at the 0° print rotation) ─────────
-    //    ID bar across the top | QR left + KS outline right | NARMS logo across the bottom.
+    //    ID bar across the top | QR left + KS outline right | NARMS logo | date/time line.
     // The printer doesn't print the bottom ~4 mm of a 30332 1×1 label, and the default
     // nudge moves everything ~3 mm down, so content is packed toward the top.
     if (W <= 1.05 && H <= 1.05 && !wide) {
@@ -3867,18 +3867,19 @@ var qrcode = function() {
         y1 += barH + gap;
       }
       var y2 = H - mBot;
+      if (dateOn) {   // one date + time line under the NARMS logo, still above the cut-off
+        var dtH = 0.08;
+        objs.push(mkDate(mSide, y2 - dtH, W - 2 * mSide, dtH, 6));
+        y2 -= dtH + gap;
+      }
       if (logoOn) {
-        var logoH = 0.16;   // NARMS strip height (the image is ~3.6:1, so this sets its size)
+        // NARMS strip height (the image is ~3.6:1, so this sets its size); a little
+        // shorter when the date line also needs room
+        var logoH = dateOn ? 0.13 : 0.16;
         objs.push(mkLogo(mSide, y2 - logoH, W - 2 * mSide, logoH, 0));
         y2 -= logoH + gap;
       }
       var rowH = y2 - y1, left = mSide, right = W - mSide;
-      if (dateOn) {   // time down the left edge, date down the right
-        var dtW = 0.09;
-        var tm = mkTimeOnly(left, y1, dtW, rowH, 5); tm.rotation = 90; objs.push(tm);
-        var dd = mkDateOnly(right - dtW, y1, dtW, rowH, 5); dd.rotation = 90; objs.push(dd);
-        left += dtW + gap; right -= dtW + gap;
-      }
       var rowW = right - left;
       var qS = qrOn ? Math.min(rowH, rowW, 0.35) : 0;
       if (qrOn) {
