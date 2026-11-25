@@ -183,7 +183,7 @@
       <p class="sub">Pick the month, click your samples, print &mdash; QR code &amp; date stamp built in.</p>
     </div>
     <button id="infoBtn" onclick="document.getElementById('infoModal').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;color:var(--muted);font-weight:700;margin-right:6px;" title="Printer setup guide">?</button>
-    <span class="build">build 2026-11-25 20:41</span>
+    <span class="build">build 2026-11-25 20:54</span>
   </div>
 
   <!-- Label size & contents -->
@@ -199,6 +199,7 @@
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showQR" checked> QR code</label>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showDate"> Date/time stamp</label>
       <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showLogo" checked> NARMS logo</label>
+      <label style="font-size:0.9em;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="showKS" checked> KS logo (1&times;1)</label>
     </div>
   </div>
 
@@ -3040,8 +3041,9 @@ var qrcode = function() {
       var h = Math.round(obj.bounds.h * 96 * SCALE);
 
       if (obj.type === 'image') {
-        if (NARMS_IMG.complete && NARMS_IMG.naturalWidth) {
-          var iw = NARMS_IMG.naturalWidth, ih = NARMS_IMG.naturalHeight;
+        var IMG = obj.img || NARMS_IMG;
+        if (IMG.complete && IMG.naturalWidth) {
+          var iw = IMG.naturalWidth, ih = IMG.naturalHeight;
           var imgRot = obj.rotation || 0;
           var rot90img = imgRot === 90 || imgRot === 270;
           // swap available dims when rotated so contain-fit uses the right axis
@@ -3052,7 +3054,7 @@ var qrcode = function() {
           ctx.save();
           ctx.translate(x + w / 2, y + h / 2);
           ctx.rotate(imgRot * Math.PI / 180);
-          ctx.drawImage(NARMS_IMG, -dw / 2, -dh / 2, dw, dh);
+          ctx.drawImage(IMG, -dw / 2, -dh / 2, dw, dh);
           ctx.restore();
         }
       } else if (obj.type === 'text' || obj.type === 'datetime') {
@@ -3785,12 +3787,17 @@ var qrcode = function() {
     { key: 'sq1',    label: '1 × 1 in',       w: 1.0,   h: 1.0,  paper: '30332 1 in x 1 in' }
   ];
   var currentSize = SIZES[0];
-  var elemOpts = { text: true, qr: true, date: false, logo: true };
+  var elemOpts = { text: true, qr: true, date: false, logo: true, ks: true };
 
   // NARMS logo (embedded, used when elemOpts.logo is true)
   var NARMS_IMG = new Image();
   NARMS_IMG.src = 'data:image/jpeg;base64,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';
   NARMS_IMG.onload = function () { if (elemOpts.logo) updatePreview(); };
+
+  // Kansas outline "KS" logo (embedded; 1×1 only, used when elemOpts.ks is true)
+  var KS_IMG = new Image();
+  KS_IMG.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAW8AAADcAQAAAACXbh3WAAAEaUlEQVR42u2aPW7cOBTH/3wSdlQEmzmAsdYRUqaLqpzDR9hyu2VusEeYoyipUvoICpAipRKkkANZbwuJFEnxM8gUAYaNDc9vqMf3+adg8LqWt4isk6IwIm9VzMwLPWbiCwCA+kycVxy5S6JovWHmhcq+k48PZfhYhhcaM5XhMwCIfEMYYCqzm9bcSS8JlmWe6QvwDhjKdh8L8BaYCvBzWVQbYC7AT8XVtJTgXdnubRl+LwvLg4qrSaCac9FqLsh3Rl1mTFOCL6Wlfb5qn2mv2vQ6PXQyVo9r9vdelNlOuGJGitNU1IGbaw6bX4+/P8yyWBJso30bH1UiCb4C+GCX046/F0K0APBOCCFUj+bOkSiVnlXAy80E4F/mydJV3OONzxhW6uULAOCHJSLIX/ECwGX9dqdbqnc2zZt/eZNHj3raeGfTBAD1bsWkU8Y7bMYtnRSmvlbHo/poHR0g/7AZNpf3jsQT/t37bbJoIXhRX2MfLteWwvZhtjZDoSgtTiaus4xCUZrtQITyXUVpyisPFaXR0dYBXEVpcE6znohCbvdp68sRV27vPYrm07E8VHE4UpyZR+AvChWHf4JQwO3sHmfNUiprPuSLUm07e9QJP5MvSo2+Kw2JcTBubp8B4A53Zo558EHrKAAPqKzJccR7PUBXf0r3MztMq/OZRwCCmXujkQ0g8kXJMLQ1Ev7+YMwSvWAcMnJ2j3+OhmnSDcj4aTyc/MWhi6mxy4mCUj0nZ6woeQyiSJTm5O4yce+tj1ESZhAqjuxuS0uWCWNm+4GXBL4XxxlQsy9Rlrvbn3Lw1vtrEN/HOj5n4IY/nmUSFzCawX9J3PrLt8yGtTnf0CcB3E6Ljym8sf7+lMLPwSh48RZWWn5O4M7hnhO4dILVZuH6IV/ieO9s+iOOD46DrJoKiKt9gtg1RemaH6P45H7wPYpvzUjILMWhP+18IyKkgYFXvvKi6EXGikS8Vv9wIxHAe/esYxRXm/2dJy7UZi9cIRm/CFXyOBYIobACD1nG6M3usvDFtWbJvMT9k9i9sXPkdEga8iS59Ka6BycnR/7M0YB7jojBeRx5erux7jKmtmFxFcc7FdZ3QogOB6FNiIT1OPvI034Xt333IfzseqiJ7t4c1GHGKJO5aql2Sz++O/mqMIwLt1Pk2D4eSjqES4eb43i3MZ2JdkG8/YkXLsv+Y4rjZyOsfHQmedv0PoqHOF6bZ7hsp5SJPtOrgf2cOCqZYX1a9YYIZtz20bglvkg6UkadTYH3pk1mmLpjptQRfCvuOnP387Fam3R/D9zMyD+spfBnKfl1TJ+bwCqs0isVg7OpQ5biUFnQept+QEdOhjsoLWrnXREYv0VsJ29XDijsxbD4Ia3f+fjWLXo7kFq6VTlXlV4n1ou8q8rpIBAj96ZBG9/n3MoAvLYeogdz7CWz+ZqZWUblzwjg1Ge+dQJeDhBT7MrmrHvOf6eVPw5u+A2/4Tf8hv/2+G39HkteMQmIuhK8zv4vwPWNyv86TfO1sz/CbwAAAABJRU5ErkJggg==';
+  KS_IMG.onload = function () { if (elemOpts.ks) updatePreview(); };
 
   function mkText(x, y, w, h, pt) {
     return { type: 'text', name: 'TEXT', isVariable: true, defaultText: '',
@@ -3826,8 +3833,9 @@ var qrcode = function() {
       rotation: 0, font: { family: 'Arial', sizePt: 8, bold: false, italic: false },
       align: 'center', valign: 'middle' };
   }
-  function mkLogo(x, y, w, h, rotation) {
-    return { type: 'image', name: 'LOGO', bounds: { x: x, y: y, w: w, h: h }, rotation: rotation || 0 };
+  function mkLogo(x, y, w, h, rotation, img) {
+    return { type: 'image', name: 'LOGO', bounds: { x: x, y: y, w: w, h: h }, rotation: rotation || 0,
+             img: img || NARMS_IMG };
   }
   // Point size for an nChars string to fill widthIn (Arial bold ~0.60em advance).
   function fitPt(widthIn, nChars, cap) {
@@ -3842,52 +3850,44 @@ var qrcode = function() {
   function buildLayout(W, H, opts) {
     var m = 0.05, objs = [];
     var wide = W > H * 1.9;
-    var qrOn = opts.qr, textOn = opts.text, dateOn = opts.date, logoOn = opts.logo;
+    var qrOn = opts.qr, textOn = opts.text, dateOn = opts.date, logoOn = opts.logo, ksOn = opts.ks;
 
-    // ── 1×1 cryo layout: rotated ID bar left | QR center | NARMS logo right ──
+    // ── 1×1 cryo layout (top at 12 o'clock at the 0° print rotation) ─────────
+    //    ID bar across the top | QR left + KS outline right | NARMS logo across the bottom.
+    // The printer doesn't print the bottom ~4 mm of a 30332 1×1 label, and the default
+    // nudge moves everything ~3 mm down, so content is packed toward the top.
     if (W <= 1.05 && H <= 1.05 && !wide) {
-      // (Drawn sideways, then turned 90° below: mCH = top margin, mCR = bottom margin.)
-      // The default nudge moves everything ~3 mm down, so the top margin is small and
-      // the bottom (logo) margin large, to keep the logo clear of the bottom edge.
-      var mCH = 0.04, mCR = 0.22, mCV = 0.13, mCI = 0.02;  // top, bottom/logo, sides, inner gap
-      var leftEdge = mCH;
+      var mTop = 0.02, mBot = 0.33, mSide = 0.13, gap = 0.015;
+      var y1 = mTop;
       if (textOn) {
-        var barW = 0.17, barMV = 0.08;   // ID bar: thicker, and longer (smaller end margins)
-        // font sized to fill the bar height (barW) when rotated — cap at ~10pt;
-        // the renderer shrinks it further if the ID is longer than the bar
-        var barPt = Math.min(barW * 72 * 0.85, 10);
-        var txt = mkText(mCH, barMV, barW, H - 2 * barMV, barPt);
-        txt.rotation = 270;
-        objs.push(txt);
-        leftEdge = mCH + barW + mCI;
+        var barH = 0.17, barMH = 0.08;
+        // font sized to the bar height, capped at ~10pt; the renderer shrinks it to fit the ID
+        var barPt = Math.min(barH * 72 * 0.85, 10);
+        objs.push(mkText(barMH, y1, W - 2 * barMH, barH, barPt));
+        y1 += barH + gap;
       }
-      var rightEdge = W - mCR;
+      var y2 = H - mBot;
       if (logoOn) {
-        var logoW = 0.18;   // logo strip thickness (the NARMS image is ~3.6:1, so this sets its size)
-        objs.push(mkLogo(W - mCR - logoW, mCV, logoW, H - 2 * mCV, 270));
-        rightEdge = W - mCR - logoW - mCI;
+        var logoH = 0.16;   // NARMS strip height (the image is ~3.6:1, so this sets its size)
+        objs.push(mkLogo(mSide, y2 - logoH, W - 2 * mSide, logoH, 0));
+        y2 -= logoH + gap;
       }
-      var dtBarH = dateOn ? 0.09 : 0;
-      if (dateOn) {
-        var cW = rightEdge - leftEdge;
-        objs.push(mkDateOnly(leftEdge, mCV, cW, dtBarH, 5));
-        objs.push(mkTimeOnly(leftEdge, H - mCV - dtBarH, cW, dtBarH, 5));
+      var rowH = y2 - y1, left = mSide, right = W - mSide;
+      if (dateOn) {   // time down the left edge, date down the right
+        var dtW = 0.09;
+        var tm = mkTimeOnly(left, y1, dtW, rowH, 5); tm.rotation = 90; objs.push(tm);
+        var dd = mkDateOnly(right - dtW, y1, dtW, rowH, 5); dd.rotation = 90; objs.push(dd);
+        left += dtW + gap; right -= dtW + gap;
       }
+      var rowW = right - left;
+      var qS = qrOn ? Math.min(rowH, rowW, 0.35) : 0;
       if (qrOn) {
-        var qTopY = mCV + dtBarH;
-        var qBotY = H - mCV - dtBarH;
-        var avH = qBotY - qTopY;
-        var avW = rightEdge - leftEdge;
-        var qS = Math.min(avW, avH, 0.35);    // QR capped at 0.35 in, centred
-        objs.push(mkQR(leftEdge + (avW - qS) / 2, qTopY + (avH - qS) / 2, qS));
+        var qx = ksOn ? left : left + (rowW - qS) / 2;   // centred when there's no KS logo
+        objs.push(mkQR(qx, y1 + (rowH - qS) / 2, qS));
       }
-      // The layout above is drawn sideways; turn it 90° clockwise so that at the 0°
-      // print rotation the label's top is at 12 o'clock (ID bar across the top, logo
-      // across the bottom). Bounds are rotated about the label centre: (x, y) -> (H - y, x).
-      for (var oi = 0; oi < objs.length; oi++) {
-        var b = objs[oi].bounds;
-        objs[oi].bounds = { x: H - b.y - b.h, y: b.x, w: b.h, h: b.w };
-        objs[oi].rotation = ((objs[oi].rotation || 0) + 90) % 360;
+      if (ksOn) {
+        var ksL = qrOn ? left + qS + 2 * gap : left;
+        if (right - ksL > 0.05) objs.push(mkLogo(ksL, y1, right - ksL, rowH, 0, KS_IMG));
       }
       return objs;
     }
@@ -4073,12 +4073,13 @@ var qrcode = function() {
     fq.addEventListener('input', function () { pq.value = fq.value; });
 
     // element toggles
-    ['showText', 'showQR', 'showDate', 'showLogo'].forEach(function (id) {
+    ['showText', 'showQR', 'showDate', 'showLogo', 'showKS'].forEach(function (id) {
       document.getElementById(id).addEventListener('change', function () {
         elemOpts.text = document.getElementById('showText').checked;
         elemOpts.qr   = document.getElementById('showQR').checked;
         elemOpts.date = document.getElementById('showDate').checked;
         elemOpts.logo = document.getElementById('showLogo').checked;
+        elemOpts.ks   = document.getElementById('showKS').checked;
         applyLabel();
       });
     });
